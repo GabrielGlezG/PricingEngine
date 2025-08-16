@@ -4,11 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,18 +22,43 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Layout>
+        <AuthProvider>
+          <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/upload" element={<Upload />} />
-              <Route path="/compare" element={<Compare />} />
-              <Route path="/insights" element={<Insights />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute requireSubscription={true}>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/upload" element={
+                <ProtectedRoute requireAdmin={true}>
+                  <Layout>
+                    <Upload />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/compare" element={
+                <ProtectedRoute requireSubscription={true}>
+                  <Layout>
+                    <Compare />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/insights" element={
+                <ProtectedRoute requireSubscription={true}>
+                  <Layout>
+                    <Insights />
+                  </Layout>
+                </ProtectedRoute>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Layout>
-        </BrowserRouter>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

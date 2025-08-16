@@ -1,5 +1,6 @@
 import { BarChart3, Upload, Lightbulb, Car, Scale } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 import {
   Sidebar,
@@ -13,17 +14,21 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 
-const items = [
-  { title: "Dashboard", url: "/", icon: BarChart3 },
-  { title: "Cargar Datos", url: "/upload", icon: Upload },
-  { title: "Comparar", url: "/compare", icon: Scale },
-  { title: "Insights", url: "/insights", icon: Lightbulb },
-]
 
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
+  const { isAdmin } = useAuth()
   const currentPath = location.pathname
+
+  const items = [
+    { title: "Dashboard", url: "/", icon: BarChart3, requireAdmin: false },
+    { title: "Cargar Datos", url: "/upload", icon: Upload, requireAdmin: true },
+    { title: "Comparar", url: "/compare", icon: Scale, requireAdmin: false },
+    { title: "Insights", url: "/insights", icon: Lightbulb, requireAdmin: false },
+  ]
+
+  const filteredItems = items.filter(item => !item.requireAdmin || isAdmin)
 
   const isActive = (path: string) => currentPath === path
   const collapsed = state === "collapsed"
@@ -38,7 +43,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url} className="flex items-center gap-3">
