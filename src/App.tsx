@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
+import Subscription from "./pages/Subscription";
+import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +53,20 @@ const App = () => (
                 <ProtectedRoute requireSubscription={true}>
                   <Layout>
                     <Insights />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/subscription" element={
+                <ProtectedRoute requireSubscription={false}>
+                  <Layout>
+                    <Subscription />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute requireAdmin={true}>
+                  <Layout>
+                    <Admin />
                   </Layout>
                 </ProtectedRoute>
               } />

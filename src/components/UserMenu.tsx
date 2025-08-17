@@ -11,9 +11,11 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { User, Settings, LogOut, Crown, CreditCard } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export function UserMenu() {
   const { user, profile, signOut, isAdmin, hasActiveSubscription } = useAuth()
+  const navigate = useNavigate()
 
   if (!user || !profile) return null
 
@@ -71,7 +73,7 @@ export function UserMenu() {
         </DropdownMenuItem>
         
         {!isAdmin && (
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/subscription')}>
             <CreditCard className="mr-2 h-4 w-4" />
             <span>Suscripción</span>
           </DropdownMenuItem>

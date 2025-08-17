@@ -26,6 +26,7 @@ export function AppSidebar() {
     { title: "Cargar Datos", url: "/upload", icon: Upload, requireAdmin: true },
     { title: "Comparar", url: "/compare", icon: Scale, requireAdmin: false },
     { title: "Insights", url: "/insights", icon: Lightbulb, requireAdmin: false },
+    { title: "Admin", url: "/admin", icon: Car, requireAdmin: true },
   ]
 
   const filteredItems = items.filter(item => !item.requireAdmin || isAdmin)

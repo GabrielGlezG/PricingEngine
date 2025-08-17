@@ -23,6 +23,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
+  refreshProfile: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -57,6 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
      profile?.subscription_expires_at && 
      new Date(profile.subscription_expires_at) > new Date())
   )
+
+  const refreshProfile = () => {
+    if (user) {
+      refetchProfile()
+    }
+  }
 
   useEffect(() => {
     // Get initial session
@@ -116,7 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hasActiveSubscription: !!hasActiveSubscription,
     signIn,
     signUp,
-    signOut
+    signOut,
+    refreshProfile
   }
 
   return (
