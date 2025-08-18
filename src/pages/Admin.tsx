@@ -15,7 +15,12 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function Admin() {
   const { toast } = useToast()
-  const [editingPlan, setEditingPlan] = useState<any>(null)
+  const [selectedUser, setSelectedUser] = useState<string>('')
+  const [subscriptionForm, setSubscriptionForm] = useState({
+    planId: '',
+    billingCycle: 'monthly',
+    durationMonths: 1
+  })
 
   // Fetch subscription plans
   const { data: plans, refetch: refetchPlans } = useQuery({
@@ -82,16 +87,63 @@ export default function Admin() {
   })
 
   const updateUserRole = useMutation({
-    mutationFn: async ({ userId, role, isActive }: { userId: string, role: string, isActive: boolean }) => {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ role, is_active: isActive })
-        .eq('user_id', userId)
+    mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
+      const { error } = await supabase.rpc('change_user_role', {
+        p_user_id: userId,
+        p_new_role: role
+      })
       
       if (error) throw error
     },
     onSuccess: () => {
-      toast({ title: "Usuario actualizado exitosamente" })
+      toast({ title: "Rol actualizado exitosamente" })
+    }
+  })
+
+  const toggleUserStatus = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string, isActive: boolean }) => {
+      const { error } = await supabase.rpc('toggle_user_status', {
+        p_user_id: userId,
+        p_is_active: isActive
+      })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Estado de usuario actualizado" })
+    }
+  })
+
+  const assignSubscription = useMutation({
+    mutationFn: async ({ userId, planId, billingCycle, durationMonths }: {
+      userId: string, planId: string, billingCycle: string, durationMonths: number
+    }) => {
+      const { error } = await supabase.rpc('assign_subscription', {
+        p_user_id: userId,
+        p_plan_id: planId,
+        p_billing_cycle: billingCycle,
+        p_duration_months: durationMonths
+      })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Suscripción asignada exitosamente" })
+      setSelectedUser('')
+      setSubscriptionForm({ planId: '', billingCycle: 'monthly', durationMonths: 1 })
+    }
+  })
+
+  const cancelSubscription = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.rpc('cancel_subscription', {
+        p_user_id: userId
+      })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({ title: "Suscripción cancelada" })
     }
   })
 
@@ -197,8 +249,7 @@ export default function Admin() {
                             variant="outline"
                             onClick={() => updateUserRole.mutate({
                               userId: user.user_id,
-                              role: user.role === 'admin' ? 'user' : 'admin',
-                              isActive: user.is_active
+                              role: user.role === 'admin' ? 'user' : 'admin'
                             })}
                           >
                             {user.role === 'admin' ? 'Quitar Admin' : 'Hacer Admin'}
@@ -206,14 +257,31 @@ export default function Admin() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateUserRole.mutate({
+                            onClick={() => toggleUserStatus.mutate({
                               userId: user.user_id,
-                              role: user.role,
                               isActive: !user.is_active
                             })}
                           >
                             {user.is_active ? 'Desactivar' : 'Activar'}
                           </Button>
+                          {user.subscription_status !== 'active' && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => setSelectedUser(user.user_id)}
+                            >
+                              Asignar Suscripción
+                            </Button>
+                          )}
+                          {user.subscription_status === 'active' && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => cancelSubscription.mutate(user.user_id)}
+                            >
+                              Cancelar Suscripción
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -273,6 +341,87 @@ export default function Admin() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Modal para asignar suscripción */}
+        {selectedUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Asignar Suscripción</CardTitle>
+                <CardDescription>
+                  Asignar una suscripción manual al usuario seleccionado
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Plan de Suscripción</Label>
+                  <select 
+                    className="w-full p-2 border rounded-md"
+                    value={subscriptionForm.planId}
+                    onChange={(e) => setSubscriptionForm(prev => ({ ...prev, planId: e.target.value }))}
+                  >
+                    <option value="">Seleccionar plan</option>
+                    {plans?.map(plan => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} - {formatPrice(plan.price_monthly)}/mes
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Ciclo de Facturación</Label>
+                  <select 
+                    className="w-full p-2 border rounded-md"
+                    value={subscriptionForm.billingCycle}
+                    onChange={(e) => setSubscriptionForm(prev => ({ ...prev, billingCycle: e.target.value }))}
+                  >
+                    <option value="monthly">Mensual</option>
+                    <option value="yearly">Anual</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label>Duración (meses)</Label>
+                  <input 
+                    type="number"
+                    min="1"
+                    max="24"
+                    className="w-full p-2 border rounded-md"
+                    value={subscriptionForm.durationMonths}
+                    onChange={(e) => setSubscriptionForm(prev => ({ ...prev, durationMonths: parseInt(e.target.value) }))}
+                  />
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={() => {
+                      if (subscriptionForm.planId) {
+                        assignSubscription.mutate({
+                          userId: selectedUser,
+                          planId: subscriptionForm.planId,
+                          billingCycle: subscriptionForm.billingCycle,
+                          durationMonths: subscriptionForm.durationMonths
+                        })
+                      }
+                    }}
+                    disabled={!subscriptionForm.planId || assignSubscription.isPending}
+                    className="flex-1"
+                  >
+                    {assignSubscription.isPending ? 'Asignando...' : 'Asignar Suscripción'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedUser('')}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <TabsContent value="plans">
           <Card>
