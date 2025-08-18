@@ -94,24 +94,14 @@ export default function Subscription() {
 
   const subscribeMutation = useMutation({
     mutationFn: async ({ planId, billingCycle }: { planId: string, billingCycle: string }) => {
-      // En una implementación real, aquí se integraría con Stripe
-      // Por ahora, simularemos la creación de una suscripción
-      const plan = plans?.find(p => p.id === planId)
-      if (!plan) throw new Error('Plan no encontrado')
-
-      const price = billingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly
-      const periodEnd = new Date()
-      periodEnd.setMonth(periodEnd.getMonth() + (billingCycle === 'yearly' ? 12 : 1))
-
-      // Simular creación de suscripción
-      const { data, error } = await supabase.rpc('create_subscription', {
+      // Crear suscripción manual (sin pago por ahora)
+      const durationMonths = billingCycle === 'yearly' ? 12 : 1
+      
+      const { data, error } = await supabase.rpc('assign_subscription', {
         p_user_id: user?.id,
         p_plan_id: planId,
         p_billing_cycle: billingCycle,
-        p_stripe_subscription_id: `sim_${Date.now()}`,
-        p_stripe_customer_id: `cus_${user?.id}`,
-        p_current_period_start: new Date().toISOString(),
-        p_current_period_end: periodEnd.toISOString()
+        p_duration_months: durationMonths
       })
 
       if (error) throw error
@@ -127,6 +117,30 @@ export default function Subscription() {
     onError: (error: any) => {
       toast({
         title: "Error al procesar suscripción",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('cancel_subscription', {
+        p_user_id: user?.id
+      })
+      
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast({
+        title: "Suscripción cancelada",
+        description: "Tu suscripción ha sido cancelada exitosamente."
+      })
+      refetchSubscription()
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al cancelar suscripción",
         description: error.message,
         variant: "destructive"
       })
@@ -221,6 +235,23 @@ export default function Subscription() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Renueva: {new Date(currentSubscription.current_period_end).toLocaleDateString('es-MX')}
                 </p>
+                {currentSubscription.cancel_at_period_end && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    Se cancelará al final del período
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {!currentSubscription.cancel_at_period_end && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cancelSubscriptionMutation.mutate()}
+                    disabled={cancelSubscriptionMutation.isPending}
+                  >
+                    {cancelSubscriptionMutation.isPending ? 'Cancelando...' : 'Cancelar Suscripción'}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -303,17 +334,17 @@ export default function Subscription() {
                   <Button 
                     className="w-full" 
                     onClick={() => handleSubscribe(plan.id)}
-                    disabled={isProcessing}
+                    disabled={isProcessing || subscribeMutation.isPending}
                   >
-                    {isProcessing ? (
+                    {(isProcessing || subscribeMutation.isPending) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Procesando...
+                        Activando...
                       </>
                     ) : (
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Suscribirse
+                        Activar Suscripción
                       </>
                     )}
                   </Button>
@@ -374,14 +405,15 @@ export default function Subscription() {
 
       {/* No Subscription Warning */}
       {!currentSubscription && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-orange-500/20 bg-orange-500/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="font-medium text-orange-800">Acceso Limitado</p>
-                <p className="text-sm text-orange-700">
-                  Sin una suscripción activa, tu acceso a las funcionalidades está restringido.
+                <p className="font-medium text-orange-400">Acceso Limitado</p>
+                <p className="text-sm text-orange-300">
+                  Sin una suscripción activa, tu acceso a las funcionalidades está restringido. 
+                  Selecciona un plan arriba para activar tu acceso completo.
                 </p>
               </div>
             </div>

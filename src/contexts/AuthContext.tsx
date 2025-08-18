@@ -60,9 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   const refreshProfile = () => {
-    if (user) {
-      refetchProfile()
-    }
+    refetchProfile()
   }
 
   useEffect(() => {

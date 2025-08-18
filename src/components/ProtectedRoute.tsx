@@ -63,19 +63,19 @@ export function ProtectedRoute({
   if (requireSubscription && !hasActiveSubscription) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-lg w-full">
           <CardContent className="p-6 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
             <h2 className="text-xl font-semibold mb-2">Suscripción Requerida</h2>
             <p className="text-muted-foreground mb-4">
               {profile?.subscription_status === 'active' && profile?.subscription_expires_at ? 
                 `Tu suscripción expiró el ${new Date(profile.subscription_expires_at).toLocaleDateString()}.` :
-                'Necesitas una suscripción activa para acceder a esta funcionalidad.'
+                'Necesitas una suscripción activa para acceder a esta funcionalidad. Contacta al administrador o activa tu suscripción.'
               }
             </p>
             <div className="space-y-2">
-              <Button className="w-full">
-                Renovar Suscripción
+              <Button className="w-full" onClick={() => window.location.href = '/subscription'}>
+                Ver Planes de Suscripción
               </Button>
               <Button variant="outline" onClick={() => window.history.back()}>
                 Volver
