@@ -55,8 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasActiveSubscription = profile?.is_active && (
     profile?.role === 'admin' || 
     (profile?.subscription_status === 'active' && 
-     profile?.subscription_expires_at && 
-     new Date(profile.subscription_expires_at) > new Date())
+     (!profile?.subscription_expires_at || 
+      new Date(profile.subscription_expires_at) > new Date()))
   )
 
   const refreshProfile = () => {
