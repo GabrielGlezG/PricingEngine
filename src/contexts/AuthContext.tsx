@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { useQuery } from '@tanstack/react-query'
+import { useToast } from '@/hooks/use-toast'
 
 interface UserProfile {
   user_id: string
@@ -24,6 +25,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
   refreshProfile: () => void
+  makeFirstAdmin: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   // Fetch user profile
   const { data: profile, refetch: refetchProfile } = useQuery({
@@ -45,13 +48,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching user profile:', error)
+        // Si el perfil no existe, intentar crearlo
+        if (error.code === 'PGRST116') {
+          const { data: newProfile, error: createError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              name: user.user_metadata?.name || user.email || '',
+              role: 'user',
+              is_active: true
+            })
+            .select()
+            .single()
+          
+          if (createError) {
+            console.error('Error creating user profile:', createError)
+            return null
+          }
+          return newProfile as UserProfile
+        }
+        return null
+      }
       return data as UserProfile
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: 1
   })
 
-  const isAdmin = profile?.role === 'admin' && profile?.is_active
+  const isAdmin = Boolean(profile?.role === 'admin' && profile?.is_active)
   const hasActiveSubscription = profile?.is_active && (
     profile?.role === 'admin' || 
     (profile?.subscription_status === 'active' && 
@@ -79,13 +106,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
         
         if (session?.user) {
-          refetchProfile()
+          // Pequeño delay para asegurar que el trigger de creación de perfil se ejecute
+          setTimeout(() => {
+            refetchProfile()
+          }, 1000)
         }
       }
     )
 
     return () => subscription.unsubscribe()
   }, [refetchProfile])
+
+  // Función para hacer bootstrap del primer admin
+  const makeFirstAdmin = async (email: string) => {
+    try {
+      const { error } = await supabase.rpc('bootstrap_first_admin', {
+        p_user_email: email
+      })
+      
+      if (error) throw error
+      
+      toast({
+        title: "Administrador creado",
+        description: "El usuario ha sido convertido en administrador."
+      })
+      
+      refetchProfile()
+    } catch (error: any) {
+      console.error('Error making first admin:', error)
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  }
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -117,12 +172,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     profile,
     loading,
-    isAdmin: !!isAdmin,
-    hasActiveSubscription: !!hasActiveSubscription,
+    isAdmin,
+    hasActiveSubscription: Boolean(hasActiveSubscription),
     signIn,
     signUp,
     signOut,
-    refreshProfile
+    refreshProfile,
+    makeFirstAdmin
   }
 
   return (

@@ -41,6 +41,25 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  // Si no hay perfil, mostrar mensaje de error
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
+            <h2 className="text-xl font-semibold mb-2">Error de Perfil</h2>
+            <p className="text-muted-foreground mb-4">
+              No se pudo cargar tu perfil de usuario. Por favor, intenta cerrar sesión y volver a iniciar sesión.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Recargar Página
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   if (requireAdmin && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -50,6 +69,11 @@ export function ProtectedRoute({
             <h2 className="text-xl font-semibold mb-2">Acceso Restringido</h2>
             <p className="text-muted-foreground mb-4">
               Esta sección requiere permisos de administrador.
+              {profile && (
+                <span className="block mt-2 text-sm">
+                  Tu rol actual: {profile.role} | Estado: {profile.is_active ? 'Activo' : 'Inactivo'}
+                </span>
+              )}
             </p>
             <Button onClick={() => window.history.back()}>
               Volver
@@ -72,6 +96,12 @@ export function ProtectedRoute({
                 `Tu suscripción expiró el ${new Date(profile.subscription_expires_at).toLocaleDateString()}.` :
                 'Necesitas una suscripción activa para acceder a esta funcionalidad. Contacta al administrador o activa tu suscripción.'
               }
+              {profile && (
+                <span className="block mt-2 text-sm">
+                  Estado de suscripción: {profile.subscription_status || 'Sin suscripción'} | 
+                  Rol: {profile.role}
+                </span>
+              )}
             </p>
             <div className="space-y-2">
               <Button className="w-full" onClick={() => window.location.href = '/subscription'}>

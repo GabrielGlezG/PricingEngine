@@ -7,17 +7,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Car, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Car, Eye, EyeOff, Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Login() {
-  const { user, signIn, signUp } = useAuth()
+  const { user, signIn, signUp, makeFirstAdmin } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [showAdminSetup, setShowAdminSetup] = useState(false)
   
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -37,6 +38,19 @@ export default function Login() {
     return <Navigate to={from} replace />
   }
 
+  const handleMakeFirstAdmin = async () => {
+    if (!user?.email) return
+    
+    setIsLoading(true)
+    try {
+      await makeFirstAdmin(user.email)
+      setShowAdminSetup(false)
+    } catch (error) {
+      console.error('Error making first admin:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -56,6 +70,11 @@ export default function Login() {
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente."
       })
+      
+      // Verificar si necesita configurar el primer admin
+      setTimeout(() => {
+        setShowAdminSetup(true)
+      }, 2000)
     }
     
     setIsLoading(false)
@@ -247,6 +266,54 @@ export default function Login() {
           </CardContent>
         </Card>
 
+        {/* Modal para configurar primer admin */}
+        {showAdminSetup && user && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-yellow-500" />
+                  Configurar Administrador
+                </CardTitle>
+                <CardDescription>
+                  ¿Deseas convertir esta cuenta en administrador del sistema?
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-400">
+                    Email: {user.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Esta acción solo está disponible si no hay otros administradores en el sistema.
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleMakeFirstAdmin}
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Crown className="mr-2 h-4 w-4" />
+                    )}
+                    Hacer Administrador
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAdminSetup(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
         <div className="mt-8 text-center">
           <p className="text-xs text-slate-500">
             Al usar ModelPulse, aceptas nuestros{' '}
