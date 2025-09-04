@@ -15,11 +15,20 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function Admin() {
   const { toast } = useToast()
+  const { user, profile, isAdmin } = useAuth()
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [subscriptionForm, setSubscriptionForm] = useState({
     planId: '',
     billingCycle: 'monthly',
     durationMonths: 1
+  })
+
+  // Debug de autenticación para admin
+  console.log('Admin Page Auth Debug:', {
+    user: !!user,
+    profile: !!profile,
+    isAdmin,
+    profileData: profile
   })
 
   // Fetch subscription plans
@@ -33,6 +42,10 @@ export default function Admin() {
       
       if (error) throw error
       return data
+    },
+    retry: (failureCount, error) => {
+      console.error('Admin plans query error:', error)
+      return failureCount < 2
     }
   })
 

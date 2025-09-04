@@ -79,11 +79,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   })
 
   const isAdmin = Boolean(profile?.role === 'admin' && profile?.is_active)
-  const hasActiveSubscription = profile?.is_active && (
-    profile?.role === 'admin' || 
-    (profile?.subscription_status === 'active' && 
-     (!profile?.subscription_expires_at || 
-      new Date(profile.subscription_expires_at) > new Date()))
+  
+  // Mejorar la lógica de verificación de suscripción activa
+  const hasActiveSubscription = Boolean(
+    profile?.is_active && (
+      // Los admins siempre tienen acceso
+      profile?.role === 'admin' || 
+      // Usuarios con suscripción activa
+      (profile?.subscription_status === 'active' && 
+       (!profile?.subscription_expires_at || 
+        new Date(profile.subscription_expires_at) > new Date()))
+    )
   )
 
   const refreshProfile = () => {
@@ -109,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Pequeño delay para asegurar que el trigger de creación de perfil se ejecute
           setTimeout(() => {
             refetchProfile()
-          }, 1000)
+          }, 500)
         }
       }
     )
@@ -131,7 +137,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "El usuario ha sido convertido en administrador."
       })
       
-      refetchProfile()
+      // Refrescar el perfil después de un pequeño delay
+      setTimeout(() => {
+        refetchProfile()
+      }, 1000)
     } catch (error: any) {
       console.error('Error making first admin:', error)
       toast({

@@ -19,6 +19,22 @@ export function ProtectedRoute({
   const { user, loading, isAdmin, hasActiveSubscription, profile } = useAuth()
   const location = useLocation()
 
+  // Debug logging para identificar problemas
+  console.log('ProtectedRoute Debug:', {
+    user: !!user,
+    profile: !!profile,
+    isAdmin,
+    hasActiveSubscription,
+    requireAdmin,
+    requireSubscription,
+    profileData: profile ? {
+      role: profile.role,
+      is_active: profile.is_active,
+      subscription_status: profile.subscription_status,
+      subscription_expires_at: profile.subscription_expires_at
+    } : null
+  })
+
   if (loading) {
     return (
       <div className="space-y-6 p-6">
@@ -52,14 +68,21 @@ export function ProtectedRoute({
             <p className="text-muted-foreground mb-4">
               No se pudo cargar tu perfil de usuario. Por favor, intenta cerrar sesión y volver a iniciar sesión.
             </p>
-            <Button onClick={() => window.location.reload()}>
-              Recargar Página
-            </Button>
+            <div className="space-y-2">
+              <Button onClick={() => window.location.reload()}>
+                Recargar Página
+              </Button>
+              <div className="text-xs text-muted-foreground">
+                Usuario ID: {user.id}<br/>
+                Email: {user.email}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
     )
   }
+  
   if (requireAdmin && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -71,7 +94,9 @@ export function ProtectedRoute({
               Esta sección requiere permisos de administrador.
               {profile && (
                 <span className="block mt-2 text-sm">
-                  Tu rol actual: {profile.role} | Estado: {profile.is_active ? 'Activo' : 'Inactivo'}
+                  Tu rol actual: {profile.role} | Estado: {profile.is_active ? 'Activo' : 'Inactivo'}<br/>
+                  Suscripción: {profile.subscription_status || 'Sin suscripción'}<br/>
+                  Debug - isAdmin: {isAdmin ? 'true' : 'false'}
                 </span>
               )}
             </p>
@@ -98,8 +123,10 @@ export function ProtectedRoute({
               }
               {profile && (
                 <span className="block mt-2 text-sm">
-                  Estado de suscripción: {profile.subscription_status || 'Sin suscripción'} | 
-                  Rol: {profile.role}
+                  Estado de suscripción: {profile.subscription_status || 'Sin suscripción'}<br/>
+                  Rol: {profile.role} | Activo: {profile.is_active ? 'Sí' : 'No'}<br/>
+                  Expira: {profile.subscription_expires_at ? new Date(profile.subscription_expires_at).toLocaleDateString() : 'N/A'}<br/>
+                  Debug - hasActiveSubscription: {hasActiveSubscription ? 'true' : 'false'}
                 </span>
               )}
             </p>

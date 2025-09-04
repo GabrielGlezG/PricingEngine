@@ -31,10 +31,21 @@ export function UserMenu() {
   const getSubscriptionStatus = () => {
     if (isAdmin) return { text: 'Admin', variant: 'default' as const, color: 'bg-yellow-600' }
     if (hasActiveSubscription) return { text: 'Premium', variant: 'default' as const, color: 'bg-green-600' }
-    return { text: 'Inactivo', variant: 'secondary' as const, color: 'bg-gray-600' }
+    return { text: 'Sin Acceso', variant: 'secondary' as const, color: 'bg-gray-600' }
   }
 
   const subscriptionStatus = getSubscriptionStatus()
+
+  // Debug logging
+  console.log('UserMenu Debug:', {
+    user: !!user,
+    profile: !!profile,
+    isAdmin,
+    hasActiveSubscription,
+    profileRole: profile?.role,
+    profileActive: profile?.is_active,
+    subscriptionStatus: profile?.subscription_status
+  })
 
   return (
     <DropdownMenu>
@@ -56,6 +67,9 @@ export function UserMenu() {
             </div>
             <p className="text-xs leading-none text-muted-foreground">
               {profile.email}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              ID: {user.id}
             </p>
             <Badge 
               variant={subscriptionStatus.variant} 

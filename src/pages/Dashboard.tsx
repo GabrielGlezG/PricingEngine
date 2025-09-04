@@ -70,6 +70,16 @@ export default function Dashboard() {
     date_to: ''
   })
 
+  // Debug de autenticación
+  const { user, profile, isAdmin, hasActiveSubscription } = useAuth()
+  console.log('Dashboard Auth Debug:', {
+    user: !!user,
+    profile: !!profile,
+    isAdmin,
+    hasActiveSubscription,
+    profileData: profile
+  })
+
   const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['analytics', filters],
     queryFn: async () => {
@@ -84,6 +94,10 @@ export default function Dashboard() {
       
       if (error) throw error
       return data as AnalyticsData
+    },
+    retry: (failureCount, error) => {
+      console.error('Analytics query error:', error)
+      return failureCount < 2
     }
   })
 
