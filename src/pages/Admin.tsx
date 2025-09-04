@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Settings, Users, CreditCard, Package, Plus, Edit, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function Admin() {
   const { toast } = useToast()
@@ -31,41 +32,23 @@ export default function Admin() {
     profileData: profile
   })
 
-  // Fetch subscription plans
-  const { data: plans, refetch: refetchPlans } = useQuery({
-    queryKey: ['admin-subscription-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .order('price_monthly')
-      
-      if (error) throw error
-      return data
+  // Mock subscription plans for now
+  const plans = [
+    {
+      id: '1',
+      name: 'Plan Básico',
+      price_monthly: 99,
+      is_active: true,
+      description: 'Plan básico para usuarios'
     },
-    retry: (failureCount, error) => {
-      console.error('Admin plans query error:', error)
-      return failureCount < 2
+    {
+      id: '2', 
+      name: 'Plan Premium',
+      price_monthly: 199,
+      is_active: true,
+      description: 'Plan premium con todas las funcionalidades'
     }
-  })
-
-  // Fetch all user subscriptions
-  const { data: subscriptions } = useQuery({
-    queryKey: ['admin-subscriptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select(`
-          *,
-          subscription_plans (name),
-          user_profiles!user_subscriptions_user_id_fkey (name, email)
-        `)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      return data
-    }
-  })
+  ]
 
   // Fetch user profiles
   const { data: users } = useQuery({
@@ -81,30 +64,16 @@ export default function Admin() {
     }
   })
 
-  // Fetch payment history
-  const { data: payments } = useQuery({
-    queryKey: ['admin-payments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_history')
-        .select(`
-          *,
-          user_profiles!payment_history_user_id_fkey (name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50)
-      
-      if (error) throw error
-      return data
-    }
-  })
+  // Mock data for subscriptions and payments
+  const subscriptions = []
+  const payments = []
 
   const updateUserRole = useMutation({
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
-      const { error } = await supabase.rpc('change_user_role', {
-        p_user_id: userId,
-        p_new_role: role
-      })
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role })
+        .eq('user_id', userId)
       
       if (error) throw error
     },
@@ -113,30 +82,16 @@ export default function Admin() {
     }
   })
 
-  const toggleUserStatus = useMutation({
-    mutationFn: async ({ userId, isActive }: { userId: string, isActive: boolean }) => {
-      const { error } = await supabase.rpc('toggle_user_status', {
-        p_user_id: userId,
-        p_is_active: isActive
-      })
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      toast({ title: "Estado de usuario actualizado" })
-    }
-  })
-
   const assignSubscription = useMutation({
-    mutationFn: async ({ userId, planId, billingCycle, durationMonths }: {
-      userId: string, planId: string, billingCycle: string, durationMonths: number
-    }) => {
-      const { error } = await supabase.rpc('assign_subscription', {
-        p_user_id: userId,
-        p_plan_id: planId,
-        p_billing_cycle: billingCycle,
-        p_duration_months: durationMonths
-      })
+    mutationFn: async ({ userId, planId }: { userId: string, planId: string }) => {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          subscription_status: 'active',
+          subscription_plan: planId,
+          subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('user_id', userId)
       
       if (error) throw error
     },
@@ -149,9 +104,13 @@ export default function Admin() {
 
   const cancelSubscription = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.rpc('cancel_subscription', {
-        p_user_id: userId
-      })
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ 
+          subscription_status: 'canceled',
+          subscription_expires_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
       
       if (error) throw error
     },
@@ -242,8 +201,8 @@ export default function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.is_active ? 'default' : 'destructive'}>
-                          {user.is_active ? 'Activo' : 'Inactivo'}
+                        <Badge variant="default">
+                          Activo
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -266,16 +225,6 @@ export default function Admin() {
                             })}
                           >
                             {user.role === 'admin' ? 'Quitar Admin' : 'Hacer Admin'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => toggleUserStatus.mutate({
-                              userId: user.user_id,
-                              isActive: !user.is_active
-                            })}
-                          >
-                            {user.is_active ? 'Desactivar' : 'Activar'}
                           </Button>
                           {user.subscription_status !== 'active' && (
                             <Button
@@ -412,9 +361,7 @@ export default function Admin() {
                       if (subscriptionForm.planId) {
                         assignSubscription.mutate({
                           userId: selectedUser,
-                          planId: subscriptionForm.planId,
-                          billingCycle: subscriptionForm.billingCycle,
-                          durationMonths: subscriptionForm.durationMonths
+                          planId: subscriptionForm.planId
                         })
                       }
                     }}

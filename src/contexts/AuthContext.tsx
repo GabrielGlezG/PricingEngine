@@ -8,8 +8,8 @@ interface UserProfile {
   user_id: string
   email: string
   name: string
-  role: string
-  is_active: boolean
+  role: string | null
+  subscription_plan: string | null
   subscription_status: string | null
   subscription_expires_at: string | null
 }
@@ -58,8 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               user_id: user.id,
               email: user.email || '',
               name: user.user_metadata?.name || user.email || '',
-              role: 'user',
-              is_active: true
+              role: 'user'
             })
             .select()
             .single()
@@ -78,11 +77,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retry: 1
   })
 
-  const isAdmin = Boolean(profile?.role === 'admin' && profile?.is_active)
+  const isAdmin = Boolean(profile?.role === 'admin')
   
   // Mejorar la lógica de verificación de suscripción activa
   const hasActiveSubscription = Boolean(
-    profile?.is_active && (
+    profile && (
       // Los admins siempre tienen acceso
       profile?.role === 'admin' || 
       // Usuarios con suscripción activa
@@ -126,9 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Función para hacer bootstrap del primer admin
   const makeFirstAdmin = async (email: string) => {
     try {
-      const { error } = await supabase.rpc('bootstrap_first_admin', {
-        p_user_email: email
-      })
+      // Actualizar el rol del usuario a admin directamente en la tabla
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({ role: 'admin' })
+        .eq('email', email)
       
       if (error) throw error
       
