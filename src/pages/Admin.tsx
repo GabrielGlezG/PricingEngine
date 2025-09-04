@@ -38,6 +38,8 @@ export default function Admin() {
       id: '1',
       name: 'Plan Básico',
       price_monthly: 99,
+      price_yearly: 990,
+      features: ['Dashboard básico', 'Soporte email'],
       is_active: true,
       description: 'Plan básico para usuarios'
     },
@@ -45,6 +47,8 @@ export default function Admin() {
       id: '2', 
       name: 'Plan Premium',
       price_monthly: 199,
+      price_yearly: 1990,
+      features: ['Dashboard completo', 'Análisis avanzados', 'Soporte prioritario'],
       is_active: true,
       description: 'Plan premium con todas las funcionalidades'
     }
@@ -72,7 +76,7 @@ export default function Admin() {
     mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ role })
+        .update({ role } as any)
         .eq('user_id', userId)
       
       if (error) throw error
@@ -196,8 +200,8 @@ export default function Admin() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                        <Badge variant={(user as any).role === 'admin' ? 'default' : 'secondary'}>
+                          {(user as any).role === 'admin' ? 'Admin' : 'Usuario'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -221,10 +225,10 @@ export default function Admin() {
                             variant="outline"
                             onClick={() => updateUserRole.mutate({
                               userId: user.user_id,
-                              role: user.role === 'admin' ? 'user' : 'admin'
+                              role: (user as any).role === 'admin' ? 'user' : 'admin'
                             })}
                           >
-                            {user.role === 'admin' ? 'Quitar Admin' : 'Hacer Admin'}
+                            {(user as any).role === 'admin' ? 'Quitar Admin' : 'Hacer Admin'}
                           </Button>
                           {user.subscription_status !== 'active' && (
                             <Button

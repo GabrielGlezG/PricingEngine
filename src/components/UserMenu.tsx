@@ -43,7 +43,6 @@ export function UserMenu() {
     isAdmin,
     hasActiveSubscription,
     profileRole: profile?.role,
-    profileActive: profile?.is_active,
     subscriptionStatus: profile?.subscription_status
   })
 

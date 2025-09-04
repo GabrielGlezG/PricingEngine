@@ -29,7 +29,6 @@ export function ProtectedRoute({
     requireSubscription,
     profileData: profile ? {
       role: profile.role,
-      is_active: profile.is_active,
       subscription_status: profile.subscription_status,
       subscription_expires_at: profile.subscription_expires_at
     } : null
@@ -94,7 +93,7 @@ export function ProtectedRoute({
               Esta sección requiere permisos de administrador.
               {profile && (
                 <span className="block mt-2 text-sm">
-                  Tu rol actual: {profile.role} | Estado: {profile.is_active ? 'Activo' : 'Inactivo'}<br/>
+                  Tu rol actual: {profile.role}<br/>
                   Suscripción: {profile.subscription_status || 'Sin suscripción'}<br/>
                   Debug - isAdmin: {isAdmin ? 'true' : 'false'}
                 </span>
@@ -124,7 +123,7 @@ export function ProtectedRoute({
               {profile && (
                 <span className="block mt-2 text-sm">
                   Estado de suscripción: {profile.subscription_status || 'Sin suscripción'}<br/>
-                  Rol: {profile.role} | Activo: {profile.is_active ? 'Sí' : 'No'}<br/>
+                  Rol: {profile.role}<br/>
                   Expira: {profile.subscription_expires_at ? new Date(profile.subscription_expires_at).toLocaleDateString() : 'N/A'}<br/>
                   Debug - hasActiveSubscription: {hasActiveSubscription ? 'true' : 'false'}
                 </span>

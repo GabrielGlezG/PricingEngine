@@ -1,162 +1,49 @@
 import { useState } from "react"
-import { useQuery, useMutation } from "@tanstack/react-query"
-import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Check, Crown, CreditCard, Calendar, AlertTriangle, Loader2 } from "lucide-react"
+import { Crown, CreditCard, Calendar, AlertTriangle, Loader2, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-interface SubscriptionPlan {
-  id: string
-  name: string
-  description: string
-  price_monthly: number
-  price_yearly: number
-  features: string[]
-  is_active: boolean
-}
-
-interface UserSubscription {
-  id: string
-  plan_id: string
-  status: string
-  billing_cycle: string
-  current_period_start: string
-  current_period_end: string
-  cancel_at_period_end: boolean
-  subscription_plans: SubscriptionPlan
-}
+// Mock subscription plans since the table doesn't exist yet
+const MOCK_PLANS = [
+  {
+    id: 'free',
+    name: 'Plan Gratuito',
+    description: 'Funcionalidades básicas para empezar',
+    price_monthly: 0,
+    price_yearly: 0,
+    features: [
+      'Acceso limitado al dashboard',
+      'Análisis básicos',
+      'Soporte por email'
+    ],
+    is_active: true
+  },
+  {
+    id: 'premium',
+    name: 'Plan Premium',
+    description: 'Acceso completo a todas las funcionalidades',
+    price_monthly: 499,
+    price_yearly: 4990,
+    features: [
+      'Acceso completo al dashboard',
+      'Análisis avanzados',
+      'Comparación de productos',
+      'Subida ilimitada de datos',
+      'Insights automáticos',
+      'Soporte prioritario'
+    ],
+    is_active: true
+  }
+]
 
 export default function Subscription() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const { toast } = useToast()
   const [selectedBilling, setSelectedBilling] = useState<'monthly' | 'yearly'>('monthly')
   const [isProcessing, setIsProcessing] = useState(false)
-
-  // Fetch subscription plans
-  const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ['subscription-plans'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_monthly')
-      
-      if (error) throw error
-      return data as SubscriptionPlan[]
-    }
-  })
-
-  // Fetch user's current subscription
-  const { data: currentSubscription, refetch: refetchSubscription } = useQuery({
-    queryKey: ['user-subscription', user?.id],
-    queryFn: async () => {
-      if (!user) return null
-      
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select(`
-          *,
-          subscription_plans (*)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single()
-      
-      if (error && error.code !== 'PGRST116') throw error
-      return data as UserSubscription
-    },
-    enabled: !!user
-  })
-
-  // Fetch payment history
-  const { data: paymentHistory } = useQuery({
-    queryKey: ['payment-history', user?.id],
-    queryFn: async () => {
-      if (!user) return []
-      
-      const { data, error } = await supabase
-        .from('payment_history')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-      
-      if (error) throw error
-      return data
-    },
-    enabled: !!user
-  })
-
-  const subscribeMutation = useMutation({
-    mutationFn: async ({ planId, billingCycle }: { planId: string, billingCycle: string }) => {
-      // Crear suscripción manual (sin pago por ahora)
-      const durationMonths = billingCycle === 'yearly' ? 12 : 1
-      
-      const { data, error } = await supabase.rpc('assign_subscription', {
-        p_user_id: user?.id,
-        p_plan_id: planId,
-        p_billing_cycle: billingCycle,
-        p_duration_months: durationMonths
-      })
-
-      if (error) throw error
-      return data
-    },
-    onSuccess: () => {
-      toast({
-        title: "¡Suscripción activada!",
-        description: "Tu suscripción ha sido activada exitosamente."
-      })
-      refetchSubscription()
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error al procesar suscripción",
-        description: error.message,
-        variant: "destructive"
-      })
-    }
-  })
-
-  const cancelSubscriptionMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.rpc('cancel_subscription', {
-        p_user_id: user?.id
-      })
-      
-      if (error) throw error
-    },
-    onSuccess: () => {
-      toast({
-        title: "Suscripción cancelada",
-        description: "Tu suscripción ha sido cancelada exitosamente."
-      })
-      refetchSubscription()
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error al cancelar suscripción",
-        description: error.message,
-        variant: "destructive"
-      })
-    }
-  })
-
-  const handleSubscribe = async (planId: string) => {
-    if (!user) return
-    
-    setIsProcessing(true)
-    try {
-      await subscribeMutation.mutateAsync({ planId, billingCycle: selectedBilling })
-    } finally {
-      setIsProcessing(false)
-    }
-  }
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -171,25 +58,26 @@ export default function Subscription() {
     switch (status) {
       case 'active':
         return <Badge variant="default" className="bg-green-600 text-white">Activa</Badge>
+      case 'expired':
+        return <Badge variant="destructive">Expirada</Badge>
       case 'canceled':
-        return <Badge variant="destructive">Cancelada</Badge>
-      case 'past_due':
-        return <Badge variant="default" className="bg-orange-600 text-white">Vencida</Badge>
+        return <Badge variant="secondary">Cancelada</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
   }
 
-  if (plansLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Cargando planes de suscripción...</p>
-        </div>
-      </div>
-    )
+  const handleContactAdmin = () => {
+    toast({
+      title: "Contacta al administrador",
+      description: "Envía un email o contacta al administrador para activar tu suscripción.",
+    })
   }
+
+  const currentPlan = MOCK_PLANS.find(plan => plan.id === profile?.subscription_plan) || MOCK_PLANS[0]
+  const hasActiveSubscription = profile?.subscription_status === 'active' && profile?.role === 'admin' || 
+    (profile?.subscription_status === 'active' && profile?.subscription_expires_at && 
+     new Date(profile.subscription_expires_at) > new Date())
 
   return (
     <div className="space-y-6">
@@ -201,7 +89,7 @@ export default function Subscription() {
       </div>
 
       {/* Current Subscription Status */}
-      {currentSubscription && (
+      {profile && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -212,45 +100,24 @@ export default function Subscription() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-lg">{currentSubscription.subscription_plans.name}</h3>
-                <p className="text-muted-foreground">{currentSubscription.subscription_plans.description}</p>
+                <h3 className="font-semibold text-lg">{currentPlan.name}</h3>
+                <p className="text-muted-foreground">{currentPlan.description}</p>
                 <div className="flex items-center gap-4 mt-2">
-                  {getStatusBadge(currentSubscription.status)}
+                  {getStatusBadge(profile.subscription_status || 'inactive')}
                   <span className="text-sm text-muted-foreground">
-                    Facturación: {currentSubscription.billing_cycle === 'yearly' ? 'Anual' : 'Mensual'}
+                    Plan: {profile.subscription_plan || 'free'}
                   </span>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-green-600">
-                  {formatPrice(
-                    currentSubscription.billing_cycle === 'yearly' 
-                      ? currentSubscription.subscription_plans.price_yearly 
-                      : currentSubscription.subscription_plans.price_monthly
-                  )}
+                  {formatPrice(currentPlan.price_monthly)}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  /{currentSubscription.billing_cycle === 'yearly' ? 'año' : 'mes'}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Renueva: {new Date(currentSubscription.current_period_end).toLocaleDateString('es-MX')}
-                </p>
-                {currentSubscription.cancel_at_period_end && (
-                  <p className="text-xs text-orange-600 mt-1">
-                    Se cancelará al final del período
+                <p className="text-sm text-muted-foreground">/mes</p>
+                {profile.subscription_expires_at && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Expira: {new Date(profile.subscription_expires_at).toLocaleDateString('es-MX')}
                   </p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {!currentSubscription.cancel_at_period_end && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => cancelSubscriptionMutation.mutate()}
-                    disabled={cancelSubscriptionMutation.isPending}
-                  >
-                    {cancelSubscriptionMutation.isPending ? 'Cancelando...' : 'Cancelar Suscripción'}
-                  </Button>
                 )}
               </div>
             </div>
@@ -259,7 +126,7 @@ export default function Subscription() {
       )}
 
       {/* Billing Toggle */}
-      {!currentSubscription && (
+      {!hasActiveSubscription && (
         <div className="flex justify-center">
           <div className="flex items-center space-x-4 bg-muted p-1 rounded-lg">
             <Button
@@ -285,9 +152,9 @@ export default function Subscription() {
 
       {/* Subscription Plans */}
       <div className="grid gap-6 md:grid-cols-2">
-        {plans?.map((plan) => {
+        {MOCK_PLANS.map((plan) => {
           const price = selectedBilling === 'yearly' ? plan.price_yearly : plan.price_monthly
-          const isCurrentPlan = currentSubscription?.plan_id === plan.id
+          const isCurrentPlan = profile?.subscription_plan === plan.id
           
           return (
             <Card key={plan.id} className={`relative ${isCurrentPlan ? 'border-primary' : ''}`}>
@@ -312,7 +179,7 @@ export default function Subscription() {
                   <span className="text-muted-foreground">
                     /{selectedBilling === 'yearly' ? 'año' : 'mes'}
                   </span>
-                  {selectedBilling === 'yearly' && (
+                  {selectedBilling === 'yearly' && plan.price_yearly > 0 && (
                     <div className="text-sm text-green-600 mt-1">
                       Ahorras {formatPrice(plan.price_monthly * 12 - plan.price_yearly)} al año
                     </div>
@@ -330,21 +197,21 @@ export default function Subscription() {
                   ))}
                 </ul>
                 
-                {!currentSubscription && (
+                {!hasActiveSubscription && plan.id === 'premium' && (
                   <Button 
                     className="w-full" 
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={isProcessing || subscribeMutation.isPending}
+                    onClick={handleContactAdmin}
+                    disabled={isProcessing}
                   >
-                    {(isProcessing || subscribeMutation.isPending) ? (
+                    {isProcessing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Activando...
+                        Procesando...
                       </>
                     ) : (
                       <>
                         <CreditCard className="mr-2 h-4 w-4" />
-                        Activar Suscripción
+                        Contactar Administrador
                       </>
                     )}
                   </Button>
@@ -355,56 +222,20 @@ export default function Subscription() {
                     Plan Activo
                   </Button>
                 )}
+
+                {plan.id === 'free' && (
+                  <Button variant="outline" className="w-full" disabled>
+                    Plan Gratuito
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      {/* Payment History */}
-      {paymentHistory && paymentHistory.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Historial de Pagos
-            </CardTitle>
-            <CardDescription>
-              Últimos movimientos en tu cuenta
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {paymentHistory.map((payment: any) => (
-                <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{payment.description || 'Pago de suscripción'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(payment.created_at).toLocaleDateString('es-MX', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatPrice(payment.amount)}</p>
-                    <Badge 
-                      variant={payment.status === 'succeeded' ? 'default' : 'destructive'}
-                      className={payment.status === 'succeeded' ? 'bg-green-600 text-white' : ''}
-                    >
-                      {payment.status === 'succeeded' ? 'Exitoso' : 'Fallido'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* No Subscription Warning */}
-      {!currentSubscription && (
+      {!hasActiveSubscription && profile?.role !== 'admin' && (
         <Card className="border-orange-500/20 bg-orange-500/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -413,7 +244,7 @@ export default function Subscription() {
                 <p className="font-medium text-orange-400">Acceso Limitado</p>
                 <p className="text-sm text-orange-300">
                   Sin una suscripción activa, tu acceso a las funcionalidades está restringido. 
-                  Selecciona un plan arriba para activar tu acceso completo.
+                  Contacta al administrador para activar tu suscripción premium.
                 </p>
               </div>
             </div>

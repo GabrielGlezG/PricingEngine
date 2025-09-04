@@ -12,6 +12,8 @@ interface UserProfile {
   subscription_plan: string | null
   subscription_status: string | null
   subscription_expires_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 interface AuthContextType {
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Actualizar el rol del usuario a admin directamente en la tabla
       const { error } = await supabase
         .from('user_profiles')
-        .update({ role: 'admin' })
+        .update({ role: 'admin' } as any)
         .eq('email', email)
       
       if (error) throw error
