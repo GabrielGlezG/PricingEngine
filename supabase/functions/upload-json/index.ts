@@ -6,13 +6,21 @@ const corsHeaders = {
 }
 
 interface JsonData {
-  Marca: string;
+  ID_Base: string;
   Categoría: string;
   "Modelo Principal": string;
   Modelo: string;
   Submodelo?: string;
-  Precio: number;
-  "Fecha Scraping": string;
+  ctx_precio: string;
+  precio_num: number;
+  precio_lista_num: number;
+  bono_num: number;
+  Precio_Texto: string;
+  fuente_texto_raw: string;
+  Modelo_URL: string;
+  Archivo_Origen: string;
+  Fecha: string;
+  Timestamp: string;
 }
 
 Deno.serve(async (req) => {
@@ -55,19 +63,18 @@ Deno.serve(async (req) => {
       try {
         // Create or get product
         const productData = {
-          brand: item.Marca,
+          id_base: item.ID_Base,
+          brand: item.Categoría,
           category: item.Categoría,
           model: item["Modelo Principal"],
           name: item.Modelo,
+          submodel: item.Submodelo || null,
         };
 
         let { data: product, error: productError } = await supabaseClient
           .from('products')
           .select('id')
-          .eq('brand', item.Marca)
-          .eq('category', item.Categoría)
-          .eq('model', item["Modelo Principal"])
-          .eq('name', item.Modelo)
+          .eq('id_base', item.ID_Base)
           .maybeSingle();
 
         if (!product) {
@@ -90,9 +97,17 @@ Deno.serve(async (req) => {
           .from('price_data')
           .insert({
             product_id: product.id,
-            store: item.Marca + ' Store',
-            price: item.Precio,
-            date: new Date(item["Fecha Scraping"]).toISOString(),
+            store: item.Categoría,
+            price: item.precio_num,
+            date: new Date(item.Fecha).toISOString(),
+            ctx_precio: item.ctx_precio,
+            precio_lista_num: item.precio_lista_num,
+            bono_num: item.bono_num,
+            precio_texto: item.Precio_Texto,
+            fuente_texto_raw: item.fuente_texto_raw,
+            modelo_url: item.Modelo_URL,
+            archivo_origen: item.Archivo_Origen,
+            url: item.Modelo_URL,
           });
 
         if (priceError) {

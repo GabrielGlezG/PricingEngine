@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Upload as UploadIcon, FileJson, CheckCircle, AlertCircle, Clock, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import Papa from "papaparse"
 
 interface ScrapingJob {
   id: string
@@ -43,16 +44,44 @@ export default function Upload() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const text = await file.text()
-      const jsonData = JSON.parse(text)
-      const batchId = crypto.randomUUID()
+      let jsonData: any[];
+      const batchId = crypto.randomUUID();
+
+      // Parse file based on type
+      if (file.name.endsWith('.json') || file.type === 'application/json') {
+        const text = await file.text();
+        jsonData = JSON.parse(text);
+      } else if (file.name.endsWith('.csv') || file.type === 'text/csv') {
+        const text = await file.text();
+        const parsed = Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          transform: (value, field) => {
+            // Convert numeric fields
+            if (['precio_num', 'precio_lista_num', 'bono_num'].includes(field as string)) {
+              return value ? parseInt(value.toString().replace(/[^\d]/g, '')) : 0;
+            }
+            return value;
+          }
+        });
+        
+        if (parsed.errors.length > 0) {
+          throw new Error(`Error parsing CSV: ${parsed.errors[0].message}`);
+        }
+        
+        jsonData = parsed.data;
+      } else if (file.name.endsWith('.xlsx')) {
+        throw new Error('Excel files not yet supported. Please convert to CSV first.');
+      } else {
+        throw new Error('Unsupported file format');
+      }
 
       const { data, error } = await supabase.functions.invoke('upload-json', {
         body: { data: jsonData, batchId }
-      })
+      });
 
-      if (error) throw error
-      return data
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -90,14 +119,21 @@ export default function Upload() {
     setDragActive(false)
     
     const files = Array.from(e.dataTransfer.files)
-    const jsonFile = files.find(file => file.type === "application/json" || file.name.endsWith('.json'))
+    const validFile = files.find(file => 
+      file.type === "application/json" || 
+      file.name.endsWith('.json') ||
+      file.type === "text/csv" ||
+      file.name.endsWith('.csv') ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.name.endsWith('.xlsx')
+    )
     
-    if (jsonFile) {
-      setSelectedFile(jsonFile)
+    if (validFile) {
+      setSelectedFile(validFile)
     } else {
       toast({
         title: "Archivo inválido",
-        description: "Por favor selecciona un archivo JSON válido.",
+        description: "Por favor selecciona un archivo JSON, CSV o Excel válido.",
         variant: "destructive",
       })
     }
@@ -148,10 +184,10 @@ export default function Upload() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UploadIcon className="h-5 w-5" />
-            Cargar Datos JSON
+            Cargar Datos de Productos
           </CardTitle>
           <CardDescription>
-            Sube archivos JSON con datos de precios de productos automotrices para su análisis
+            Sube archivos JSON, CSV o Excel con datos de precios de productos automotrices para su análisis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -170,7 +206,7 @@ export default function Upload() {
             <FileJson className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <div className="space-y-2">
               <p className="text-lg font-medium">
-                {selectedFile ? selectedFile.name : "Arrastra tu archivo JSON aquí"}
+                {selectedFile ? selectedFile.name : "Arrastra tu archivo JSON, CSV o Excel aquí"}
               </p>
               <p className="text-sm text-muted-foreground">
                 o
@@ -184,7 +220,7 @@ export default function Upload() {
                 ref={fileInputRef}
                 id="file-upload"
                 type="file"
-                accept=".json,application/json"
+                accept=".json,.csv,.xlsx,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -234,22 +270,29 @@ export default function Upload() {
           {/* Formato esperado */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Formato JSON Esperado</CardTitle>
+              <CardTitle className="text-base">Formato Excel/CSV Esperado</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto text-foreground">
-{`[
-  {
-    "Marca": "Toyota",
-    "Categoría": "Sedán",
-    "Modelo Principal": "Camry",
-    "Modelo": "Camry LE",
-    "Submodelo": "2024",
-    "Precio": 580000,
-    "Fecha Scraping": "2024-01-15"
-  }
-]`}
-              </pre>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Las columnas deben estar en este orden exacto:
+                </p>
+                <div className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto">
+                  <div className="grid grid-cols-1 gap-1 font-mono text-xs">
+                    <div className="font-semibold border-b pb-2">Columnas requeridas:</div>
+                    <div>ID_Base | Categoría | Modelo Principal | Modelo | Submodelo</div>
+                    <div>ctx_precio | precio_num | precio_lista_num | bono_num</div>
+                    <div>Precio_Texto | fuente_texto_raw | Modelo_URL</div>
+                    <div>Archivo_Origen | Fecha | Timestamp</div>
+                  </div>
+                </div>
+                <div className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto">
+                  <div className="font-semibold mb-2">Ejemplo de datos:</div>
+                  <pre className="text-xs text-foreground font-mono">
+{`audi|a1-sportback|a1 sportback 30 tfsi,Audi,A1 Sportback,A1 Sportback 30 TFSI,,financiamiento:marca,24900000,27100000,2200000,$24.900.000,Motor: 1.5 Turbo TFSI...,https://www.example.com/a1,audi_a1.xlsx,2025-09-08,2025-09-08T06:34:36+00:00`}
+                  </pre>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </CardContent>

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -16,27 +16,48 @@ export type Database = {
     Tables: {
       price_data: {
         Row: {
+          archivo_origen: string | null
+          bono_num: number | null
           created_at: string | null
+          ctx_precio: string | null
           date: string
+          fuente_texto_raw: string | null
           id: string
+          modelo_url: string | null
+          precio_lista_num: number | null
+          precio_texto: string | null
           price: number
           product_id: string
           store: string
           url: string | null
         }
         Insert: {
+          archivo_origen?: string | null
+          bono_num?: number | null
           created_at?: string | null
+          ctx_precio?: string | null
           date: string
+          fuente_texto_raw?: string | null
           id?: string
+          modelo_url?: string | null
+          precio_lista_num?: number | null
+          precio_texto?: string | null
           price: number
           product_id: string
           store: string
           url?: string | null
         }
         Update: {
+          archivo_origen?: string | null
+          bono_num?: number | null
           created_at?: string | null
+          ctx_precio?: string | null
           date?: string
+          fuente_texto_raw?: string | null
           id?: string
+          modelo_url?: string | null
+          precio_lista_num?: number | null
+          precio_texto?: string | null
           price?: number
           product_id?: string
           store?: string
@@ -58,9 +79,11 @@ export type Database = {
           category: string
           created_at: string | null
           id: string
+          id_base: string | null
           image_url: string | null
           model: string
           name: string
+          submodel: string | null
           updated_at: string | null
         }
         Insert: {
@@ -68,9 +91,11 @@ export type Database = {
           category: string
           created_at?: string | null
           id?: string
+          id_base?: string | null
           image_url?: string | null
           model: string
           name: string
+          submodel?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -78,9 +103,11 @@ export type Database = {
           category?: string
           created_at?: string | null
           id?: string
+          id_base?: string | null
           image_url?: string | null
           model?: string
           name?: string
+          submodel?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -126,6 +153,7 @@ export type Database = {
           created_at: string | null
           email: string
           name: string
+          role: string | null
           subscription_expires_at: string | null
           subscription_plan: string | null
           subscription_status: string | null
@@ -136,6 +164,7 @@ export type Database = {
           created_at?: string | null
           email: string
           name: string
+          role?: string | null
           subscription_expires_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
@@ -146,6 +175,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           name?: string
+          role?: string | null
           subscription_expires_at?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
@@ -162,11 +192,11 @@ export type Database = {
       generate_automatic_insights: {
         Args: Record<PropertyKey, never>
         Returns: {
-          insight_type: string
-          title: string
-          description: string
           data: Json
+          description: string
+          insight_type: string
           priority: number
+          title: string
         }[]
       }
     }
