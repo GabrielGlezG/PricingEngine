@@ -1,5 +1,7 @@
 import { useState, useRef } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
+// @ts-ignore - Papa parse types
+import Papa from "papaparse"
 import { supabase } from "@/integrations/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,9 +45,26 @@ export default function Upload() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const text = await file.text()
-      const jsonData = JSON.parse(text)
-      const batchId = crypto.randomUUID()
+      let jsonData: any;
+      const batchId = crypto.randomUUID();
+
+      if (file.name.endsWith('.json')) {
+        const text = await file.text()
+        jsonData = JSON.parse(text)
+      } else if (file.name.endsWith('.csv')) {
+        const text = await file.text()
+        const parsed = Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: (header) => header.trim()
+        });
+        jsonData = parsed.data;
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // For now, show message that Excel files need to be converted to CSV
+        throw new Error('Los archivos Excel deben convertirse a CSV primero. Por favor exporta tu archivo como CSV y vuelve a subirlo.');
+      } else {
+        throw new Error('Tipo de archivo no soportado');
+      }
 
       const { data, error } = await supabase.functions.invoke('upload-json', {
         body: { data: jsonData, batchId }
@@ -90,14 +109,22 @@ export default function Upload() {
     setDragActive(false)
     
     const files = Array.from(e.dataTransfer.files)
-    const jsonFile = files.find(file => file.type === "application/json" || file.name.endsWith('.json'))
+    const validFile = files.find(file => 
+      file.type === "application/json" || 
+      file.name.endsWith('.json') ||
+      file.type === "text/csv" ||
+      file.name.endsWith('.csv') ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls')
+    )
     
-    if (jsonFile) {
-      setSelectedFile(jsonFile)
+    if (validFile) {
+      setSelectedFile(validFile)
     } else {
       toast({
         title: "Archivo inválido",
-        description: "Por favor selecciona un archivo JSON válido.",
+        description: "Por favor selecciona un archivo JSON, CSV o Excel válido.",
         variant: "destructive",
       })
     }
@@ -148,10 +175,10 @@ export default function Upload() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UploadIcon className="h-5 w-5" />
-            Cargar Datos JSON
+            Cargar Datos de Productos
           </CardTitle>
           <CardDescription>
-            Sube archivos JSON con datos de precios de productos automotrices para su análisis
+            Sube archivos JSON/CSV/Excel con datos de precios de productos automotrices para su análisis
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -170,7 +197,7 @@ export default function Upload() {
             <FileJson className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <div className="space-y-2">
               <p className="text-lg font-medium">
-                {selectedFile ? selectedFile.name : "Arrastra tu archivo JSON aquí"}
+                {selectedFile ? selectedFile.name : "Arrastra tu archivo JSON/CSV/Excel aquí"}
               </p>
               <p className="text-sm text-muted-foreground">
                 o
@@ -184,7 +211,7 @@ export default function Upload() {
                 ref={fileInputRef}
                 id="file-upload"
                 type="file"
-                accept=".json,application/json"
+                accept=".json,.csv,.xlsx,.xls,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -234,21 +261,27 @@ export default function Upload() {
           {/* Formato esperado */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Formato JSON Esperado</CardTitle>
+              <CardTitle className="text-base">Formato JSON/CSV Esperado</CardTitle>
             </CardHeader>
             <CardContent>
               <pre className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto text-foreground">
-{`[
-  {
-    "Marca": "Toyota",
-    "Categoría": "Sedán",
-    "Modelo Principal": "Camry",
-    "Modelo": "Camry LE",
-    "Submodelo": "2024",
-    "Precio": 580000,
-    "Fecha Scraping": "2024-01-15"
-  }
-]`}
+{`{
+  "UID": "9d16db5ca272",
+  "ID_Base": "audi|a1-sportback|a1 sportback 30 tfsi",
+  "Categoría": "Audi",
+  "Modelo Principal": "A1 Sportback",
+  "Modelo": "A1 Sportback 30 TFSI",
+  "ctx_precio": "financiamiento:marca",
+  "precio_num": 24900000,
+  "precio_lista_num": 27100000,
+  "bono_num": 2200000,
+  "Precio_Texto": "$24.900.000",
+  "fuente_texto_raw": "A1 Sportback 30 TFSI...",
+  "Modelo_URL": "https://www.automotrizcarmona.cl/project/a1-sportback/",
+  "Archivo_Origen": "audi_a1-sportback.xlsx",
+  "Fecha": "2025-09-08",
+  "Timestamp": "2025-09-08T06:34:36+00:00"
+}`}
               </pre>
             </CardContent>
           </Card>

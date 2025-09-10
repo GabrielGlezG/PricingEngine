@@ -33,7 +33,8 @@ export default function Compare() {
   const [comparisonFilter, setComparisonFilter] = useState({
     category: '',
     brand: '',
-    maxPrice: ''
+    maxPrice: '',
+    ctx_precio: ''
   })
 
   // Fetch available products for selection
@@ -77,6 +78,7 @@ export default function Compare() {
     if (comparisonFilter.category && product.category !== comparisonFilter.category) return false
     if (comparisonFilter.brand && product.brand !== comparisonFilter.brand) return false
     if (comparisonFilter.maxPrice && product.latest_price > parseInt(comparisonFilter.maxPrice)) return false
+    // Note: ctx_precio filter would need to be implemented at the price_data level
     return true
   }) || []
 

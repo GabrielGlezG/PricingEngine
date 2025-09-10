@@ -68,7 +68,9 @@ export default function Dashboard() {
     category: '',
     model: '',
     date_from: '',
-    date_to: ''
+    date_to: '',
+    ctx_precio: '',
+    priceRange: ''
   })
 
   // Debug de autenticación
@@ -208,7 +210,7 @@ export default function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
             <Select value={filters.brand || "all"} onValueChange={(value) => setFilters(f => ({ ...f, brand: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Todas las marcas" />
@@ -244,6 +246,31 @@ export default function Dashboard() {
                     {model.brand} {model.model}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo de precio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="financiamiento:marca">Financiamiento Marca</SelectItem>
+                <SelectItem value="contado">Contado</SelectItem>
+                <SelectItem value="promocion">Promoción</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.priceRange || "all"} onValueChange={(value) => setFilters(f => ({ ...f, priceRange: value === "all" ? "" : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Rango de precios" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los precios</SelectItem>
+                <SelectItem value="0-20000000">$0 - $20M</SelectItem>
+                <SelectItem value="20000000-40000000">$20M - $40M</SelectItem>
+                <SelectItem value="40000000-60000000">$40M - $60M</SelectItem>
+                <SelectItem value="60000000+">$60M+</SelectItem>
               </SelectContent>
             </Select>
 
