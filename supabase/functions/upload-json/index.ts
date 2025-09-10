@@ -62,14 +62,30 @@ Deno.serve(async (req) => {
     for (const item of jsonData as JsonData[]) {
       try {
         // Create or get product
+        console.log('Processing item:', JSON.stringify(item, null, 2));
+        
         const productData = {
-          brand: item.Categoría,
-          category: item.Categoría,
+          brand: item["Categoría"] || item.Categoría,
+          category: item["Categoría"] || item.Categoría,
           model: item["Modelo Principal"],
           name: item.Modelo,
           id_base: item.ID_Base,
           submodel: item.Modelo
         };
+        
+        console.log('Product data:', JSON.stringify(productData, null, 2));
+
+        // Validate required fields
+        if (!productData.brand) {
+          console.error('Missing brand field');
+          results.push({ item, error: 'Missing brand field' });
+          continue;
+        }
+        if (!productData.category) {
+          console.error('Missing category field');
+          results.push({ item, error: 'Missing category field' });
+          continue;
+        }
 
         let { data: product, error: productError } = await supabaseClient
           .from('products')
@@ -93,24 +109,28 @@ Deno.serve(async (req) => {
         }
 
         // Insert price data
+        const priceData = {
+          product_id: product.id,
+          uid: item.UID,
+          store: (item["Categoría"] || item.Categoría) + ' Store',
+          price: parseInt(item.precio_num),
+          date: new Date(item.Fecha).toISOString(),
+          ctx_precio: item.ctx_precio,
+          precio_num: parseInt(item.precio_num),
+          precio_lista_num: item.precio_lista_num ? parseInt(item.precio_lista_num) : null,
+          bono_num: item.bono_num ? parseInt(item.bono_num) : null,
+          precio_texto: item.Precio_Texto,
+          fuente_texto_raw: item.fuente_texto_raw,
+          modelo_url: item.Modelo_URL,
+          archivo_origen: item.Archivo_Origen,
+          timestamp_data: new Date(item.Timestamp).toISOString(),
+        };
+        
+        console.log('Price data:', JSON.stringify(priceData, null, 2));
+
         const { error: priceError } = await supabaseClient
           .from('price_data')
-          .insert({
-            product_id: product.id,
-            uid: item.UID,
-            store: item.Categoría + ' Store',
-            price: item.precio_num,
-            date: new Date(item.Fecha).toISOString(),
-            ctx_precio: item.ctx_precio,
-            precio_num: item.precio_num,
-            precio_lista_num: item.precio_lista_num,
-            bono_num: item.bono_num,
-            precio_texto: item.Precio_Texto,
-            fuente_texto_raw: item.fuente_texto_raw,
-            modelo_url: item.Modelo_URL,
-            archivo_origen: item.Archivo_Origen,
-            timestamp_data: new Date(item.Timestamp).toISOString(),
-          });
+          .insert(priceData);
 
         if (priceError) {
           console.error('Error inserting price:', priceError);
