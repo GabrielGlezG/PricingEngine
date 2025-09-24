@@ -239,10 +239,25 @@ Deno.serve(async (req) => {
       `)
       .order('date', { ascending: true });
 
-    const monthlyVariation = { most_volatile: [] };
+    const monthlyVariation: {
+      most_volatile: Array<{
+        brand: string;
+        model: string;
+        name: string;
+        avg_monthly_variation: number;
+        data_points: number;
+      }>;
+    } = { most_volatile: [] };
+    
     if (monthlyData) {
       // Group by product and calculate monthly changes
-      const productGroups: Record<string, any[]> = monthlyData.reduce((acc: Record<string, any[]>, item: any) => {
+      const productGroups: Record<string, Array<{
+        date: string;
+        price: number;
+        brand: string;
+        model: string;
+        name: string;
+      }>> = monthlyData.reduce((acc, item: any) => {
         const key = `${(item.products as any).brand}-${(item.products as any).model}`;
         if (!acc[key]) acc[key] = [];
         acc[key].push({
@@ -253,12 +268,25 @@ Deno.serve(async (req) => {
           name: (item.products as any).name
         });
         return acc;
-      }, {});
+      }, {} as Record<string, Array<{
+        date: string;
+        price: number;
+        brand: string;
+        model: string;
+        name: string;
+      }>>);
 
-      const volatilityAnalysis: any[] = [];
-      Object.entries(productGroups).forEach(([key, data]: [string, any[]]) => {
-        if ((data as any[]).length > 1) {
-          const sortedData = (data as any[]).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const volatilityAnalysis: Array<{
+        brand: string;
+        model: string;
+        name: string;
+        avg_monthly_variation: number;
+        data_points: number;
+      }> = [];
+      
+      Object.entries(productGroups).forEach(([key, data]) => {
+        if (data.length > 1) {
+          const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           const variations = [];
           
           for (let i = 1; i < sortedData.length; i++) {
@@ -295,16 +323,16 @@ Deno.serve(async (req) => {
 
       if (brandHistory && brandHistory.length > 1) {
         // Group by date and calculate average price per date
-        const dateGroups = brandHistory.reduce((acc, item) => {
+        const dateGroups = brandHistory.reduce((acc: Record<string, number[]>, item) => {
           const dateKey = item.date.split('T')[0];
           if (!acc[dateKey]) acc[dateKey] = [];
           acc[dateKey].push(parseFloat(item.price));
           return acc;
-        }, {});
+        }, {} as Record<string, number[]>);
 
-        const dateAverages = Object.entries(dateGroups).map(([date, prices]) => ({
+        const dateAverages = Object.entries(dateGroups).map(([date, prices]: [string, number[]]) => ({
           date,
-          avg_price: prices.reduce((a, b) => a + b, 0) / prices.length
+          avg_price: (prices as number[]).reduce((a: number, b: number) => a + b, 0) / (prices as number[]).length
         })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         if (dateAverages.length > 1) {
@@ -429,10 +457,10 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Function error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

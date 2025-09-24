@@ -31,18 +31,26 @@ interface AnalyticsData {
     prices_by_brand: Array<{brand: string, avg_price: number, min_price: number, max_price: number, count: number, value_score: number, price_trend?: number}>
     prices_by_category: Array<{category: string, avg_price: number, min_price: number, max_price: number, count: number}>
     models_by_category: Array<{category: string, count: number}>
+    models_by_principal: Array<{model_principal: string, count: number, avg_price: number, min_price: number, max_price: number}>
     price_distribution: Array<{range: string, count: number}>
     best_value_models: Array<{brand: string, name: string, category: string, price: number, value_rating: string}>
     top_5_expensive: Array<{name: string, brand: string, price: number}>
     bottom_5_cheap: Array<{name: string, brand: string, price: number}>
+    brand_variations: Array<{brand: string, first_avg_price: number, last_avg_price: number, variation_percent: number, scraping_sessions: number}>
+    monthly_volatility: {
+      most_volatile: Array<{brand: string, model: string, name: string, avg_monthly_variation: number, data_points: number}>
+    }
   }
   historical_data?: Array<{date: string, price: number}>
   applied_filters: {
     brand?: string
     category?: string
     model?: string
+    submodel?: string
     date_from?: string
     date_to?: string
+    ctx_precio?: string
+    priceRange?: string
   }
   generated_at: string
 }
@@ -67,6 +75,7 @@ export default function Dashboard() {
     brand: '',
     category: '',
     model: '',
+    submodel: '',
     date_from: '',
     date_to: '',
     ctx_precio: '',
@@ -148,6 +157,31 @@ export default function Dashboard() {
       const { data, error } = await query
       if (error) throw error
       return data.map(p => ({ model: p.model, name: p.name, brand: p.brand }))
+    }
+  })
+
+  const { data: submodels } = useQuery({
+    queryKey: ['submodels', filters.brand, filters.category, filters.model],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select('submodel, brand, model')
+        .not('submodel', 'is', null)
+        .order('submodel')
+      
+      if (filters.brand) {
+        query = query.eq('brand', filters.brand)
+      }
+      if (filters.category) {
+        query = query.eq('category', filters.category)
+      }
+      if (filters.model) {
+        query = query.eq('model', filters.model)
+      }
+      
+      const { data, error } = await query
+      if (error) throw error
+      return [...new Set(data.map(p => p.submodel).filter(Boolean))]
     }
   })
 
@@ -255,7 +289,11 @@ export default function Dashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los submodelos</SelectItem>
-                {/* Submodels will be populated based on available data */}
+                {submodels?.map(submodel => (
+                  <SelectItem key={submodel} value={submodel}>
+                    {submodel}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
