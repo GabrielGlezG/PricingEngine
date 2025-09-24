@@ -10,6 +10,7 @@ import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Ta
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Legend } from 'recharts'
 import { useState } from "react"
 import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
+import { ModelSubmodelSelector } from "@/components/ModelSubmodelSelector"
 
 interface AnalyticsData {
   metrics: {
@@ -234,70 +235,40 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Filtros */}
+      <ModelSubmodelSelector
+        selectedBrand={filters.brand}
+        selectedCategory={filters.category}
+        selectedModel={filters.model}
+        selectedSubmodel={filters.submodel}
+        onBrandChange={(brand) => setFilters(f => ({ ...f, brand }))}
+        onCategoryChange={(category) => setFilters(f => ({ ...f, category }))}
+        onModelChange={(model) => setFilters(f => ({ ...f, model }))}
+        onSubmodelChange={(submodel) => setFilters(f => ({ ...f, submodel }))}
+        onClearFilters={() => setFilters({
+          brand: '',
+          category: '',
+          model: '',
+          submodel: '',
+          date_from: '',
+          date_to: '',
+          ctx_precio: '',
+          priceRange: ''
+        })}
+      />
+
+      {/* Filtros Adicionales */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Filtros de Análisis
+            Filtros Adicionales
           </CardTitle>
           <CardDescription>
-            Aplica filtros para personalizar el análisis de datos
+            Filtros complementarios para análisis específicos
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
-            <Select value={filters.brand || "all"} onValueChange={(value) => setFilters(f => ({ ...f, brand: value === "all" ? "" : value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas las marcas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las marcas</SelectItem>
-                {brands?.map(brand => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.category || "all"} onValueChange={(value) => setFilters(f => ({ ...f, category: value === "all" ? "" : value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todas las categorías" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las categorías</SelectItem>
-                {categories?.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.model || "all"} onValueChange={(value) => setFilters(f => ({ ...f, model: value === "all" ? "" : value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos los modelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los modelos</SelectItem>
-                {models?.map(model => (
-                  <SelectItem key={`${model.brand}-${model.model}`} value={model.model}>
-                    {model.brand} {model.model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.submodel || "all"} onValueChange={(value) => setFilters(f => ({ ...f, submodel: value === "all" ? "" : value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos los submodelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los submodelos</SelectItem>
-                {submodels?.map(submodel => (
-                  <SelectItem key={submodel} value={submodel}>
-                    {submodel}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+          <div className="grid gap-4 md:grid-cols-4">
             <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Tipo de precio" />
@@ -323,18 +294,20 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
 
-            <Button 
-              onClick={() => refetch()} 
-              disabled={isRefetching}
-              className="w-full"
-            >
-              {isRefetching ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Actualizar
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => refetch()} 
+                disabled={isRefetching}
+                className="flex-1"
+              >
+                {isRefetching ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Actualizar
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
