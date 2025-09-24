@@ -249,6 +249,16 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
 
+            <Select value={filters.submodel || "all"} onValueChange={(value) => setFilters(f => ({ ...f, submodel: value === "all" ? "" : value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos los submodelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los submodelos</SelectItem>
+                {/* Submodels will be populated based on available data */}
+              </SelectContent>
+            </Select>
+
             <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Tipo de precio" />
@@ -300,7 +310,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{analytics.metrics.total_models}</div>
             <p className="text-xs text-muted-foreground">
-              {analytics.metrics.total_brands} marcas
+              {analytics.metrics.total_brands} marcas activas
             </p>
           </CardContent>
         </Card>
@@ -702,6 +712,72 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Variación de Precios por Marca */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Variación de Precio Promedio por Marca</CardTitle>
+          <CardDescription>Cambios en precios promedio entre fechas de scraping</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            {(analytics.chart_data?.brand_variations || []).map((brand, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex-1">
+                  <h4 className="font-semibold">{brand.brand}</h4>
+                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                    <span>Inicial: {formatPrice(brand.first_avg_price)}</span>
+                    <span>Actual: {formatPrice(brand.last_avg_price)}</span>
+                    <span>{brand.scraping_sessions} sesiones</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-bold ${
+                    brand.variation_percent > 0 ? 'text-red-600' : 
+                    brand.variation_percent < 0 ? 'text-green-600' : 'text-gray-600'
+                  }`}>
+                    {brand.variation_percent > 0 ? '+' : ''}{brand.variation_percent.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Modelos con Mayor Variabilidad Intermensual */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Modelos con Mayor Volatilidad de Precios</CardTitle>
+          <CardDescription>Modelos con mayor variación intermensual - útil para detectar oportunidades</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {(analytics.chart_data?.monthly_volatility?.most_volatile || []).map((item, index) => (
+              <div key={index} className="flex items-center justify-between border-b pb-2">
+                <div>
+                  <p className="font-medium">{item.brand} {item.name}</p>
+                  <div className="flex gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">{item.data_points} puntos de datos</Badge>
+                    <Badge 
+                      variant={item.avg_monthly_variation > 20 ? "destructive" : item.avg_monthly_variation > 10 ? "secondary" : "default"} 
+                      className="text-xs"
+                    >
+                      {item.avg_monthly_variation > 20 ? "Alta" : item.avg_monthly_variation > 10 ? "Media" : "Baja"} volatilidad
+                    </Badge>
+                  </div>
+                </div>
+                <p className="font-bold text-orange-600 text-sm">
+                  {item.avg_monthly_variation.toFixed(1)}% var.
+                </p>
+              </div>
+            ))}
+            {(!analytics.chart_data?.monthly_volatility?.most_volatile?.length) && (
+              <p className="text-muted-foreground text-sm">No hay suficientes datos históricos para calcular volatilidad</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Análisis de Competitividad por Marca */}
       <Card>
