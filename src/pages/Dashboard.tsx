@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Legend } from 'recharts'
 import { useState } from "react"
+import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
 
 interface AnalyticsData {
   metrics: {
@@ -529,40 +530,12 @@ export default function Dashboard() {
       </div>
 
       {/* Histórico de Precios por Modelo */}
-      {analytics.historical_data && analytics.historical_data.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolución de Precios del Modelo Seleccionado</CardTitle>
-            <CardDescription>
-              Histórico de precios para el modelo {filters.model}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={analytics.historical_data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={(value) => new Date(value).toLocaleDateString()}
-                />
-                <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                <Tooltip 
-                  formatter={(value: number) => [formatPrice(value), 'Precio']}
-                  labelFormatter={(value) => `Fecha: ${new Date(value).toLocaleDateString()}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+      <PriceEvolutionChart
+        selectedBrand={filters.brand}
+        selectedCategory={filters.category}
+        selectedModel={filters.model}
+        selectedSubmodel={filters.submodel}
+      />
 
       {/* Análisis Comparativo por Categorías */}
       <div className="grid gap-6 md:grid-cols-2">
