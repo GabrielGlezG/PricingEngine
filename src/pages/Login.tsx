@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Car, Eye, EyeOff, Loader2, Crown } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import logo from '@/assets/pricing-engine-logo.png'
 
 export default function Login() {
   const { user, signIn, signUp, makeFirstAdmin } = useAuth()
@@ -117,22 +118,20 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-primary rounded-full">
-              <Car className="h-8 w-8 text-primary-foreground" />
-            </div>
+          <div className="flex items-center justify-center mb-6">
+            <img src={logo} alt="PricingEngine" className="h-24 w-24 object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">ModelPulse</h1>
-          <p className="text-slate-400">Sistema de Análisis de Precios Automotrices</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
+          <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p>
         </div>
 
-        <Card className="border-slate-700 bg-slate-800/50 backdrop-blur">
+        <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-white">Acceso al Sistema</CardTitle>
-            <CardDescription className="text-center text-slate-400">
+            <CardTitle className="text-2xl text-center">Acceso al Sistema</CardTitle>
+            <CardDescription className="text-center">
               Inicia sesión o crea una cuenta para continuar
             </CardDescription>
           </CardHeader>
@@ -152,7 +151,7 @@ export default function Login() {
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
@@ -160,11 +159,10 @@ export default function Login() {
                       value={loginForm.email}
                       onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                       required
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white">Contraseña</Label>
+                    <Label htmlFor="password">Contraseña</Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -173,7 +171,7 @@ export default function Login() {
                         value={loginForm.password}
                         onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                         required
-                        className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 pr-10"
+                        className="pr-10"
                       />
                       <Button
                         type="button"
@@ -183,9 +181,9 @@ export default function Login() {
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-slate-400" />
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
                         ) : (
-                          <Eye className="h-4 w-4 text-slate-400" />
+                          <Eye className="h-4 w-4 text-muted-foreground" />
                         )}
                       </Button>
                     </div>
@@ -200,7 +198,7 @@ export default function Login() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-white">Nombre Completo</Label>
+                    <Label htmlFor="signup-name">Nombre Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -208,11 +206,10 @@ export default function Login() {
                       value={signupForm.name}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
                       required
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-white">Email</Label>
+                    <Label htmlFor="signup-email">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -220,11 +217,10 @@ export default function Login() {
                       value={signupForm.email}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
                       required
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-white">Contraseña</Label>
+                    <Label htmlFor="signup-password">Contraseña</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -232,11 +228,10 @@ export default function Login() {
                       value={signupForm.password}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
                       required
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-white">Confirmar Contraseña</Label>
+                    <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -244,7 +239,6 @@ export default function Login() {
                       value={signupForm.confirmPassword}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       required
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={isLoading}>
@@ -256,7 +250,7 @@ export default function Login() {
             </Tabs>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 ¿Necesitas ayuda?{' '}
                 <Link to="/contact" className="text-primary hover:underline">
                   Contacta soporte
@@ -315,13 +309,13 @@ export default function Login() {
           </div>
         )}
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-500">
-            Al usar ModelPulse, aceptas nuestros{' '}
-            <Link to="/terms" className="hover:underline">
+          <p className="text-xs text-muted-foreground">
+            Al usar PricingEngine, aceptas nuestros{' '}
+            <Link to="/terms" className="text-muted-foreground hover:underline">
               Términos de Servicio
             </Link>{' '}
             y{' '}
-            <Link to="/privacy" className="hover:underline">
+            <Link to="/privacy" className="text-muted-foreground hover:underline">
               Política de Privacidad
             </Link>
           </p>
