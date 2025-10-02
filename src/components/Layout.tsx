@@ -1,7 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "./AppSidebar"
 import { UserMenu } from "./UserMenu"
-import logo from "@/assets/pricing-engine-logo.png"
+import logo from "@/assets/pricing-engine-icon.png"
 
 interface LayoutProps {
   children: React.ReactNode

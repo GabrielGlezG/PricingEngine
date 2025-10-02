@@ -1,7 +1,7 @@
 import { BarChart3, Upload, Lightbulb, Scale } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import logo from "@/assets/pricing-engine-logo.png"
+import logo from "@/assets/pricing-engine-icon.png"
 
 import {
   Sidebar,

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import logo from '@/assets/pricing-engine-logo.png'
+import logo from '@/assets/pricing-engine-icon.png'
 
 export default function Login() {
   const { user, signIn, signUp, makeFirstAdmin } = useAuth()

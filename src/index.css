@@ -27,7 +27,11 @@ All colors MUST be HSL.
     --border: 0 0% 18%;
     --input: 0 0% 18%;
     --ring: 25 38% 50%;
-    --radius: 0.75rem;
+    --radius: 1rem;
+    
+    /* Copper highlight for metric cards */
+    --metric-card: 25 38% 50%;
+    --metric-card-foreground: 0 0% 100%;
     
     /* Chart colors con el esquema cobre */
     --chart-1: 25 38% 50%;

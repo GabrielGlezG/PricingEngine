@@ -258,20 +258,20 @@ export default function Dashboard() {
       />
 
       {/* Filtros Adicionales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+      <Card className="border-border/50 shadow-md">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="h-5 w-5 text-primary" />
             Filtros Adicionales
           </CardTitle>
           <CardDescription>
-            Filtros complementarios para análisis específicos
+            Refina tu análisis con criterios específicos de precio
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
             <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Tipo de precio" />
               </SelectTrigger>
               <SelectContent>
@@ -283,7 +283,7 @@ export default function Dashboard() {
             </Select>
 
             <Select value={filters.priceRange || "all"} onValueChange={(value) => setFilters(f => ({ ...f, priceRange: value === "all" ? "" : value }))}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Rango de precios" />
               </SelectTrigger>
               <SelectContent>
@@ -295,7 +295,7 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 md:col-span-2">
               <Button 
                 onClick={() => refetch()} 
                 disabled={isRefetching}
@@ -306,126 +306,135 @@ export default function Dashboard() {
                 ) : (
                   <RefreshCw className="h-4 w-4 mr-2" />
                 )}
-                Actualizar
+                Actualizar Datos
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Métricas principales */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Modelos</CardTitle>
-            <Package className="h-5 w-5 text-primary" />
+      {/* Métricas principales - Diseño inspirado en referencia */}
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-primary-foreground">Total Modelos</CardTitle>
+            <Package className="h-5 w-5 text-primary-foreground/80" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{analytics.metrics.total_models}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-4xl font-bold text-primary-foreground">{analytics.metrics.total_models}</div>
+            <p className="text-xs text-primary-foreground/70 mt-2">
               {analytics.metrics.total_brands} marcas activas
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
-            <DollarSign className="h-5 w-5" style={{ color: 'hsl(var(--chart-2))' }} />
+        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-primary-foreground">Precio Promedio</CardTitle>
+            <DollarSign className="h-5 w-5 text-primary-foreground/80" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{formatPrice(analytics.metrics.avg_price)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              CV: {analytics.metrics.variation_coefficient.toFixed(1)}%
+            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.avg_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-2">
+              Variación: {analytics.metrics.variation_coefficient.toFixed(1)}%
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Precio Mínimo</CardTitle>
-            <TrendingDown className="h-5 w-5" style={{ color: 'hsl(var(--chart-4))' }} />
+        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-primary-foreground">Precio Mínimo</CardTitle>
+            <TrendingDown className="h-5 w-5 text-primary-foreground/80" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{formatPrice(analytics.metrics.min_price)}</div>
-            <p className="text-xs text-muted-foreground mt-1">valor más bajo</p>
+            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.min_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-2">Valor más accesible</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Precio Máximo</CardTitle>
-            <TrendingUp className="h-5 w-5" style={{ color: 'hsl(var(--chart-5))' }} />
+        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-medium text-primary-foreground">Precio Máximo</CardTitle>
+            <TrendingUp className="h-5 w-5 text-primary-foreground/80" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{formatPrice(analytics.metrics.max_price)}</div>
-            <p className="text-xs text-muted-foreground mt-1">valor más alto</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Marcas Activas</CardTitle>
-            <Building2 className="h-5 w-5" style={{ color: 'hsl(var(--chart-3))' }} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{analytics.metrics.total_brands}</div>
-            <p className="text-xs text-muted-foreground mt-1">fabricantes disponibles</p>
+            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.max_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-2">Valor premium</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Tabs con visualizaciones organizadas */}
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 h-auto">
-          <TabsTrigger value="general" className="text-sm">Visión General</TabsTrigger>
-          <TabsTrigger value="precios" className="text-sm">Análisis de Precios</TabsTrigger>
-          <TabsTrigger value="marcas" className="text-sm">Por Marca</TabsTrigger>
-          <TabsTrigger value="tendencias" className="text-sm">Tendencias</TabsTrigger>
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 h-auto bg-card border border-border">
+          <TabsTrigger value="general" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Visión General
+          </TabsTrigger>
+          <TabsTrigger value="precios" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Análisis de Precios
+          </TabsTrigger>
+          <TabsTrigger value="marcas" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Por Marca
+          </TabsTrigger>
+          <TabsTrigger value="tendencias" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            Tendencias
+          </TabsTrigger>
         </TabsList>
 
         {/* Tab: Visión General */}
-        <TabsContent value="general" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle>Modelos por Categoría</CardTitle>
+        <TabsContent value="general" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Modelos por Categoría
+                </CardTitle>
                 <CardDescription>Distribución de vehículos según tipo</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
+              <CardContent className="pt-2">
+                <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={analytics.chart_data?.models_by_category || []}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                    <XAxis dataKey="category" className="text-xs" />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis 
+                      dataKey="category" 
+                      className="text-xs"
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
+                        backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--chart-1))" name="Cantidad" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle>Distribución por Rango de Precio</CardTitle>
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  Distribución por Rango de Precio
+                </CardTitle>
                 <CardDescription>Modelos en cada segmento de mercado</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
+              <CardContent className="pt-2">
+                <ResponsiveContainer width="100%" height={320}>
                   <PieChart>
                     <Pie
                       data={analytics.chart_data?.price_distribution || []}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ range, percent }) => `${range} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={120}
+                      label={({ range, percent }) => `${range} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={110}
                       fill="#8884d8"
                       dataKey="count"
                     >
@@ -435,9 +444,10 @@ export default function Dashboard() {
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
+                        backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                       }}
                     />
                   </PieChart>
@@ -446,22 +456,33 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Modelos por Línea Principal</CardTitle>
-              <CardDescription>Top modelos más populares</CardDescription>
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Modelos por Línea Principal
+              </CardTitle>
+              <CardDescription>Top 10 modelos más populares del inventario</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+            <CardContent className="pt-2">
+              <ResponsiveContainer width="100%" height={380}>
                 <BarChart data={(analytics.chart_data?.models_by_principal || []).slice(0, 10)}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis dataKey="model_principal" className="text-xs" angle={-45} textAnchor="end" height={100} />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="model_principal" 
+                    className="text-xs" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
+                      backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Cantidad" radius={[8, 8, 0, 0]} />
@@ -472,28 +493,29 @@ export default function Dashboard() {
         </TabsContent>
 
         {/* Tab: Análisis de Precios */}
-        <TabsContent value="precios" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-chart-5" />
+        <TabsContent value="precios" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
                   Top 5 Modelos Más Caros
                 </CardTitle>
-                <CardDescription>Vehículos de mayor valor</CardDescription>
+                <CardDescription>Vehículos de mayor valor en el inventario</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
+              <CardContent className="pt-2">
+                <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={analytics.chart_data?.top_5_expensive || []} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                    <YAxis dataKey="name" type="category" width={150} className="text-xs" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis dataKey="name" type="category" width={150} className="text-xs" stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
+                        backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                       }}
                     />
                     <Bar dataKey="price" fill="hsl(var(--chart-5))" name="Precio" radius={[0, 8, 8, 0]} />
@@ -502,26 +524,27 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-chart-2" />
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingDown className="h-5 w-5 text-primary" />
                   Top 5 Modelos Más Económicos
                 </CardTitle>
-                <CardDescription>Vehículos de menor valor</CardDescription>
+                <CardDescription>Vehículos de menor valor disponibles</CardDescription>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
+              <CardContent className="pt-2">
+                <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={analytics.chart_data?.bottom_5_cheap || []} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                    <YAxis dataKey="name" type="category" width={150} className="text-xs" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis dataKey="name" type="category" width={150} className="text-xs" stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
+                        backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                       }}
                     />
                     <Bar dataKey="price" fill="hsl(var(--chart-2))" name="Precio" radius={[0, 8, 8, 0]} />
@@ -531,30 +554,34 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Precios por Categoría</CardTitle>
-              <CardDescription>Comparación de rangos por tipo de vehículo</CardDescription>
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Precios por Categoría
+              </CardTitle>
+              <CardDescription>Comparación de rangos de precio por tipo de vehículo</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               <ResponsiveContainer width="100%" height={400}>
                 <ComposedChart data={analytics.chart_data?.prices_by_category || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis dataKey="category" />
-                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => formatPrice(value)}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
+                      backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Legend />
                   <Bar dataKey="min_price" fill="hsl(var(--chart-6))" name="Mínimo" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="avg_price" fill="hsl(var(--chart-1))" name="Promedio" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="avg_price" fill="hsl(var(--primary))" name="Promedio" radius={[8, 8, 0, 0]} />
                   <Bar dataKey="max_price" fill="hsl(var(--chart-5))" name="Máximo" radius={[8, 8, 0, 0]} />
-                  <Line type="monotone" dataKey="avg_price" stroke="hsl(var(--chart-3))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_price" stroke="hsl(var(--chart-3))" strokeWidth={3} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -562,24 +589,35 @@ export default function Dashboard() {
         </TabsContent>
 
         {/* Tab: Por Marca */}
-        <TabsContent value="marcas" className="space-y-4">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Precios Promedio por Marca</CardTitle>
+        <TabsContent value="marcas" className="space-y-6">
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Precios Promedio por Marca
+              </CardTitle>
               <CardDescription>Comparación de precios entre fabricantes</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={analytics.chart_data?.prices_by_brand || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis dataKey="brand" angle={-45} textAnchor="end" height={100} className="text-xs" />
-                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="brand" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    className="text-xs"
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => formatPrice(value)}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
+                      backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Bar dataKey="avg_price" name="Precio Promedio" radius={[8, 8, 0, 0]}>
@@ -592,23 +630,34 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Variación de Precios por Marca</CardTitle>
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Variación de Precios por Marca
+              </CardTitle>
               <CardDescription>Cambios entre periodos de scraping</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+            <CardContent className="pt-2">
+              <ResponsiveContainer width="100%" height={380}>
                 <BarChart data={analytics.chart_data?.brand_variations || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                  <XAxis dataKey="brand" angle={-45} textAnchor="end" height={100} className="text-xs" />
-                  <YAxis tickFormatter={(value) => `${value}%`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis 
+                    dataKey="brand" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={100} 
+                    className="text-xs"
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis tickFormatter={(value) => `${value}%`} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
+                      backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Bar dataKey="variation_percent" fill="hsl(var(--chart-6))" name="Variación %" radius={[8, 8, 0, 0]} />
@@ -619,7 +668,7 @@ export default function Dashboard() {
         </TabsContent>
 
         {/* Tab: Tendencias */}
-        <TabsContent value="tendencias" className="space-y-4">
+        <TabsContent value="tendencias" className="space-y-6">
           <PriceEvolutionChart
             selectedBrand={filters.brand}
             selectedCategory={filters.category}
@@ -627,18 +676,18 @@ export default function Dashboard() {
             selectedSubmodel={filters.submodel}
           />
 
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-chart-7" />
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
                 Modelos con Mayor Volatilidad
               </CardTitle>
               <CardDescription>Detección de cambios intermensual de precios</CardDescription>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+            <CardContent className="pt-2">
+              <ResponsiveContainer width="100%" height={380}>
                 <BarChart data={analytics.chart_data?.monthly_volatility?.most_volatile || []}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
                     angle={-45} 
@@ -646,14 +695,16 @@ export default function Dashboard() {
                     height={120} 
                     className="text-xs"
                     interval={0}
+                    stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis tickFormatter={(value) => `${value}%`} />
+                  <YAxis tickFormatter={(value) => `${value}%`} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
+                      backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Bar dataKey="avg_monthly_variation" fill="hsl(var(--chart-7))" name="Volatilidad %" radius={[8, 8, 0, 0]} />
