@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
+import { Eye, EyeOff, Loader as Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import logo from '@/assets/WhatsApp Image 2025-10-02 at 2.27.16 PM.jpeg'
 

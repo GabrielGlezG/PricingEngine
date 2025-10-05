@@ -1,4 +1,4 @@
-import { BarChart3, Upload, Lightbulb, Scale, TrendingUp } from "lucide-react"
+import { ChartBar as BarChart3, Upload, Lightbulb, Scale, TrendingUp } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import logo from "@/assets/WhatsApp Image 2025-10-02 at 2.27.16 PM.jpeg"
