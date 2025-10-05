@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Eye, EyeOff, Loader as Loader2, Crown } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import logo from '@/assets/WhatsApp Image 2025-10-02 at 2.27.16 PM.jpeg'
+import logo from '@/assets/pricing-engine-icon.png'
 
 export default function Login() {
   const { user, signIn, signUp, makeFirstAdmin } = useAuth()
@@ -122,9 +122,9 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
-            <img src={logo} alt="PricingEngine" className="h-32 w-32 object-cover rounded-xl shadow-lg" />
+            <img src={logo} alt="PricingEngine" className="h-24 w-24 object-contain" />
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">PricingEngine</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
           <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p>
         </div>
 

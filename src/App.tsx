@@ -11,7 +11,6 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
-import PriceEvolution from "./pages/PriceEvolution";
 import Subscription from "./pages/Subscription";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
@@ -54,13 +53,6 @@ const App = () => (
                 <ProtectedRoute requireSubscription={true}>
                   <Layout>
                     <Insights />
-                  </Layout>
-                </ProtectedRoute>
-              } />
-              <Route path="/price-evolution" element={
-                <ProtectedRoute requireSubscription={true}>
-                  <Layout>
-                    <PriceEvolution />
                   </Layout>
                 </ProtectedRoute>
               } />

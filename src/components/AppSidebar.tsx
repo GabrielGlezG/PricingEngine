@@ -1,7 +1,7 @@
-import { ChartBar as BarChart3, Upload, Lightbulb, Scale, TrendingUp } from "lucide-react"
+import { BarChart3, Upload, Lightbulb, Scale } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import logo from "@/assets/WhatsApp Image 2025-10-02 at 2.27.16 PM.jpeg"
+import logo from "@/assets/pricing-engine-icon.png"
 
 import {
   Sidebar,
@@ -27,7 +27,6 @@ export function AppSidebar() {
     { title: "Cargar Datos", url: "/upload", icon: Upload, requireAdmin: true },
     { title: "Comparar", url: "/compare", icon: Scale, requireAdmin: false },
     { title: "Insights", url: "/insights", icon: Lightbulb, requireAdmin: false },
-    { title: "Evolución de Precios", url: "/price-evolution", icon: TrendingUp, requireAdmin: false },
     { title: "Admin", url: "/admin", icon: BarChart3, requireAdmin: true },
   ]
 
@@ -37,12 +36,12 @@ export function AppSidebar() {
   const collapsed = state === "collapsed"
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
+    <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center gap-2 px-4 py-4">
-            <img src={logo} alt="PricingEngine" className="h-10 w-10 object-cover rounded-md" />
-            {!collapsed && <span className="font-semibold text-base">PricingEngine</span>}
+          <SidebarGroupLabel className="flex items-center gap-2 px-4 py-3">
+            <img src={logo} alt="PricingEngine" className="h-8 w-8 object-contain" />
+            {!collapsed && <span className="font-semibold">PricingEngine</span>}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
