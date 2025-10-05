@@ -1,7 +1,7 @@
 import { BarChart3, Upload, Lightbulb, Scale, TrendingUp } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import logo from "@/assets/pricing-engine-icon.png"
+import logo from "@/assets/WhatsApp Image 2025-10-02 at 2.27.16 PM.jpeg"
 
 import {
   Sidebar,
@@ -37,12 +37,12 @@ export function AppSidebar() {
   const collapsed = state === "collapsed"
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center gap-2 px-4 py-3">
-            <img src={logo} alt="PricingEngine" className="h-8 w-8 object-contain" />
-            {!collapsed && <span className="font-semibold">PricingEngine</span>}
+          <SidebarGroupLabel className="flex items-center gap-2 px-4 py-4">
+            <img src={logo} alt="PricingEngine" className="h-10 w-10 object-cover rounded-md" />
+            {!collapsed && <span className="font-semibold text-base">PricingEngine</span>}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

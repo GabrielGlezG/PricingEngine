@@ -29,9 +29,9 @@ export function UserMenu() {
   }
 
   const getSubscriptionStatus = () => {
-    if (isAdmin) return { text: 'Admin', variant: 'default' as const, color: 'bg-yellow-600' }
-    if (hasActiveSubscription) return { text: 'Premium', variant: 'default' as const, color: 'bg-green-600' }
-    return { text: 'Sin Acceso', variant: 'secondary' as const, color: 'bg-gray-600' }
+    if (isAdmin) return { text: 'Admin', variant: 'default' as const, color: 'bg-primary' }
+    if (hasActiveSubscription) return { text: 'Premium', variant: 'default' as const, color: 'bg-primary' }
+    return { text: 'Sin Acceso', variant: 'secondary' as const, color: 'bg-muted' }
   }
 
   const subscriptionStatus = getSubscriptionStatus()
@@ -62,7 +62,7 @@ export function UserMenu() {
           <div className="flex flex-col space-y-2">
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium leading-none">{profile.name}</p>
-              {isAdmin && <Crown className="h-3 w-3 text-yellow-500" />}
+              {isAdmin && <Crown className="h-3 w-3 text-primary" />}
             </div>
             <p className="text-xs leading-none text-muted-foreground">
               {profile.email}
