@@ -311,6 +311,12 @@ export function PriceEvolutionChart({
                     name
                   ]}
                   labelFormatter={(label) => `Período: ${label}`}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    color: 'hsl(var(--foreground))'
+                  }}
                 />
                 <Legend />
                 {evolutionData.models.map((model, index) => (

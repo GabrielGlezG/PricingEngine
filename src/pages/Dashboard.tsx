@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
 import { useState } from "react"
-import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
 import { ModelSubmodelSelector } from "@/components/ModelSubmodelSelector"
 
 interface AnalyticsData {
@@ -669,13 +668,6 @@ export default function Dashboard() {
 
         {/* Tab: Tendencias */}
         <TabsContent value="tendencias" className="space-y-6">
-          <PriceEvolutionChart
-            selectedBrand={filters.brand}
-            selectedCategory={filters.category}
-            selectedModel={filters.model}
-            selectedSubmodel={filters.submodel}
-          />
-
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
