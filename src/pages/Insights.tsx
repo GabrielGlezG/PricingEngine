@@ -80,28 +80,28 @@ export default function Insights() {
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'price_trend':
-        return <TrendingUp className="h-5 w-5" />
+        return <TrendingUp className="h-5 w-5 text-primary" />
       case 'best_value':
-        return <DollarSign className="h-5 w-5 text-green-600" />
+        return <DollarSign className="h-5 w-5 text-primary" />
       case 'price_max':
-        return <DollarSign className="h-5 w-5 text-red-600" />
+        return <DollarSign className="h-5 w-5 text-destructive" />
       case 'price_stability':
-        return <BarChart3 className="h-5 w-5" />
+        return <BarChart3 className="h-5 w-5 text-primary" />
       case 'category_comparison':
-        return <BarChart3 className="h-5 w-5 text-blue-600" />
+        return <BarChart3 className="h-5 w-5 text-primary" />
       default:
-        return <Lightbulb className="h-5 w-5" />
+        return <Lightbulb className="h-5 w-5 text-primary" />
     }
   }
 
   const getPriorityBadge = (priority: number) => {
     switch (priority) {
       case 1:
-        return <Badge variant="default" className="bg-red-600 text-white">Alta Prioridad</Badge>
+        return <Badge variant="destructive">Alta Prioridad</Badge>
       case 2:
-        return <Badge variant="default" className="bg-yellow-600 text-white">Media Prioridad</Badge>
+        return <Badge variant="secondary">Media Prioridad</Badge>
       case 3:
-        return <Badge variant="secondary">Baja Prioridad</Badge>
+        return <Badge variant="outline">Baja Prioridad</Badge>
       default:
         return <Badge variant="outline">Sin Prioridad</Badge>
     }
@@ -127,7 +127,7 @@ export default function Insights() {
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Cambio:</span>
-              <span className={`font-bold ${insight.data.change_percent > 0 ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`font-bold ${insight.data.change_percent > 0 ? 'text-destructive' : 'text-primary'}`}>
                 {insight.data.change_percent > 0 ? '+' : ''}{insight.data.change_percent}%
               </span>
             </div>
@@ -147,18 +147,18 @@ export default function Insights() {
           return (
             <div className="space-y-3">
               {insight.data.slice(0, 3).map((model: any, index: number) => (
-                <div key={index} className="p-3 bg-green-500/10 border border-green-500/20 rounded-md">
+                <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded-md">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium">{model.brand} {model.model}</p>
                       <div className="flex gap-1 mt-1">
                         <Badge variant="outline" className="text-xs">{model.category}</Badge>
-                        <Badge variant="default" className="text-xs bg-green-600 text-white">
+                        <Badge variant="default" className="text-xs bg-primary">
                           -{model.savings_vs_median}% vs mediana
                         </Badge>
                       </div>
                     </div>
-                    <p className="font-bold text-green-500">{formatPrice(model.price)}</p>
+                    <p className="font-bold text-primary">{formatPrice(model.price)}</p>
                   </div>
                 </div>
               ))}
@@ -184,7 +184,7 @@ export default function Insights() {
             </div>
             <div className="flex items-center justify-between">
               <span className="font-medium">Precio:</span>
-              <span className="text-2xl font-bold text-red-500">
+              <span className="text-2xl font-bold text-destructive">
                 {formatPrice(insight.data.price)}
               </span>
             </div>
@@ -196,7 +196,7 @@ export default function Insights() {
           return (
             <div className="space-y-3">
               {insight.data.map((item: any, index: number) => (
-                <div key={index} className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded-md">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium">{item.brand} {item.model}</p>
@@ -223,8 +223,8 @@ export default function Insights() {
         return (
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/10">
-                <h4 className="font-semibold text-red-400 mb-2 flex items-center gap-2">
+              <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/10">
+                <h4 className="font-semibold text-destructive mb-2 flex items-center gap-2">
                   🔴 Segmento Más Caro
                 </h4>
                 <p className="font-medium text-lg">{insight.data.most_expensive_category.category}</p>
@@ -241,8 +241,8 @@ export default function Insights() {
                 </div>
               </div>
               
-              <div className="p-4 rounded-lg border border-green-500/20 bg-green-500/10">
-                <h4 className="font-semibold text-green-400 mb-2 flex items-center gap-2">
+              <div className="p-4 rounded-lg border border-primary/20 bg-primary/10">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
                   🟢 Segmento Más Accesible
                 </h4>
                 <p className="font-medium text-lg">{insight.data.most_affordable_category.category}</p>
@@ -260,7 +260,7 @@ export default function Insights() {
               </div>
             </div>
             
-            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
               <p className="text-sm text-foreground">
                 💡 <strong>Tip para compradores:</strong> Considera el segmento {insight.data.most_affordable_category.category} 
                 para obtener el mejor valor por tu dinero.
@@ -402,18 +402,18 @@ export default function Insights() {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {marketStats.chart_data.best_value_models.slice(0, 6).map((model: any, index: number) => (
-                <div key={index} className="p-4 border rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+                <div key={index} className="p-4 border rounded-lg bg-primary/10 border-primary/20">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="font-semibold text-green-400">{model.brand} {model.name}</h3>
+                      <h3 className="font-semibold text-primary">{model.brand} {model.name}</h3>
                       <Badge variant="outline" className="text-xs mt-1">{model.category}</Badge>
                     </div>
-                    <Badge variant="default" className="bg-green-600 text-white">
+                    <Badge variant="default" className="bg-primary">
                       -{model.value_rating}%
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-green-500">{formatPrice(model.price)}</span>
+                    <span className="text-2xl font-bold text-primary">{formatPrice(model.price)}</span>
                     <div className="text-right text-xs text-muted-foreground">
                       vs mediana del mercado
                     </div>
@@ -421,7 +421,7 @@ export default function Insights() {
                 </div>
               ))}
             </div>
-            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
               <p className="text-sm text-foreground">
                 💡 <strong>Tip de compra:</strong> Estos modelos están priceados por debajo de la mediana del mercado, 
                 representando excelentes oportunidades de inversión.

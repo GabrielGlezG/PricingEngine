@@ -146,11 +146,11 @@ export default function Upload() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
+        return <CheckCircle className="h-4 w-4 text-primary" />
       case 'processing':
-        return <Clock className="h-4 w-4 text-blue-500" />
+        return <Clock className="h-4 w-4 text-muted-foreground" />
       case 'failed':
-        return <AlertCircle className="h-4 w-4 text-red-500" />
+        return <AlertCircle className="h-4 w-4 text-destructive" />
       default:
         return <Clock className="h-4 w-4 text-muted-foreground" />
     }
@@ -159,9 +159,9 @@ export default function Upload() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-600 text-white">Completado</Badge>
+        return <Badge variant="default" className="bg-primary">Completado</Badge>
       case 'processing':
-        return <Badge variant="default" className="bg-blue-600 text-white">Procesando</Badge>
+        return <Badge variant="secondary">Procesando</Badge>
       case 'failed':
         return <Badge variant="destructive">Fallido</Badge>
       default:

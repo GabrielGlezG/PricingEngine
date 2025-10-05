@@ -124,15 +124,15 @@ export default function Compare() {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-500'
-    if (score >= 60) return 'text-yellow-500'
-    return 'text-red-500'
+    if (score >= 80) return 'text-primary'
+    if (score >= 60) return 'text-muted-foreground'
+    return 'text-destructive'
   }
 
   const getScoreBadge = (score: number) => {
-    if (score >= 80) return <Badge variant="default" className="bg-green-600 text-white">Excelente</Badge>
-    if (score >= 60) return <Badge variant="default" className="bg-yellow-600 text-white">Bueno</Badge>
-    return <Badge variant="default" className="bg-red-600 text-white">Regular</Badge>
+    if (score >= 80) return <Badge variant="default" className="bg-primary">Excelente</Badge>
+    if (score >= 60) return <Badge variant="secondary">Bueno</Badge>
+    return <Badge variant="destructive">Regular</Badge>
   }
 
   const addProduct = (productId: string) => {
@@ -259,7 +259,7 @@ export default function Compare() {
                   <div className="flex-1">
                     <p className="font-medium">{product.brand} {product.model}</p>
                     <p className="text-sm text-muted-foreground">{product.category}</p>
-                    <p className="text-sm font-semibold text-green-500">
+                    <p className="text-sm font-semibold text-primary">
                       {formatPrice(product.latest_price || 0)}
                     </p>
                   </div>
@@ -313,8 +313,8 @@ export default function Compare() {
                     <tr className="border-b">
                       <td className="p-3 font-medium">Precio Actual</td>
                       {comparisonData.map((item, index) => (
-                        <td key={index} className="p-3 text-center">
-                          <span className="text-lg font-bold text-green-500">
+                      <td key={index} className="p-3 text-center">
+                          <span className="text-lg font-bold text-primary">
                             {formatPrice(item.product.latest_price || 0)}
                           </span>
                         </td>
