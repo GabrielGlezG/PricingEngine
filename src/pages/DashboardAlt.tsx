@@ -56,23 +56,44 @@ export default function DashboardAlt() {
       if (selectedBrand) params.append('brand', selectedBrand)
       if (selectedModel) params.append('model', selectedModel)
       if (selectedSubmodel) params.append('submodel', selectedSubmodel)
-      
-      const { data, error } = await supabase.functions.invoke('get-analytics-v2', {
-        body: { params: params.toString() }
-      })
-      
-      console.log('Analytics ALT response:', { data, error })
-      
+
+      const tryInvoke = async (fnName: string) => {
+        return await supabase.functions.invoke(fnName, {
+          body: { params: params.toString() }
+        })
+      }
+
+      let data: any = null
+      let error: any = null
+      try {
+        const resV2 = await tryInvoke('get-analytics-v2')
+        data = resV2.data
+        error = resV2.error
+        console.log('Analytics ALT v2 response:', { data, error })
+      } catch (e) {
+        console.warn('get-analytics-v2 (ALT) failed, trying fallback:', e)
+      }
+
+      if (!data) {
+        try {
+          const resV1 = await tryInvoke('get-analytics')
+          data = resV1.data
+          error = resV1.error
+          console.log('Analytics ALT v1 fallback response:', { data, error })
+        } catch (e) {
+          console.error('Fallback get-analytics (ALT) failed:', e)
+        }
+      }
+
       if (error) {
         console.error('Edge function error (ALT):', error)
-        throw error
       }
-      
+
       if (!data) {
-        console.warn('No data returned from edge function (ALT)')
+        console.warn('No data returned from any edge function (ALT)')
         return null
       }
-      
+
       return data as Analytics
     }
   })

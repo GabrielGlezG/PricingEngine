@@ -102,23 +102,45 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
       })
-      
-      const { data, error } = await supabase.functions.invoke('get-analytics-v2', {
-        body: { params: params.toString() }
-      })
-      
-      console.log('Analytics response:', { data, error })
-      
+
+      // Try v2 first, fallback to v1 if it fails
+      const tryInvoke = async (fnName: string) => {
+        return await supabase.functions.invoke(fnName, {
+          body: { params: params.toString() }
+        })
+      }
+
+      let data: any = null
+      let error: any = null
+      try {
+        const resV2 = await tryInvoke('get-analytics-v2')
+        data = resV2.data
+        error = resV2.error
+        console.log('Analytics v2 response:', { data, error })
+      } catch (e) {
+        console.warn('get-analytics-v2 failed, will try fallback:', e)
+      }
+
+      if (!data) {
+        try {
+          const resV1 = await tryInvoke('get-analytics')
+          data = resV1.data
+          error = resV1.error
+          console.log('Analytics v1 fallback response:', { data, error })
+        } catch (e) {
+          console.error('Fallback get-analytics failed:', e)
+        }
+      }
+
       if (error) {
         console.error('Edge function error:', error)
-        throw error
       }
-      
+
       if (!data) {
-        console.warn('No data returned from edge function')
+        console.warn('No data returned from any edge function')
         return null
       }
-      
+
       return data as AnalyticsData
     },
     retry: (failureCount, error) => {
