@@ -31,7 +31,7 @@ export function Sidebar() {
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </button>
 
-      <div className="pt-8 pb-6 px-4 flex flex-col items-center border-b border-border">
+      <div className="pt-8 pb-6 px-4 flex flex-col items-center">
         <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-12 w-12' : 'h-24 w-auto'} object-contain transition-all duration-300`} />
       </div>
 
