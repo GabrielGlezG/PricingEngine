@@ -237,10 +237,10 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     }
   })
 
-  // Local fallback analytics computation if edge functions fail
+  // Fallback local analytics computation if edge functions fail
   const { data: localAnalytics } = useQuery({
     queryKey: ['analytics-local', filters, refreshTick],
-    enabled: !analytics,
+    enabled: true, // Always run as fallback
     queryFn: async () => {
       console.warn('Using local fallback analytics computation')
       const { data, error } = await supabase
@@ -316,6 +316,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
         min_value: s.min,
         max_value: s.max,
       }))
+
+      console.log('Local analytics price_distribution calculated:', price_distribution)
 
       return { chart_data: { price_distribution } }
     }
