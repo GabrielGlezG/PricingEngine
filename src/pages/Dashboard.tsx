@@ -321,16 +321,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       console.log('Local analytics price_distribution calculated:', price_distribution)
 
       return { chart_data: { price_distribution } }
-    }
-  })
-
-  const priceDistributionData = useMemo(() => {
-    const data = (analytics?.chart_data?.price_distribution && analytics.chart_data.price_distribution.length > 0)
-      ? analytics.chart_data.price_distribution
-      : (localAnalytics?.chart_data?.price_distribution || [])
-    console.log('Using price distribution source:', analytics?.chart_data?.price_distribution?.length ? 'server' : 'local', data)
-    return data
-  }, [analytics, localAnalytics])
+    },
+  });
 
   if (isLoading) {
     return (
@@ -911,4 +903,5 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       </Tabs>
     </div>
   )
+}
 }
