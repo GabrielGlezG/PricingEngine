@@ -32,10 +32,7 @@ export function Sidebar() {
       </button>
 
       <div className="pt-8 pb-6 px-4 flex flex-col items-center border-b border-border">
-        <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-10 w-10' : 'h-16 w-16'} object-contain transition-all duration-300`} />
-        {!isCollapsed && (
-          <h2 className="mt-3 text-lg font-bold text-foreground">PricingEngine</h2>
-        )}
+        <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-12 w-12' : 'h-24 w-auto'} object-contain transition-all duration-300`} />
       </div>
 
       <nav className="flex-1 p-4 space-y-2 mt-2">
