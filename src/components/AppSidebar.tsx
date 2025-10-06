@@ -24,6 +24,7 @@ export function AppSidebar() {
 
   const items = [
     { title: "Dashboard", url: "/", icon: BarChart3, requireAdmin: false },
+    { title: "Dashboard Alt", url: "/dashboard-alt", icon: BarChart3, requireAdmin: false },
     { title: "Cargar Datos", url: "/upload", icon: Upload, requireAdmin: true },
     { title: "Comparar", url: "/compare", icon: Scale, requireAdmin: false },
     { title: "Evolución de Precios", url: "/price-evolution", icon: TrendingUp, requireAdmin: false },

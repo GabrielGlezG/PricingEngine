@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import DashboardAlt from "./pages/DashboardAlt";
 import Upload from "./pages/Upload";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
@@ -61,6 +62,13 @@ const App = () => (
                 <ProtectedRoute requireSubscription={true}>
                   <Layout>
                     <PriceEvolution />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard-alt" element={
+                <ProtectedRoute requireSubscription={true}>
+                  <Layout>
+                    <DashboardAlt />
                   </Layout>
                 </ProtectedRoute>
               } />
