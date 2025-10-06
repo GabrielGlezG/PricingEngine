@@ -35,7 +35,7 @@ export default function Login() {
 
   // Redirect if already logged in
   if (user) {
-    const from = location.state?.from?.pathname || '/'
+    const from = location.state?.from?.pathname || '/dashboard'
     return <Navigate to={from} replace />
   }
 
