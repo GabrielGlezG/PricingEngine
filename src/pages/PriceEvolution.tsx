@@ -5,7 +5,6 @@ import { ModelSubmodelSelector } from "@/components/ModelSubmodelSelector"
 export default function PriceEvolution() {
   const [filters, setFilters] = useState({
     brand: '',
-    category: '',
     model: '',
     submodel: ''
   })
@@ -21,24 +20,25 @@ export default function PriceEvolution() {
 
       <ModelSubmodelSelector
         selectedBrand={filters.brand}
-        selectedCategory={filters.category}
+        selectedCategory=""
         selectedModel={filters.model}
         selectedSubmodel={filters.submodel}
         onBrandChange={(brand) => setFilters(f => ({ ...f, brand }))}
-        onCategoryChange={(category) => setFilters(f => ({ ...f, category }))}
+        onCategoryChange={() => {}}
         onModelChange={(model) => setFilters(f => ({ ...f, model }))}
         onSubmodelChange={(submodel) => setFilters(f => ({ ...f, submodel }))}
         onClearFilters={() => setFilters({
           brand: '',
-          category: '',
           model: '',
           submodel: ''
         })}
+        hideCategory
+        copperClearButton
       />
 
       <PriceEvolutionChart
         selectedBrand={filters.brand}
-        selectedCategory={filters.category}
+        selectedCategory=""
         selectedModel={filters.model}
         selectedSubmodel={filters.submodel}
       />

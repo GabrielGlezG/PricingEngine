@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
+import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown, X } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
 import { useState } from "react"
 import { usePriceDistribution } from "@/hooks/usePriceDistribution"
@@ -254,7 +254,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-5">
             <Select value={filters.brand || "all"} onValueChange={(value) => setFilters(f => ({ ...f, brand: value === "all" ? "" : value }))}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todas las marcas" />
@@ -290,6 +290,15 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                 ))}
               </SelectContent>
             </Select>
+
+            <Button 
+              variant="dark"
+              onClick={() => setFilters({ brand: '', model: '', submodel: '' })}
+              className="w-full"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Limpiar Filtros
+            </Button>
 
             <Button 
               onClick={() => { setRefreshTick((t) => t + 1); refetch(); }} 

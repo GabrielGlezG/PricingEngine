@@ -16,6 +16,8 @@ interface ModelSubmodelSelectorProps {
   onModelChange: (model: string) => void
   onSubmodelChange: (submodel: string) => void
   onClearFilters: () => void
+  hideCategory?: boolean
+  copperClearButton?: boolean
 }
 
 export function ModelSubmodelSelector({
@@ -27,7 +29,9 @@ export function ModelSubmodelSelector({
   onCategoryChange,
   onModelChange,
   onSubmodelChange,
-  onClearFilters
+  onClearFilters,
+  hideCategory = false,
+  copperClearButton = false
 }: ModelSubmodelSelectorProps) {
   
   const { data: brands } = useQuery({
@@ -121,7 +125,7 @@ export function ModelSubmodelSelector({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className={`grid gap-4 ${hideCategory ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
           <Select value={selectedBrand || "all"} onValueChange={(value) => onBrandChange(value === "all" ? "" : value)}>
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todas las marcas" />
@@ -134,17 +138,19 @@ export function ModelSubmodelSelector({
             </SelectContent>
           </Select>
 
-          <Select value={selectedCategory || "all"} onValueChange={(value) => onCategoryChange(value === "all" ? "" : value)}>
-            <SelectTrigger className="bg-card border-border">
-              <SelectValue placeholder="Todas las categorías" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              {categories?.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!hideCategory && (
+            <Select value={selectedCategory || "all"} onValueChange={(value) => onCategoryChange(value === "all" ? "" : value)}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todas las categorías" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                {categories?.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={selectedModel || "all"} onValueChange={(value) => onModelChange(value === "all" ? "" : value)}>
             <SelectTrigger className="bg-card border-border">
@@ -171,7 +177,7 @@ export function ModelSubmodelSelector({
           </Select>
 
           <Button 
-            variant={hasActiveFilters ? "default" : "outline"}
+            variant={copperClearButton ? "copper" : (hasActiveFilters ? "default" : "outline")}
             onClick={onClearFilters}
             className="w-full"
           >

@@ -235,9 +235,10 @@ export default function Compare() {
                   priceRange: [minPrice, maxPrice]
                 })
               }}
-              variant="secondary"
+              variant="copper"
               className="w-full"
             >
+              <X className="h-4 w-4 mr-2" />
               Limpiar Todo
             </Button>
           </div>
