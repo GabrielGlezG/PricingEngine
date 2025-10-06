@@ -325,111 +325,79 @@ export default function Insights() {
   }
 
   return (
-    <div className="space-y-8 p-6">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background border border-primary/20 p-8">
-        <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black)]" />
-        <div className="relative flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-primary/20 backdrop-blur-sm">
-                <Lightbulb className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Insights Automáticos
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Análisis inteligente basado en datos históricos del mercado
-                </p>
-              </div>
-            </div>
-          </div>
-          <Button 
-            onClick={() => refetch()} 
-            disabled={isRefetching}
-            size="lg"
-            className="shadow-lg hover:shadow-xl transition-shadow"
-          >
-            {isRefetching ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                Actualizando...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Actualizar
-              </>
-            )}
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Insights Automáticos</h1>
+          <p className="text-muted-foreground">
+            Análisis inteligente basado en datos históricos del mercado
+          </p>
         </div>
+        <Button onClick={() => refetch()} disabled={isRefetching}>
+          {isRefetching ? (
+            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          Actualizar
+        </Button>
       </div>
 
       {/* Market Overview Cards */}
       {marketStats && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-none shadow-lg bg-gradient-to-br from-blue-500/10 to-blue-600/5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Modelos Analizados</CardTitle>
-              <div className="p-2 rounded-lg bg-blue-500/20">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Modelos Analizados</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{marketStats.metrics?.total_models || 0}</div>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                <ShoppingCart className="h-3 w-3" />
+              <div className="text-2xl font-bold">{marketStats.metrics?.total_models || 0}</div>
+              <p className="text-xs text-muted-foreground">
                 {marketStats.metrics?.total_brands || 0} marcas diferentes
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg bg-gradient-to-br from-green-500/10 to-green-600/5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Precio Promedio</CardTitle>
-              <div className="p-2 rounded-lg bg-green-500/20">
-                <DollarSign className="h-5 w-5 text-green-600" />
-              </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{formatPrice(marketStats.metrics?.avg_price || 0)}</div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <div className="text-2xl font-bold">{formatPrice(marketStats.metrics?.avg_price || 0)}</div>
+              <p className="text-xs text-muted-foreground">
                 Mediana: {formatPrice(marketStats.metrics?.median_price || 0)}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg bg-gradient-to-br from-orange-500/10 to-orange-600/5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Volatilidad</CardTitle>
-              <div className="p-2 rounded-lg bg-orange-500/20">
-                <TrendingUp className="h-5 w-5 text-orange-600" />
-              </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Volatilidad</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
+              <div className="text-2xl font-bold">
                 {marketStats.metrics?.variation_coefficient 
                   ? `${marketStats.metrics.variation_coefficient.toFixed(1)}%`
                   : 'N/A'
                 }
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground">
                 Coeficiente de variación
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-lg bg-gradient-to-br from-purple-500/10 to-purple-600/5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-semibold">Actividad Reciente</CardTitle>
-              <div className="p-2 rounded-lg bg-purple-500/20">
-                <Calendar className="h-5 w-5 text-purple-600" />
-              </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Actividad Reciente</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{recentTrends?.length || 0}</div>
-              <p className="text-sm text-muted-foreground mt-1">
+              <div className="text-2xl font-bold">{recentTrends?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">
                 Actualizaciones últimos 30 días
               </p>
             </CardContent>
@@ -439,51 +407,29 @@ export default function Insights() {
 
       {/* Price Distribution Chart */}
        {(priceDistributionLocal || marketStats?.chart_data?.price_distribution) && (
-        <Card className="border-none shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <BarChart3 className="h-6 w-6 text-primary" />
-              </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
               Distribución de Precios por Segmento
             </CardTitle>
-            <CardDescription className="text-base mt-2">
+            <CardDescription>
               Cantidad de modelos en cada rango de precio del mercado
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={320}>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={priceDistributionLocal || marketStats.chart_data.price_distribution}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis 
-                  dataKey="range" 
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <YAxis 
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }}
-                />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="range" />
+                <YAxis />
+                <Tooltip />
                 <Area 
                   type="monotone" 
                   dataKey="count" 
                   stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  fill="url(#colorCount)"
+                  fill="hsl(var(--primary))" 
+                  fillOpacity={0.6}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -493,48 +439,41 @@ export default function Insights() {
 
       {/* Best Value Models Spotlight */}
       {marketStats?.chart_data?.best_value_models && marketStats.chart_data.best_value_models.length > 0 && (
-        <Card className="border-none shadow-lg bg-gradient-to-br from-green-500/5 to-emerald-500/5">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 rounded-lg bg-green-500/20">
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              Spotlight: Mejores Oportunidades del Mercado
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              Mejores Oportunidades del Mercado
             </CardTitle>
-            <CardDescription className="text-base mt-2">
+            <CardDescription>
               Los modelos con mejor relación calidad-precio disponibles ahora
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {marketStats.chart_data.best_value_models.slice(0, 6).map((model: any, index: number) => (
-                <div key={index} className="group p-5 border rounded-xl bg-gradient-to-br from-primary/5 to-transparent border-primary/20 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{model.brand}</h3>
-                      <p className="text-sm text-muted-foreground mt-0.5">{model.name}</p>
-                      <Badge variant="outline" className="text-xs mt-2">{model.category}</Badge>
+                <div key={index} className="p-4 border rounded-lg bg-muted/50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold">{model.brand} {model.name}</h3>
+                      <Badge variant="outline" className="text-xs mt-1">{model.category}</Badge>
                     </div>
-                    <Badge className="bg-green-600 hover:bg-green-700 shadow-md">
+                    <Badge variant="default">
                       -{model.value_rating}%
                     </Badge>
                   </div>
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-border/50">
-                    <div>
-                      <span className="text-3xl font-bold text-primary">{formatPrice(model.price)}</span>
-                      <p className="text-xs text-muted-foreground mt-1">vs mediana del mercado</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-2xl font-bold text-primary">{formatPrice(model.price)}</span>
+                    <div className="text-right text-xs text-muted-foreground">
+                      vs mediana
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl">
-              <p className="text-sm text-foreground flex items-start gap-2">
-                <Zap className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <span>
-                  <strong>Tip de compra:</strong> Estos modelos están priceados por debajo de la mediana del mercado, 
-                  representando excelentes oportunidades de inversión.
-                </span>
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                💡 <strong>Tip:</strong> Estos modelos están priceados por debajo de la mediana del mercado.
               </p>
             </div>
           </CardContent>
@@ -543,51 +482,39 @@ export default function Insights() {
 
       {insights && insights.length > 0 ? (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Zap className="h-5 w-5 text-primary" />
-            <h2 className="text-2xl font-bold">Hallazgos Clave</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {insights
-              .sort((a, b) => a.priority - b.priority)
-              .map((insight, index) => (
-                <Card 
-                  key={index} 
-                  className="border-none shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-card to-card/50"
-                >
-                  <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          {getInsightIcon(insight.insight_type)}
-                        </div>
-                        <CardTitle className="text-lg leading-tight">{insight.title}</CardTitle>
+          {insights
+            .sort((a, b) => a.priority - b.priority)
+            .map((insight, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      {getInsightIcon(insight.insight_type)}
+                      <div>
+                        <CardTitle className="text-lg">{insight.title}</CardTitle>
+                        <CardDescription className="mt-1">
+                          {insight.description}
+                        </CardDescription>
                       </div>
-                      {getPriorityBadge(insight.priority)}
                     </div>
-                    <CardDescription className="text-sm">{insight.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-6">{renderInsightData(insight)}</CardContent>
-                </Card>
-              ))}
-          </div>
+                    {getPriorityBadge(insight.priority)}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {renderInsightData(insight)}
+                </CardContent>
+              </Card>
+            ))}
         </div>
       ) : (
-        <Card className="border-none shadow-lg">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="p-4 rounded-full bg-muted mb-4">
-              <Lightbulb className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No hay insights disponibles</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
-              Haz clic en el botón para generar nuevos insights basados en los datos históricos
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No hay insights disponibles</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Los insights se generan automáticamente cuando hay suficientes datos.
             </p>
-            <Button 
-              onClick={() => refetch()} 
-              disabled={isRefetching}
-              size="lg"
-              className="shadow-lg"
-            >
+            <Button onClick={() => refetch()} disabled={isRefetching}>
               {isRefetching ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin mr-2" />
@@ -595,7 +522,7 @@ export default function Insights() {
                 </>
               ) : (
                 <>
-                  <Zap className="h-4 w-4 mr-2" />
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Generar Insights
                 </>
               )}
