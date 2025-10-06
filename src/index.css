@@ -36,6 +36,12 @@
     --chart-6: 25 55% 65%;
     --chart-7: 20 35% 48%;
     --chart-8: 30 42% 52%;
+    
+    /* Success and Warning colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -68,6 +74,12 @@
     --chart-6: 25 55% 65%;
     --chart-7: 20 35% 48%;
     --chart-8: 30 42% 52%;
+    
+    /* Success and Warning colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
   }
 }
 

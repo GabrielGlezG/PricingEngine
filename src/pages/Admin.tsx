@@ -13,15 +13,30 @@ import { Settings, Users, CreditCard, Package, Plus, Edit, Trash2 } from "lucide
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export default function Admin() {
   const { toast } = useToast()
   const { user, profile, isAdmin } = useAuth()
   const [selectedUser, setSelectedUser] = useState<string>('')
+  const [showNewUserDialog, setShowNewUserDialog] = useState(false)
   const [subscriptionForm, setSubscriptionForm] = useState({
     planId: '',
     billingCycle: 'monthly',
     durationMonths: 1
+  })
+  const [newUserForm, setNewUserForm] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'user'
   })
 
   // Debug de autenticación para admin
@@ -55,7 +70,7 @@ export default function Admin() {
   ]
 
   // Fetch user profiles
-  const { data: users } = useQuery({
+  const { data: users, refetch: refetchUsers } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -123,6 +138,56 @@ export default function Admin() {
     }
   })
 
+  const createNewUser = useMutation({
+    mutationFn: async (userData: typeof newUserForm) => {
+      // Crear usuario en auth
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      })
+      
+      if (signUpError) throw signUpError
+      
+      // El perfil se crea automáticamente con el trigger
+      // Esperar un momento para que se cree el perfil
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Actualizar el rol si es admin
+      if (userData.role === 'admin' && authData.user) {
+        const { error: roleError } = await supabase
+          .from('user_profiles')
+          .update({ role: 'admin' } as any)
+          .eq('user_id', authData.user.id)
+        
+        if (roleError) throw roleError
+      }
+      
+      return authData
+    },
+    onSuccess: () => {
+      toast({ 
+        title: "Usuario creado exitosamente",
+        description: "El usuario ha sido registrado en el sistema."
+      })
+      setShowNewUserDialog(false)
+      setNewUserForm({ email: '', password: '', name: '', role: 'user' })
+      refetchUsers()
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al crear usuario",
+        description: error.message,
+        variant: "destructive"
+      })
+    }
+  })
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -135,11 +200,11 @@ export default function Admin() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge variant="default" className="bg-green-600 text-white">Activa</Badge>
+        return <Badge className="bg-success text-success-foreground">Activa</Badge>
       case 'canceled':
         return <Badge variant="destructive">Cancelada</Badge>
       case 'past_due':
-        return <Badge variant="default" className="bg-orange-600 text-white">Vencida</Badge>
+        return <Badge className="bg-warning text-warning-foreground">Vencida</Badge>
       default:
         return <Badge variant="secondary">{status}</Badge>
     }
@@ -176,11 +241,89 @@ export default function Admin() {
 
         <TabsContent value="users">
           <Card>
-            <CardHeader>
-              <CardTitle>Gestión de Usuarios</CardTitle>
-              <CardDescription>
-                Administra roles y permisos de usuarios
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Gestión de Usuarios</CardTitle>
+                <CardDescription>
+                  Administra roles y permisos de usuarios
+                </CardDescription>
+              </div>
+              <Dialog open={showNewUserDialog} onOpenChange={setShowNewUserDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nuevo Usuario
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                    <DialogDescription>
+                      Registra un nuevo usuario en el sistema
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => {
+                    e.preventDefault()
+                    createNewUser.mutate(newUserForm)
+                  }} className="space-y-4">
+                    <div>
+                      <Label>Nombre Completo</Label>
+                      <Input
+                        type="text"
+                        placeholder="Nombre del usuario"
+                        value={newUserForm.name}
+                        onChange={(e) => setNewUserForm(prev => ({ ...prev, name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        placeholder="usuario@email.com"
+                        value={newUserForm.email}
+                        onChange={(e) => setNewUserForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Contraseña</Label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={newUserForm.password}
+                        onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <div>
+                      <Label>Rol</Label>
+                      <select 
+                        className="w-full p-2 border rounded-md bg-background text-foreground"
+                        value={newUserForm.role}
+                        onChange={(e) => setNewUserForm(prev => ({ ...prev, role: e.target.value }))}
+                      >
+                        <option value="user">Usuario</option>
+                        <option value="admin">Administrador</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2 pt-4">
+                      <Button type="submit" disabled={createNewUser.isPending} className="flex-1">
+                        {createNewUser.isPending ? 'Creando...' : 'Crear Usuario'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowNewUserDialog(false)}
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
               <Table>

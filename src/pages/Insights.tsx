@@ -91,7 +91,7 @@ export default function Insights() {
       case 'best_value':
         return <Award className="h-5 w-5 text-primary" />
       case 'historical_opportunity':
-        return <Target className="h-5 w-5 text-green-500" />
+        return <Target className="h-5 w-5 text-success" />
       case 'price_max':
         return <DollarSign className="h-5 w-5 text-destructive" />
       case 'price_stability':
@@ -185,13 +185,13 @@ export default function Insights() {
           return (
             <div className="space-y-3">
               {insight.data.map((model: any, index: number) => (
-                <div key={index} className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/30 rounded-lg">
+                <div key={index} className="p-4 bg-success/10 border border-success/30 rounded-lg">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex-1">
                       <p className="font-semibold text-lg">{model.brand} {model.model}</p>
                       <p className="text-sm text-muted-foreground">{model.name}</p>
                     </div>
-                    <Badge className="bg-green-600">Oportunidad</Badge>
+                    <Badge className="bg-success">Oportunidad</Badge>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <div className="text-center p-2 bg-background/50 rounded">
@@ -200,14 +200,14 @@ export default function Insights() {
                     </div>
                     <div className="text-center p-2 bg-background/50 rounded">
                       <p className="text-xs text-muted-foreground">Mínimo</p>
-                      <p className="font-bold text-green-600">{formatPrice(model.historical_low)}</p>
+                      <p className="font-bold text-success">{formatPrice(model.historical_low)}</p>
                     </div>
                     <div className="text-center p-2 bg-background/50 rounded">
                       <p className="text-xs text-muted-foreground">Máximo</p>
-                      <p className="font-bold text-red-600">{formatPrice(model.historical_high)}</p>
+                      <p className="font-bold text-destructive">{formatPrice(model.historical_high)}</p>
                     </div>
                   </div>
-                  <div className="mt-2 p-2 bg-green-500/10 rounded text-xs">
+                  <div className="mt-2 p-2 bg-success/10 rounded text-xs">
                     💚 Variación histórica de {model.range_percent}% - Precio actual cerca del mínimo
                   </div>
                 </div>
@@ -291,8 +291,8 @@ export default function Insights() {
                 </div>
               </div>
               
-              <div className="p-4 rounded-lg border border-primary/20 bg-primary/10">
-                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+              <div className="p-4 rounded-lg border border-success/20 bg-success/10">
+                <h4 className="font-semibold text-success mb-2 flex items-center gap-2">
                   🟢 Segmento Más Accesible
                 </h4>
                 <p className="font-medium text-lg">{insight.data.most_affordable_category.category}</p>

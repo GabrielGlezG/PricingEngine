@@ -93,7 +93,7 @@ export default function Subscription() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-500" />
+              <Crown className="h-5 w-5 text-warning" />
               Tu Suscripción Actual
             </CardTitle>
           </CardHeader>
@@ -170,7 +170,7 @@ export default function Subscription() {
                 <CardTitle className="flex items-center justify-between">
                   {plan.name}
                   {plan.id === 'premium' && (
-                    <Crown className="h-5 w-5 text-yellow-500" />
+                    <Crown className="h-5 w-5 text-warning" />
                   )}
                 </CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
@@ -236,13 +236,13 @@ export default function Subscription() {
 
       {/* No Subscription Warning */}
       {!hasActiveSubscription && profile?.role !== 'admin' && (
-        <Card className="border-orange-500/20 bg-orange-500/10">
+        <Card className="border-warning/20 bg-warning/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <AlertTriangle className="h-5 w-5 text-warning" />
               <div>
-                <p className="font-medium text-orange-400">Acceso Limitado</p>
-                <p className="text-sm text-orange-300">
+                <p className="font-medium text-warning">Acceso Limitado</p>
+                <p className="text-sm text-warning/80">
                   Sin una suscripción activa, tu acceso a las funcionalidades está restringido. 
                   Contacta al administrador para activar tu suscripción premium.
                 </p>
