@@ -140,6 +140,8 @@ export default function Admin() {
 
   const createNewUser = useMutation({
     mutationFn: async (userData: typeof newUserForm) => {
+      console.log('Calling create-user edge function with:', { email: userData.email, role: userData.role })
+      
       // Usar edge function para crear usuario con permisos de admin
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
@@ -150,8 +152,17 @@ export default function Admin() {
         }
       })
       
-      if (error) throw error
-      if (!data?.success) throw new Error(data?.error || 'Error al crear usuario')
+      console.log('Edge function response:', { data, error })
+      
+      if (error) {
+        console.error('Edge function error:', error)
+        throw error
+      }
+      
+      if (!data?.success) {
+        console.error('Edge function returned error:', data?.error)
+        throw new Error(data?.error || 'Error al crear usuario')
+      }
       
       return data
     },
