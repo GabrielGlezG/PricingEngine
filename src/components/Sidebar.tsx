@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BarChart3, Upload, Lightbulb, Scale, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import logo from '@/assets/pricing-engine-logo-nobg.png'
+import logo from '@/assets/pricing-engine-logo.png'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
