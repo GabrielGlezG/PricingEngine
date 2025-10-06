@@ -20,6 +20,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [showAdminSetup, setShowAdminSetup] = useState(false)
+  const [justRegistered, setJustRegistered] = useState(false)
   
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -35,6 +36,10 @@ export default function Login() {
 
   // Redirect if already logged in
   if (user) {
+    // Si acaba de registrarse, redirigir a subscription
+    if (justRegistered) {
+      return <Navigate to="/subscription" replace />
+    }
     const from = location.state?.from?.pathname || '/dashboard'
     return <Navigate to={from} replace />
   }
@@ -108,9 +113,10 @@ export default function Login() {
         variant: "destructive"
       })
     } else {
+      setJustRegistered(true)
       toast({
         title: "¡Registro exitoso!",
-        description: "Revisa tu email para confirmar tu cuenta."
+        description: "Serás redirigido a la página de suscripción."
       })
     }
     

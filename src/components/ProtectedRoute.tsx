@@ -35,7 +35,8 @@ export function ProtectedRoute({
   })
 
   // Mostrar skeleton si está cargando o si el usuario existe pero el perfil no se ha cargado aún
-  if (loading || (user && !profile)) {
+  // PERO permitir /subscription sin esperar el perfil si no requiere suscripción
+  if (loading || (user && !profile && requireSubscription)) {
     return (
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -57,16 +58,16 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Si llegamos aquí sin perfil después de cargar, entonces sí es un error real
-  if (!profile) {
+  // Si llegamos aquí sin perfil después de cargar, solo mostrar error si se requiere suscripción o admin
+  if (!profile && (requireSubscription || requireAdmin)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
-            <h2 className="text-xl font-semibold mb-2">Error de Perfil</h2>
+            <h2 className="text-xl font-semibold mb-2">Cargando Perfil</h2>
             <p className="text-muted-foreground mb-4">
-              No se pudo cargar tu perfil de usuario. Por favor, intenta cerrar sesión y volver a iniciar sesión.
+              Estamos preparando tu cuenta. Si esto toma más de unos segundos, intenta recargar la página.
             </p>
             <div className="space-y-2">
               <Button onClick={() => window.location.reload()}>
