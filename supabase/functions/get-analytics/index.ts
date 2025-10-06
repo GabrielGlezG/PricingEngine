@@ -359,13 +359,43 @@ Deno.serve(async (req) => {
       };
     }));
 
-    // Price distribution for comparison insights
-    const priceDistribution = [
-      { range: 'Bajo ($0-$300k)', count: prices.filter(p => p <= 300000).length },
-      { range: 'Medio ($300k-$600k)', count: prices.filter(p => p > 300000 && p <= 600000).length },
-      { range: 'Alto ($600k-$1M)', count: prices.filter(p => p > 600000 && p <= 1000000).length },
-      { range: 'Premium ($1M+)', count: prices.filter(p => p > 1000000).length }
-    ];
+    // Price distribution with dynamic ranges based on actual data
+    const formatPriceForRange = (price: number) => {
+      if (price >= 1000000) return `$${(price / 1000000).toFixed(1)}M`;
+      return `$${(price / 1000).toFixed(0)}k`;
+    };
+
+    // Calculate dynamic price segments based on min, max, and quartiles
+    const priceDistribution: Array<{
+      range: string;
+      count: number;
+      min_value: number;
+      max_value: number;
+    }> = [];
+    if (prices.length > 0) {
+      // Use quartiles and min/max for meaningful segments
+      const segments = [
+        { label: 'Muy Bajo', min: minPrice, max: lowerQuartile },
+        { label: 'Bajo', min: lowerQuartile, max: medianPrice },
+        { label: 'Medio', min: medianPrice, max: upperQuartile },
+        { label: 'Alto', min: upperQuartile, max: maxPrice }
+      ];
+
+      segments.forEach(segment => {
+        const count = prices.filter(p => p >= segment.min && p < segment.max).length;
+        // For the last segment, include the max value
+        const adjustedCount = segment.max === maxPrice 
+          ? prices.filter(p => p >= segment.min && p <= segment.max).length 
+          : count;
+        
+        priceDistribution.push({
+          range: `${segment.label} (${formatPriceForRange(segment.min)}-${formatPriceForRange(segment.max)})`,
+          count: adjustedCount,
+          min_value: segment.min,
+          max_value: segment.max
+        });
+      });
+    }
 
     // Best value models (price below median)
     const bestValueModels = filteredData
