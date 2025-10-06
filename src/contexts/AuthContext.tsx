@@ -51,18 +51,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
       
       if (error) {
-        // Si el perfil no existe, esperar a que el trigger lo cree
-        if (error.code === 'PGRST116') {
-          return null
-        }
         console.error('Error fetching user profile:', error)
+        // Si el perfil no existe, intentar crearlo
+        if (error.code === 'PGRST116') {
+          const { data: newProfile, error: createError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              name: user.user_metadata?.name || user.email || '',
+              role: 'user'
+            })
+            .select()
+            .single()
+          
+          if (createError) {
+            console.error('Error creating user profile:', createError)
+            return null
+          }
+          return newProfile as UserProfile
+        }
         return null
       }
       return data as UserProfile
     },
     enabled: !!user,
-    retry: 3,
-    retryDelay: 1000
+    retry: 1
   })
 
   const isAdmin = Boolean(profile?.role === 'admin')
@@ -99,10 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
         
         if (session?.user) {
-          // Delay más largo para asegurar que el trigger de creación de perfil se ejecute
+          // Pequeño delay para asegurar que el trigger de creación de perfil se ejecute
           setTimeout(() => {
             refetchProfile()
-          }, 1500)
+          }, 500)
         }
       }
     )
