@@ -89,13 +89,15 @@ export default function Insights() {
       case 'price_trend':
         return <TrendingUp className="h-5 w-5 text-primary" />
       case 'best_value':
-        return <DollarSign className="h-5 w-5 text-primary" />
+        return <Award className="h-5 w-5 text-primary" />
+      case 'historical_opportunity':
+        return <Target className="h-5 w-5 text-green-500" />
       case 'price_max':
         return <DollarSign className="h-5 w-5 text-destructive" />
       case 'price_stability':
         return <BarChart3 className="h-5 w-5 text-primary" />
       case 'category_comparison':
-        return <BarChart3 className="h-5 w-5 text-primary" />
+        return <ShoppingCart className="h-5 w-5 text-primary" />
       default:
         return <Lightbulb className="h-5 w-5 text-primary" />
     }
@@ -153,19 +155,60 @@ export default function Insights() {
         if (Array.isArray(insight.data)) {
           return (
             <div className="space-y-3">
-              {insight.data.slice(0, 3).map((model: any, index: number) => (
-                <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded-md">
+              {insight.data.map((model: any, index: number) => (
+                <div key={index} className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="font-medium">{model.brand} {model.model}</p>
-                      <div className="flex gap-1 mt-1">
+                    <div className="flex-1">
+                      <p className="font-semibold text-lg">{model.brand} {model.model}</p>
+                      <p className="text-sm text-muted-foreground">{model.name}</p>
+                      <div className="flex gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">{model.category}</Badge>
-                        <Badge variant="default" className="text-xs bg-primary">
-                          -{model.savings_vs_median}% vs mediana
+                        <Badge className="text-xs bg-primary">
+                          Ahorro {model.savings_vs_median}%
                         </Badge>
                       </div>
                     </div>
-                    <p className="font-bold text-primary">{formatPrice(model.price)}</p>
+                    <div className="text-right ml-4">
+                      <p className="text-2xl font-bold text-primary">{formatPrice(model.price)}</p>
+                      <p className="text-xs text-muted-foreground">vs mediana</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+        return <div>Datos no disponibles</div>
+      
+      case 'historical_opportunity':
+        if (Array.isArray(insight.data)) {
+          return (
+            <div className="space-y-3">
+              {insight.data.map((model: any, index: number) => (
+                <div key={index} className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex-1">
+                      <p className="font-semibold text-lg">{model.brand} {model.model}</p>
+                      <p className="text-sm text-muted-foreground">{model.name}</p>
+                    </div>
+                    <Badge className="bg-green-600">Oportunidad</Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-center p-2 bg-background/50 rounded">
+                      <p className="text-xs text-muted-foreground">Actual</p>
+                      <p className="font-bold text-primary">{formatPrice(model.current_price)}</p>
+                    </div>
+                    <div className="text-center p-2 bg-background/50 rounded">
+                      <p className="text-xs text-muted-foreground">Mínimo</p>
+                      <p className="font-bold text-green-600">{formatPrice(model.historical_low)}</p>
+                    </div>
+                    <div className="text-center p-2 bg-background/50 rounded">
+                      <p className="text-xs text-muted-foreground">Máximo</p>
+                      <p className="font-bold text-red-600">{formatPrice(model.historical_high)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 p-2 bg-green-500/10 rounded text-xs">
+                    💚 Variación histórica de {model.range_percent}% - Precio actual cerca del mínimo
                   </div>
                 </div>
               ))}
