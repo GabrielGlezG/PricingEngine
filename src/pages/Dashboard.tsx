@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
-import { useState } from "react"
+import { useState, useMemo } from "react"
+
 
 interface AnalyticsData {
   metrics: {
@@ -323,6 +324,14 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     }
   })
 
+  const priceDistributionData = useMemo(() => {
+    const data = (analytics?.chart_data?.price_distribution && analytics.chart_data.price_distribution.length > 0)
+      ? analytics.chart_data.price_distribution
+      : (localAnalytics?.chart_data?.price_distribution || [])
+    console.log('Using price distribution source:', analytics?.chart_data?.price_distribution?.length ? 'server' : 'local', data)
+    return data
+  }, [analytics, localAnalytics])
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -342,8 +351,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
         </div>
       </div>
     )
-  }
-
   if (!analytics) {
     if (localAnalytics?.chart_data?.price_distribution) {
       return (
