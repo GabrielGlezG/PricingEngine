@@ -76,13 +76,8 @@ const COLORS = [
 export default function Dashboard() {
   const [filters, setFilters] = useState({
     brand: '',
-    category: '',
     model: '',
-    submodel: '',
-    date_from: '',
-    date_to: '',
-    ctx_precio: '',
-    priceRange: ''
+    submodel: ''
   })
   const [refreshTick, setRefreshTick] = useState(0)
 
@@ -153,21 +148,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     }
   })
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('category')
-        .order('category')
-      
-      if (error) throw error
-      return [...new Set(data.map(p => p.category))]
-    }
-  })
-
   const { data: models } = useQuery({
-    queryKey: ['models', filters.brand, filters.category],
+    queryKey: ['models', filters.brand],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -176,9 +158,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       
       if (filters.brand) {
         query = query.eq('brand', filters.brand)
-      }
-      if (filters.category) {
-        query = query.eq('category', filters.category)
       }
       
       const { data, error } = await query
@@ -193,7 +172,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
   })
 
   const { data: submodels } = useQuery({
-    queryKey: ['submodels', filters.brand, filters.category, filters.model],
+    queryKey: ['submodels', filters.brand, filters.model],
     queryFn: async () => {
       let query = supabase
         .from('products')
@@ -203,9 +182,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       
       if (filters.brand) {
         query = query.eq('brand', filters.brand)
-      }
-      if (filters.category) {
-        query = query.eq('category', filters.category)
       }
       if (filters.model) {
         query = query.eq('model', filters.model)
@@ -278,7 +254,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-6">
+          <div className="grid gap-4 md:grid-cols-4">
             <Select value={filters.brand || "all"} onValueChange={(value) => setFilters(f => ({ ...f, brand: value === "all" ? "" : value }))}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todas las marcas" />
@@ -314,45 +290,19 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Tipo de precio" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="financiamiento:marca">Financiamiento Marca</SelectItem>
-                <SelectItem value="contado">Contado</SelectItem>
-                <SelectItem value="promocion">Promoción</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Select value={filters.priceRange || "all"} onValueChange={(value) => setFilters(f => ({ ...f, priceRange: value === "all" ? "" : value }))}>
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Rango de precios" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los precios</SelectItem>
-                <SelectItem value="0-20000000">$0 - $20M</SelectItem>
-                <SelectItem value="20000000-40000000">$20M - $40M</SelectItem>
-                <SelectItem value="40000000-60000000">$40M - $60M</SelectItem>
-                <SelectItem value="60000000+">$60M+</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex gap-2 md:col-span-2">
-              <Button 
-                onClick={() => { setRefreshTick((t) => t + 1); refetch(); }} 
-                disabled={isRefetching}
-                className="flex-1"
-              >
-                {isRefetching ? (
-                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Actualizar Datos
-              </Button>
-            </div>
+            <Button 
+              onClick={() => { setRefreshTick((t) => t + 1); refetch(); }} 
+              disabled={isRefetching}
+              className="w-full"
+            >
+              {isRefetching ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Actualizar Datos
+            </Button>
           </div>
         </CardContent>
       </Card>
