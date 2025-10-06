@@ -93,6 +93,8 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Keep unfiltered data for general stats (top expensive/cheap)
+    const unfilteredData = Array.from(latestPrices.values());
     let filteredData = Array.from(latestPrices.values());
 
     // Apply filters
@@ -198,16 +200,33 @@ Deno.serve(async (req) => {
         .map(item => parseFloat(item.price));
       const brandAvg = brandPrices.reduce((a, b) => a + b, 0) / brandPrices.length;
       
-      // Get historical trend for this brand (last 2 scraping dates)
-      const { data: brandHistory } = await supabaseClient
+      // Get historical trend for this brand (last 2 scraping dates) - FILTERED
+      let brandHistoryQuery = supabaseClient
         .from('price_data')
         .select(`
-          date, price,
-          products!inner (brand)
+          date, price, ctx_precio,
+          products!inner (brand, category, model, submodel)
         `)
         .eq('products.brand', brand)
         .order('date', { ascending: false })
         .limit(100);
+      
+      // Apply same filters
+      if (filters.category) {
+        brandHistoryQuery = brandHistoryQuery.eq('products.category', filters.category);
+      }
+      if (filters.model) {
+        brandHistoryQuery = brandHistoryQuery.eq('products.model', filters.model);
+      }
+      if (filters.submodel) {
+        brandHistoryQuery = brandHistoryQuery.eq('products.submodel', filters.submodel);
+      }
+      if (filters.ctx_precio) {
+        brandHistoryQuery = brandHistoryQuery.eq('ctx_precio', filters.ctx_precio);
+      }
+      
+      const { data: brandHistory } = await brandHistoryQuery;
+      
       
       // Calculate trend
       const recentPrices = brandHistory?.map(h => parseFloat(h.price)) || [];
@@ -257,15 +276,35 @@ Deno.serve(async (req) => {
       count: filteredData.filter(item => item.products?.category === category).length
     }));
 
-    // Calculate monthly variation for volatility analysis
-    const { data: monthlyData } = await supabaseClient
+    // Calculate monthly variation for volatility analysis (FILTERED)
+    let monthlyQuery = supabaseClient
       .from('price_data')
       .select(`
         date,
         price,
-        products!inner (id, brand, model, name)
+        ctx_precio,
+        products!inner (id, brand, model, name, category, submodel)
       `)
       .order('date', { ascending: true });
+    
+    // Apply same filters to volatility analysis
+    if (filters.brand) {
+      monthlyQuery = monthlyQuery.eq('products.brand', filters.brand);
+    }
+    if (filters.category) {
+      monthlyQuery = monthlyQuery.eq('products.category', filters.category);
+    }
+    if (filters.model) {
+      monthlyQuery = monthlyQuery.eq('products.model', filters.model);
+    }
+    if (filters.submodel) {
+      monthlyQuery = monthlyQuery.eq('products.submodel', filters.submodel);
+    }
+    if (filters.ctx_precio) {
+      monthlyQuery = monthlyQuery.eq('ctx_precio', filters.ctx_precio);
+    }
+
+    const { data: monthlyData } = await monthlyQuery;
 
     const monthlyVariation: {
       most_volatile: Array<{
@@ -345,16 +384,32 @@ Deno.serve(async (req) => {
         .slice(0, 5);
     }
 
-    // Calculate brand price variations between scraping dates
+    // Calculate brand price variations between scraping dates (FILTERED)
     const brandVariations = await Promise.all(brands.map(async (brand) => {
-      const { data: brandHistory } = await supabaseClient
+      let brandQuery = supabaseClient
         .from('price_data')
         .select(`
-          date, price,
-          products!inner (brand)
+          date, price, ctx_precio,
+          products!inner (brand, category, model, submodel)
         `)
         .eq('products.brand', brand)
         .order('date', { ascending: true });
+      
+      // Apply same filters
+      if (filters.category) {
+        brandQuery = brandQuery.eq('products.category', filters.category);
+      }
+      if (filters.model) {
+        brandQuery = brandQuery.eq('products.model', filters.model);
+      }
+      if (filters.submodel) {
+        brandQuery = brandQuery.eq('products.submodel', filters.submodel);
+      }
+      if (filters.ctx_precio) {
+        brandQuery = brandQuery.eq('ctx_precio', filters.ctx_precio);
+      }
+
+      const { data: brandHistory } = await brandQuery;
 
       if (brandHistory && brandHistory.length > 1) {
         // Group by date and calculate average price per date
@@ -465,8 +520,8 @@ Deno.serve(async (req) => {
         value_rating: ((medianPrice - parseFloat(item.price)) / medianPrice * 100).toFixed(1)
       }));
 
-    // Top 5 most expensive and cheapest
-    const sortedByPrice = [...filteredData].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    // Top 5 most expensive and cheapest (ALWAYS use unfiltered data)
+    const sortedByPrice = [...unfilteredData].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
     const top5Expensive = sortedByPrice.slice(0, 5).map(item => ({
       brand: item.products?.brand,
       model: item.products?.name,
