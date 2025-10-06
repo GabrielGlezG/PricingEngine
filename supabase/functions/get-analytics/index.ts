@@ -19,7 +19,8 @@ Deno.serve(async (req) => {
 
     // Parse request to get filters
     const url = new URL(req.url);
-    const filters = {
+    // Default: from URL params
+    let filters = {
       brand: url.searchParams.get('brand') || '',
       category: url.searchParams.get('category') || '',
       model: url.searchParams.get('model') || '',
@@ -29,6 +30,26 @@ Deno.serve(async (req) => {
       dateFrom: url.searchParams.get('dateFrom') || '',
       dateTo: url.searchParams.get('dateTo') || ''
     };
+
+    // Also support body with `params` (supabase.functions.invoke)
+    try {
+      const body = await req.json().catch(() => null) as any
+      if (body && typeof body.params === 'string') {
+        const sp = new URLSearchParams(body.params)
+        filters = {
+          brand: sp.get('brand') || filters.brand,
+          category: sp.get('category') || filters.category,
+          model: sp.get('model') || filters.model,
+          submodel: sp.get('submodel') || filters.submodel,
+          ctx_precio: sp.get('ctx_precio') || filters.ctx_precio,
+          priceRange: sp.get('priceRange') || filters.priceRange,
+          dateFrom: sp.get('dateFrom') || filters.dateFrom,
+          dateTo: sp.get('dateTo') || filters.dateTo,
+        }
+      }
+    } catch (_) {
+      // ignore body parse errors
+    }
 
     console.log('Received filters:', filters);
 

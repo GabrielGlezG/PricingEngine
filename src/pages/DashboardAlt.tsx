@@ -65,6 +65,12 @@ export default function DashboardAlt() {
     }
   })
 
+  // Debug: log price distribution and timestamp when analytics change
+  if (analytics) {
+    console.log('Analytics ALT generated_at:', (analytics as any)?.generated_at)
+    console.log('Price distribution ALT (server):', (analytics as any)?.chart_data?.price_distribution)
+  }
+
   const { data: products } = useQuery({
     queryKey: ['products-filters'],
     queryFn: async () => {

@@ -82,6 +82,7 @@ export default function Dashboard() {
     ctx_precio: '',
     priceRange: ''
   })
+  const [refreshTick, setRefreshTick] = useState(0)
 
   // Debug de autenticación
   const { user, profile, isAdmin, hasActiveSubscription } = useAuth()
@@ -94,7 +95,7 @@ export default function Dashboard() {
   })
 
   const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['analytics', filters],
+    queryKey: ['analytics', filters, refreshTick],
     queryFn: async () => {
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
@@ -113,6 +114,12 @@ export default function Dashboard() {
       return failureCount < 2
     }
   })
+
+  // Debug: log price distribution and timestamp when analytics change
+  if (analytics) {
+    console.log('Analytics generated_at:', analytics.generated_at)
+    console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
+  }
 
   const { data: brands } = useQuery({
     queryKey: ['brands'],
@@ -269,8 +276,8 @@ export default function Dashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los modelos</SelectItem>
-                {models?.map(m => (
-                  <SelectItem key={m.model} value={m.model}>{m.model}</SelectItem>
+                {models?.map((m, idx) => (
+                  <SelectItem key={`${m.model}-${idx}`} value={m.model}>{m.model}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -313,7 +320,7 @@ export default function Dashboard() {
 
             <div className="flex gap-2 md:col-span-2">
               <Button 
-                onClick={() => refetch()} 
+                onClick={() => { setRefreshTick((t) => t + 1); refetch(); }} 
                 disabled={isRefetching}
                 className="flex-1"
               >
