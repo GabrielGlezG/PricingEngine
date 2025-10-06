@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
     } = { most_volatile: [] };
     
     if (monthlyData) {
-      // Group by product and calculate monthly changes
+      // Group by product ID to analyze each product individually
       const productGroups: Record<string, Array<{
         date: string;
         price: number;
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
         model: string;
         name: string;
       }>> = monthlyData.reduce((acc, item: any) => {
-        const key = `${(item.products as any).brand}-${(item.products as any).model}`;
+        const key = (item.products as any).id; // Group by product ID
         if (!acc[key]) acc[key] = [];
         acc[key].push({
           date: item.date,
