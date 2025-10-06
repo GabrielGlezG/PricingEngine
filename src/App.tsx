@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Layout } from "./components/Layout";
+import { NewLayout } from "./components/NewLayout";
 import Dashboard from "./pages/Dashboard";
 import DashboardAlt from "./pages/DashboardAlt";
 import Upload from "./pages/Upload";
@@ -32,58 +32,58 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/" element={
                 <ProtectedRoute requireSubscription={true}>
-                  <Layout>
+                  <NewLayout>
                     <Dashboard />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/upload" element={
                 <ProtectedRoute requireAdmin={true}>
-                  <Layout>
+                  <NewLayout>
                     <Upload />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/compare" element={
                 <ProtectedRoute requireSubscription={true}>
-                  <Layout>
+                  <NewLayout>
                     <Compare />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/insights" element={
                 <ProtectedRoute requireSubscription={true}>
-                  <Layout>
+                  <NewLayout>
                     <Insights />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/price-evolution" element={
                 <ProtectedRoute requireSubscription={true}>
-                  <Layout>
+                  <NewLayout>
                     <PriceEvolution />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/dashboard-alt" element={
                 <ProtectedRoute requireSubscription={true}>
-                  <Layout>
+                  <NewLayout>
                     <DashboardAlt />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/subscription" element={
                 <ProtectedRoute requireSubscription={false}>
-                  <Layout>
+                  <NewLayout>
                     <Subscription />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
                 <ProtectedRoute requireAdmin={true}>
-                  <Layout>
+                  <NewLayout>
                     <Admin />
-                  </Layout>
+                  </NewLayout>
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
