@@ -37,18 +37,21 @@ export function ProtectedRoute({
   // Mostrar skeleton si está cargando o si el usuario existe pero el perfil no se ha cargado aún
   if (loading || (user && !profile)) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-24 mb-2" />
-                <Skeleton className="h-3 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center">
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-12 mx-auto rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48 mx-auto" />
+                <Skeleton className="h-4 w-64 mx-auto" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {user && !profile ? 'Preparando tu cuenta...' : 'Cargando...'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
