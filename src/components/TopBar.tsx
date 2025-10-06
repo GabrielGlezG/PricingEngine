@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Settings, LogOut, Crown, CreditCard } from 'lucide-react'
 import { Badge } from './custom/Badge'
-import logo from '@/assets/pricing-engine-logo.png'
 
 export function TopBar() {
   const { user, profile, signOut, isAdmin, hasActiveSubscription } = useAuth()
@@ -42,12 +41,7 @@ export function TopBar() {
   const subscriptionStatus = getSubscriptionStatus()
 
   return (
-    <div className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
-      <div className="flex items-center gap-3">
-        <img src={logo} alt="PricingEngine" className="h-10 w-10 object-contain" />
-        <h1 className="text-xl font-bold text-foreground">PricingEngine</h1>
-      </div>
-
+    <div className="h-16 bg-card border-b border-border flex items-center justify-end px-6">
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BarChart3, Upload, Lightbulb, Scale, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import logo from '@/assets/pricing-engine-logo.png'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -30,7 +31,12 @@ export function Sidebar() {
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </button>
 
-      <div className="h-16 border-b border-border" />
+      <div className="pt-8 pb-6 px-4 flex flex-col items-center border-b border-border">
+        <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-10 w-10' : 'h-16 w-16'} object-contain transition-all duration-300`} />
+        {!isCollapsed && (
+          <h2 className="mt-3 text-lg font-bold text-foreground">PricingEngine</h2>
+        )}
+      </div>
 
       <nav className="flex-1 p-4 space-y-2 mt-2">
         {filteredItems.map((item) => (
