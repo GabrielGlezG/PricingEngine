@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
     } = { most_volatile: [] };
     
     if (monthlyData) {
-      // Group by product ID to analyze each product individually
+      // Group by brand-model to analyze all submodels together
       const productGroups: Record<string, Array<{
         date: string;
         price: number;
@@ -286,13 +286,15 @@ Deno.serve(async (req) => {
         model: string;
         name: string;
       }>> = monthlyData.reduce((acc, item: any) => {
-        const key = (item.products as any).id; // Group by product ID
+        const brand = (item.products as any).brand;
+        const model = (item.products as any).model;
+        const key = `${brand}-${model}`; // Group by brand-model
         if (!acc[key]) acc[key] = [];
         acc[key].push({
           date: item.date,
           price: parseFloat(item.price),
-          brand: (item.products as any).brand,
-          model: (item.products as any).model,
+          brand: brand,
+          model: model,
           name: (item.products as any).name
         });
         return acc;
@@ -313,8 +315,8 @@ Deno.serve(async (req) => {
       }> = [];
       
       Object.entries(productGroups).forEach(([key, data]) => {
-        // Require at least 3 data points to ensure meaningful volatility
-        if (data.length > 2) {
+        // Require at least 2 data points to calculate volatility
+        if (data.length > 1) {
           const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           const variations = [] as number[];
           
