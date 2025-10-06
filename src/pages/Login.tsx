@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import logo from '@/assets/pricing-engine-icon.png'
+import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
   const { user, signIn, signUp, makeFirstAdmin } = useAuth()
@@ -122,7 +122,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
-            <img src={logo} alt="PricingEngine" className="h-24 w-24 object-contain" />
+            <img src={logo} alt="PricingEngine" className="h-32 w-auto object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
           <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p>
