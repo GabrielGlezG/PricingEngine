@@ -6,8 +6,8 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {
   const variantStyles = {
-    default: 'bg-[#2A2A2A] text-[#D0D0D0]',
-    copper: 'bg-[#B17A50] text-white',
+    default: 'bg-muted text-muted-foreground',
+    copper: 'bg-primary text-primary-foreground',
     success: 'bg-green-600 text-white',
     warning: 'bg-yellow-600 text-white',
     danger: 'bg-red-600 text-white'

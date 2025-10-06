@@ -6,30 +6,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 96%;
-    --foreground: 0 0% 7%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --background: 216 12% 7%;
+    --foreground: 0 0% 100%;
+    --card: 216 12% 12%;
+    --card-foreground: 0 0% 100%;
+    --popover: 216 12% 12%;
+    --popover-foreground: 0 0% 100%;
     --primary: 25 38% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 82%;
-    --muted-foreground: 0 0% 40%;
+    --secondary: 216 12% 12%;
+    --secondary-foreground: 0 0% 82%;
+    --muted: 216 12% 16%;
+    --muted-foreground: 0 0% 82%;
     --accent: 25 38% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
     --ring: 25 38% 50%;
     --radius: 1rem;
-    
-    /* Copper highlight for metric cards */
-    --metric-card: 25 38% 50%;
-    --metric-card-foreground: 0 0% 100%;
     
     /* Chart colors - copper scheme */
     --chart-1: 25 38% 50%;
@@ -43,17 +39,17 @@
   }
 
   .dark {
-    --background: 0 0% 7%;
+    --background: 216 12% 7%;
     --foreground: 0 0% 100%;
-    --card: 0 0% 12%;
+    --card: 216 12% 12%;
     --card-foreground: 0 0% 100%;
-    --popover: 0 0% 12%;
+    --popover: 216 12% 12%;
     --popover-foreground: 0 0% 100%;
     --primary: 25 38% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 12%;
+    --secondary: 216 12% 12%;
     --secondary-foreground: 0 0% 82%;
-    --muted: 0 0% 18%;
+    --muted: 216 12% 16%;
     --muted-foreground: 0 0% 82%;
     --accent: 25 38% 50%;
     --accent-foreground: 0 0% 100%;
