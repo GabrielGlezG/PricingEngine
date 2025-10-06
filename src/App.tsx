@@ -66,7 +66,7 @@ const App = () => (
                 </ProtectedRoute>
               } />
               <Route path="/subscription" element={
-                <ProtectedRoute requireSubscription={false}>
+                <ProtectedRoute requireSubscription={false} allowWithoutProfile={true}>
                   <NewLayout>
                     <Subscription />
                   </NewLayout>

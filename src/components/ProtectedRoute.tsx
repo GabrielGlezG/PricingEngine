@@ -9,12 +9,14 @@ interface ProtectedRouteProps {
   children: React.ReactNode
   requireAdmin?: boolean
   requireSubscription?: boolean
+  allowWithoutProfile?: boolean
 }
 
 export function ProtectedRoute({ 
   children, 
   requireAdmin = false, 
-  requireSubscription = true 
+  requireSubscription = true,
+  allowWithoutProfile = false
 }: ProtectedRouteProps) {
   const { user, loading, isAdmin, hasActiveSubscription, profile } = useAuth()
   const location = useLocation()
@@ -58,25 +60,21 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Si llegamos aquí sin perfil después de cargar, solo mostrar error si se requiere suscripción o admin
-  if (!profile && (requireSubscription || requireAdmin)) {
+  // Si el usuario está autenticado pero no tiene perfil y no está en /subscription, redirigir
+  if (user && !profile && !loading && !allowWithoutProfile) {
+    return <Navigate to="/subscription" replace />
+  }
+
+  // Si no tiene perfil pero está permitido (subscription page), mostrar un mensaje de carga
+  if (!profile && allowWithoutProfile && user) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
+      <div className="space-y-6 p-6">
+        <Card>
           <CardContent className="p-6 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
-            <h2 className="text-xl font-semibold mb-2">Cargando Perfil</h2>
-            <p className="text-muted-foreground mb-4">
-              Estamos preparando tu cuenta. Si esto toma más de unos segundos, intenta recargar la página.
-            </p>
-            <div className="space-y-2">
-              <Button onClick={() => window.location.reload()}>
-                Recargar Página
-              </Button>
-              <div className="text-xs text-muted-foreground">
-                Usuario ID: {user.id}<br/>
-                Email: {user.email}
-              </div>
+            <div className="animate-pulse space-y-4">
+              <Skeleton className="h-8 w-48 mx-auto" />
+              <Skeleton className="h-4 w-64 mx-auto" />
+              <Skeleton className="h-32 w-full" />
             </div>
           </CardContent>
         </Card>
@@ -84,7 +82,9 @@ export function ProtectedRoute({
     )
   }
   
-  if (requireAdmin && !isAdmin) {
+  // Verificar permisos solo si tiene perfil
+  if (profile) {
+    if (requireAdmin && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="max-w-md w-full">
@@ -108,9 +108,9 @@ export function ProtectedRoute({
         </Card>
       </div>
     )
-  }
+    }
 
-  if (requireSubscription && !hasActiveSubscription) {
+    if (requireSubscription && !hasActiveSubscription) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <Card className="max-w-lg w-full">
@@ -143,6 +143,7 @@ export function ProtectedRoute({
         </Card>
       </div>
     )
+    }
   }
 
   return <>{children}</>
