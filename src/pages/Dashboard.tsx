@@ -237,6 +237,90 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     }
   })
 
+  // Local fallback analytics computation if edge functions fail
+  const { data: localAnalytics } = useQuery({
+    queryKey: ['analytics-local', filters, refreshTick],
+    enabled: !analytics,
+    queryFn: async () => {
+      console.warn('Using local fallback analytics computation')
+      const { data, error } = await supabase
+        .from('price_data')
+        .select(`
+          id, price, date, ctx_precio, precio_num, precio_lista_num, bono_num, precio_texto,
+          products!inner ( id, brand, category, model, name, submodel )
+        `)
+        .order('date', { ascending: false })
+        .limit(2000)
+
+      if (error) throw error
+
+      const latestMap = new Map<string, any>()
+      data?.forEach((item: any) => {
+        const pid = (item.products as any)?.id
+        if (!pid) return
+        if (!latestMap.has(pid) || new Date(item.date) > new Date(latestMap.get(pid).date)) {
+          latestMap.set(pid, item)
+        }
+      })
+      let rows = Array.from(latestMap.values())
+
+      if (filters.brand) rows = rows.filter(r => r.products?.brand === filters.brand)
+      if (filters.category) rows = rows.filter(r => r.products?.category === filters.category)
+      if (filters.model) rows = rows.filter(r => r.products?.model === filters.model)
+      if (filters.submodel) rows = rows.filter(r => r.products?.submodel === filters.submodel)
+      if (filters.ctx_precio) rows = rows.filter(r => r.ctx_precio === filters.ctx_precio)
+
+      const getPrice = (it: any) => {
+        const primary = Number(it?.precio_num ?? it?.precio_lista_num)
+        if (!Number.isNaN(primary) && primary > 0) return primary
+        const cleaned = String(it?.price ?? '').replace(/[^0-9.-]/g, '')
+        const parsed = Number(cleaned)
+        return Number.isNaN(parsed) ? 0 : parsed
+      }
+      const prices = rows.map(getPrice).filter((p: number) => p > 0)
+      if (prices.length === 0) return { chart_data: { price_distribution: [] } }
+
+      const sorted = [...prices].sort((a, b) => a - b)
+      const min = sorted[0]
+      const max = sorted[sorted.length - 1]
+      const q1 = sorted[Math.floor(sorted.length * 0.25)]
+      const med = sorted.length % 2 ? sorted[Math.floor(sorted.length / 2)] : (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2
+      const q3 = sorted[Math.floor(sorted.length * 0.75)]
+
+      const bounds = [min, q1, med, q3, max].map(n => Math.max(0, Number(n))).sort((a,b)=>a-b)
+      const unique = [...new Set(bounds)]
+
+      const formatPriceForRange = (price: number) => price >= 1_000_000 ? `$${(price/1_000_000).toFixed(1)}M` : `$${(price/1_000).toFixed(0)}k`
+
+      let segments: Array<{label:string; min:number; max:number}>
+      if (unique.length < 5 || bounds[0] === bounds[4]) {
+        const step = (max - min) / 4 || 1
+        segments = [
+          { label: 'Muy Bajo', min, max: min + step },
+          { label: 'Bajo', min: min + step, max: min + step*2 },
+          { label: 'Medio', min: min + step*2, max: min + step*3 },
+          { label: 'Alto', min: min + step*3, max },
+        ]
+      } else {
+        segments = [
+          { label: 'Muy Bajo', min: bounds[0], max: bounds[1] },
+          { label: 'Bajo', min: bounds[1], max: bounds[2] },
+          { label: 'Medio', min: bounds[2], max: bounds[3] },
+          { label: 'Alto', min: bounds[3], max: bounds[4] },
+        ]
+      }
+
+      const price_distribution = segments.map((s, idx) => ({
+        range: `${s.label} (${formatPriceForRange(s.min)}-${formatPriceForRange(s.max)})`,
+        count: prices.filter(p => p >= s.min && (idx === segments.length -1 ? p <= s.max : p < s.max)).length,
+        min_value: s.min,
+        max_value: s.max,
+      }))
+
+      return { chart_data: { price_distribution } }
+    }
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -259,6 +343,46 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
   }
 
   if (!analytics) {
+    if (localAnalytics?.chart_data?.price_distribution) {
+      return (
+        <div className="space-y-6">
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Distribución por Rango de Precio
+              </CardTitle>
+              <CardDescription>Modelos en cada segmento de mercado</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={localAnalytics.chart_data.price_distribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                  <XAxis 
+                    dataKey="range" 
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-6">
         <Card>
@@ -490,7 +614,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={analytics.chart_data?.price_distribution || []}>
+                  <BarChart data={(analytics?.chart_data?.price_distribution ?? localAnalytics?.chart_data?.price_distribution ?? [])}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis 
                       dataKey="range" 
