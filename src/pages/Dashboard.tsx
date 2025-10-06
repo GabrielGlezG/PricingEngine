@@ -725,7 +725,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                 <BarChart data={analytics.chart_data?.monthly_volatility?.most_volatile || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
-                    dataKey="name" 
+                    dataKey="model" 
                     angle={-45} 
                     textAnchor="end" 
                     height={120} 
