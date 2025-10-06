@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { X, Plus, TrendingUp, DollarSign, Award, Zap, Scale } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts'
-import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
 
 interface Product {
   id: string
@@ -438,14 +437,7 @@ export default function Compare() {
           </Card>
 
           {/* Gráficos de Comparación */}
-          <div className="space-y-6">
-            {/* Evolución de Precios de Modelos Seleccionados */}
-            <PriceEvolutionChart
-              selectedBrand={comparisonFilter.brand}
-              selectedCategory={comparisonFilter.category}
-            />
-            
-            <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Comparación de Scores</CardTitle>
@@ -497,7 +489,6 @@ export default function Compare() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-          </div>
           </div>
 
           {/* Recomendación Final */}
