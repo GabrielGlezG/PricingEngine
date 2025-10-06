@@ -128,17 +128,17 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     console.error('Query error:', queryError)
   }
 
-  // Debug: log price distribution and timestamp when analytics change
-   if (analytics) {
-     console.log('Analytics generated_at:', analytics.generated_at)
-     console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
-   }
-   if (priceDistributionLocal) {
-     console.log('Price distribution (local DB):', priceDistributionLocal)
-   }
-
   // Local, accurate price distribution from DB (quartiles)
   const { data: priceDistributionLocal } = usePriceDistribution(filters)
+
+  // Debug: log price distribution and timestamp when analytics change
+  if (analytics) {
+    console.log('Analytics generated_at:', analytics.generated_at)
+    console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
+  }
+  if (priceDistributionLocal) {
+    console.log('Price distribution (local DB):', priceDistributionLocal)
+  }
 
    const { data: brands } = useQuery({
     queryKey: ['brands'],
