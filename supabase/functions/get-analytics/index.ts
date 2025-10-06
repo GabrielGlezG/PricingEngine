@@ -390,47 +390,53 @@ Deno.serve(async (req) => {
     // Price distribution with dynamic ranges based on actual data
     const formatPriceForRange = (price: number) => {
       if (price >= 1000000) return `$${(price / 1000000).toFixed(1)}M`;
-      return `$${(price / 1000).toFixed(0)}k`;
+      if (price >= 1000) return `$${(price / 1000).toFixed(0)}k`;
+      return `$${price.toFixed(0)}`;
     };
 
-    // Calculate dynamic price segments based on min, max, and quartiles (robust)
+    // Calculate dynamic price segments based on min, max, and quartiles
     const priceDistribution: Array<{
       range: string;
       count: number;
       min_value: number;
       max_value: number;
     }> = [];
+    
     if (prices.length > 0) {
-      // Ensure ordered unique boundaries
-      const bounds = [minPrice, lowerQuartile, medianPrice, upperQuartile, maxPrice]
-        .map(n => Math.max(0, Number(n)))
-        .sort((a, b) => a - b);
+      // Use quartiles to create 4 segments: Very Low, Low, Medium, High
+      const bounds = [minPrice, lowerQuartile, medianPrice, upperQuartile, maxPrice];
+      
+      console.log('Price distribution calculation:', {
+        minPrice,
+        lowerQuartile,
+        medianPrice,
+        upperQuartile,
+        maxPrice,
+        totalPrices: prices.length
+      });
 
-      // If quartiles collapse (all equal), fall back to 4 equal-width bins
-      const unique = [...new Set(bounds)];
-      let segments: Array<{ label: string; min: number; max: number }>;
-
-      if (unique.length < 5 || bounds[0] === bounds[4]) {
-        const minB = Math.min(...prices);
-        const maxB = Math.max(...prices);
-        const step = (maxB - minB) / 4 || 1;
-        segments = [
-          { label: 'Muy Bajo', min: minB, max: minB + step },
-          { label: 'Bajo', min: minB + step, max: minB + step * 2 },
-          { label: 'Medio', min: minB + step * 2, max: minB + step * 3 },
-          { label: 'Alto', min: minB + step * 3, max: maxB },
-        ];
-      } else {
-        segments = [
-          { label: 'Muy Bajo', min: bounds[0], max: bounds[1] },
-          { label: 'Bajo', min: bounds[1], max: bounds[2] },
-          { label: 'Medio', min: bounds[2], max: bounds[3] },
-          { label: 'Alto', min: bounds[3], max: bounds[4] },
-        ];
-      }
+      // Create 4 segments based on quartiles
+      const segments = [
+        { label: 'Muy Bajo', min: bounds[0], max: bounds[1] },
+        { label: 'Bajo', min: bounds[1], max: bounds[2] },
+        { label: 'Medio', min: bounds[2], max: bounds[3] },
+        { label: 'Alto', min: bounds[3], max: bounds[4] },
+      ];
 
       segments.forEach((segment, idx) => {
-        const count = prices.filter(p => p >= segment.min && (idx === segments.length - 1 ? p <= segment.max : p < segment.max)).length;
+        const count = prices.filter(p => {
+          if (idx === 0) {
+            // First segment: min <= p <= q1
+            return p >= segment.min && p <= segment.max;
+          } else if (idx === segments.length - 1) {
+            // Last segment: q3 < p <= max
+            return p > segment.min && p <= segment.max;
+          } else {
+            // Middle segments: prev < p <= current
+            return p > segment.min && p <= segment.max;
+          }
+        }).length;
+        
         priceDistribution.push({
           range: `${segment.label} (${formatPriceForRange(segment.min)}-${formatPriceForRange(segment.max)})`,
           count,
@@ -438,6 +444,8 @@ Deno.serve(async (req) => {
           max_value: segment.max
         });
       });
+
+      console.log('Price distribution result:', priceDistribution);
     }
 
     // Best value models (price below median)
