@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
 import { useState } from "react"
+import { usePriceDistribution } from "@/hooks/usePriceDistribution"
 
 
 interface AnalyticsData {
@@ -128,12 +129,18 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
   }
 
   // Debug: log price distribution and timestamp when analytics change
-  if (analytics) {
-    console.log('Analytics generated_at:', analytics.generated_at)
-    console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
-  }
+   if (analytics) {
+     console.log('Analytics generated_at:', analytics.generated_at)
+     console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
+   }
+   if (priceDistributionLocal) {
+     console.log('Price distribution (local DB):', priceDistributionLocal)
+   }
 
-  const { data: brands } = useQuery({
+  // Local, accurate price distribution from DB (quartiles)
+  const { data: priceDistributionLocal } = usePriceDistribution(filters)
+
+   const { data: brands } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -465,7 +472,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={analytics.chart_data?.price_distribution || []}>
+                  <BarChart data={priceDistributionLocal || analytics.chart_data?.price_distribution || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis 
                       dataKey="range" 

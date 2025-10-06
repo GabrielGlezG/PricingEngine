@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Lightbulb, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertTriangle, Target, Award, Zap, Users, ShoppingCart, TrendingDown, Calendar } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts'
+import { usePriceDistribution } from "@/hooks/usePriceDistribution"
 
 interface Insight {
   insight_type: string
@@ -34,9 +35,13 @@ export default function Insights() {
       if (error) throw error
       return data
     },
-    staleTime: 0, // Force refetch to get updated dynamic price ranges
+    staleTime: 0,
     refetchOnMount: true,
   })
+
+  // Local, accurate price distribution computed from DB
+  const { data: priceDistributionLocal } = usePriceDistribution()
+
 
   // Fetch recent price trends
   const { data: recentTrends } = useQuery({
@@ -358,7 +363,7 @@ export default function Insights() {
       )}
 
       {/* Price Distribution Chart */}
-      {marketStats?.chart_data?.price_distribution && (
+       {(priceDistributionLocal || marketStats?.chart_data?.price_distribution) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -371,7 +376,7 @@ export default function Insights() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={marketStats.chart_data.price_distribution}>
+              <AreaChart data={priceDistributionLocal || marketStats.chart_data.price_distribution}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="range" />
                 <YAxis />
