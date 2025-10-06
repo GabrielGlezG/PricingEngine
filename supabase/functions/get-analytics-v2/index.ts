@@ -83,6 +83,46 @@ Deno.serve(async (req) => {
       throw priceError;
     }
 
+    if (!priceData || priceData.length === 0) {
+      console.log('No price data found in database');
+      // Return empty analytics structure instead of error
+      return new Response(
+        JSON.stringify({ 
+          metrics: {
+            total_models: 0,
+            total_brands: 0,
+            total_categories: 0,
+            avg_price: 0,
+            median_price: 0,
+            min_price: 0,
+            max_price: 0,
+            price_std_dev: 0,
+            price_range: 0,
+            variation_coefficient: 0,
+            lower_quartile: 0,
+            upper_quartile: 0,
+            current_scraping_date: null,
+            total_scraping_sessions: 0
+          },
+          chart_data: {
+            prices_by_brand: [],
+            prices_by_category: [],
+            models_by_category: [],
+            models_by_principal: [],
+            price_distribution: [],
+            best_value_models: [],
+            top_5_expensive: [],
+            bottom_5_cheap: [],
+            brand_variations: [],
+            monthly_volatility: { most_volatile: [] }
+          },
+          applied_filters: filters,
+          generated_at: new Date().toISOString()
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
     console.log('Retrieved price data count:', priceData?.length || 0);
 
     // Get latest price for each product (most recent date per product)

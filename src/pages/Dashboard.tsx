@@ -94,9 +94,10 @@ export default function Dashboard() {
     profileData: profile
   })
 
-const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
+const { data: analytics, isLoading, refetch, isRefetching, error: queryError } = useQuery({
     queryKey: ['analytics-v2', filters, refreshTick],
     queryFn: async () => {
+      console.log('Fetching analytics with filters:', filters)
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
@@ -106,7 +107,18 @@ const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
         body: { params: params.toString() }
       })
       
-      if (error) throw error
+      console.log('Analytics response:', { data, error })
+      
+      if (error) {
+        console.error('Edge function error:', error)
+        throw error
+      }
+      
+      if (!data) {
+        console.warn('No data returned from edge function')
+        return null
+      }
+      
       return data as AnalyticsData
     },
     retry: (failureCount, error) => {
@@ -114,6 +126,11 @@ const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
       return failureCount < 2
     }
   })
+
+  // Log query errors
+  if (queryError) {
+    console.error('Query error:', queryError)
+  }
 
   // Debug: log price distribution and timestamp when analytics change
   if (analytics) {

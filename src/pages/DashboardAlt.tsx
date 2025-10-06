@@ -48,22 +48,39 @@ export default function DashboardAlt() {
   const [selectedModel, setSelectedModel] = useState('')
   const [selectedSubmodel, setSelectedSubmodel] = useState('')
 
-  const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
+  const { data: analytics, isLoading, refetch, isRefetching, error: queryError } = useQuery({
     queryKey: ['analytics-alt', selectedBrand, selectedModel, selectedSubmodel],
     queryFn: async () => {
+      console.log('Fetching analytics ALT with filters:', { selectedBrand, selectedModel, selectedSubmodel })
       const params = new URLSearchParams()
       if (selectedBrand) params.append('brand', selectedBrand)
       if (selectedModel) params.append('model', selectedModel)
       if (selectedSubmodel) params.append('submodel', selectedSubmodel)
       
-      const { data, error } = await supabase.functions.invoke('get-analytics', {
-        body: params.toString() ? { params: params.toString() } : {}
+      const { data, error } = await supabase.functions.invoke('get-analytics-v2', {
+        body: { params: params.toString() }
       })
       
-      if (error) throw error
+      console.log('Analytics ALT response:', { data, error })
+      
+      if (error) {
+        console.error('Edge function error (ALT):', error)
+        throw error
+      }
+      
+      if (!data) {
+        console.warn('No data returned from edge function (ALT)')
+        return null
+      }
+      
       return data as Analytics
     }
   })
+
+  // Log query errors
+  if (queryError) {
+    console.error('Query error (ALT):', queryError)
+  }
 
   // Debug: log price distribution and timestamp when analytics change
   if (analytics) {
