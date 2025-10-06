@@ -1,5 +1,8 @@
 project_id = "beybdwxmocwaeuizghnf"
 
+[functions.create-user]
+verify_jwt = true
+
 [functions.upload-json]
 verify_jwt = false
 

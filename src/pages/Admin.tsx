@@ -140,35 +140,20 @@ export default function Admin() {
 
   const createNewUser = useMutation({
     mutationFn: async (userData: typeof newUserForm) => {
-      // Crear usuario en auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: {
-            name: userData.name
-          },
-          emailRedirectTo: `${window.location.origin}/`
+      // Usar edge function para crear usuario con permisos de admin
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+          role: userData.role
         }
       })
       
-      if (signUpError) throw signUpError
+      if (error) throw error
+      if (!data?.success) throw new Error(data?.error || 'Error al crear usuario')
       
-      // El perfil se crea automáticamente con el trigger
-      // Esperar un momento para que se cree el perfil
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Actualizar el rol si es admin
-      if (userData.role === 'admin' && authData.user) {
-        const { error: roleError } = await supabase
-          .from('user_profiles')
-          .update({ role: 'admin' } as any)
-          .eq('user_id', authData.user.id)
-        
-        if (roleError) throw roleError
-      }
-      
-      return authData
+      return data
     },
     onSuccess: () => {
       toast({ 
