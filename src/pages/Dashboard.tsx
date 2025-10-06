@@ -157,7 +157,12 @@ export default function Dashboard() {
       
       const { data, error } = await query
       if (error) throw error
-      return data.map(p => ({ model: p.model, name: p.name, brand: p.brand }))
+      
+      // Remove duplicates by model name
+      const uniqueModels = Array.from(
+        new Map(data.map(p => [p.model, { model: p.model, name: p.name, brand: p.brand }])).values()
+      )
+      return uniqueModels
     }
   })
 
