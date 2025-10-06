@@ -34,7 +34,8 @@ export function ProtectedRoute({
     } : null
   })
 
-  if (loading) {
+  // Mostrar skeleton si está cargando o si el usuario existe pero el perfil no se ha cargado aún
+  if (loading || (user && !profile)) {
     return (
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -56,7 +57,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Si no hay perfil, mostrar mensaje de error
+  // Si llegamos aquí sin perfil después de cargar, entonces sí es un error real
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
