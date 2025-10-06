@@ -537,13 +537,8 @@ Deno.serve(async (req) => {
         historical_data: historicalData,
         applied_filters: {
           brand: filters.brand,
-          category: filters.category,
           model: filters.model,
-          submodel: filters.submodel,
-          ctx_precio: filters.ctx_precio,
-          priceRange: filters.priceRange,
-          date_from: filters.dateFrom,
-          date_to: filters.dateTo
+          submodel: filters.submodel
         },
         generated_at: new Date().toISOString()
       }),
