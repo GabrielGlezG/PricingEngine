@@ -615,7 +615,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={(analytics?.chart_data?.price_distribution ?? localAnalytics?.chart_data?.price_distribution ?? [])}>
+                  <BarChart data={(localAnalytics?.chart_data?.price_distribution ?? analytics?.chart_data?.price_distribution ?? [])}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis 
                       dataKey="range" 
