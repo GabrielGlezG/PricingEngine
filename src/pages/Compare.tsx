@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Card } from "@/components/custom/Card"
 import { Badge } from "@/components/custom/Badge"
-import { Button } from "@/components/custom/Button"
-import { Select } from "@/components/custom/Select"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Slider } from "@/components/ui/slider"
 import { X, Plus, Scale } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
@@ -30,12 +31,10 @@ interface ComparisonData {
 export default function Compare() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [comparisonFilter, setComparisonFilter] = useState({
-    category: '',
     brand: '',
     model: '',
     submodel: '',
-    maxPrice: '',
-    ctx_precio: ''
+    priceRange: [0, 2000000] as [number, number]
   })
 
   // Fetch available products for selection
@@ -70,32 +69,34 @@ export default function Compare() {
     }
   })
 
-  // Get brands, categories, models and submodels for filters
-  const brands = [...new Set(products?.map(p => p.brand))].filter(Boolean)
-  const categories = [...new Set(products?.map(p => p.category))].filter(Boolean)
+  // Get brands, models and submodels for filters
+  const brands = [...new Set(products?.map(p => p.brand))].filter(Boolean).sort()
   
   const models = [...new Set(
     products
       ?.filter(p => !comparisonFilter.brand || p.brand === comparisonFilter.brand)
-      ?.filter(p => !comparisonFilter.category || p.category === comparisonFilter.category)
       ?.map(p => p.model)
-  )].filter(Boolean)
+  )].filter(Boolean).sort()
   
   const submodels = [...new Set(
     products
       ?.filter(p => !comparisonFilter.brand || p.brand === comparisonFilter.brand)
-      ?.filter(p => !comparisonFilter.category || p.category === comparisonFilter.category)
       ?.filter(p => !comparisonFilter.model || p.model === comparisonFilter.model)
       ?.map(p => p.submodel)
-  )].filter(Boolean)
+  )].filter(Boolean).sort()
+
+  // Calculate min and max prices from available products
+  const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
+  const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 2000000
 
   // Filter products based on current filters
   const filteredProducts = products?.filter(product => {
-    if (comparisonFilter.category && product.category !== comparisonFilter.category) return false
     if (comparisonFilter.brand && product.brand !== comparisonFilter.brand) return false
     if (comparisonFilter.model && product.model !== comparisonFilter.model) return false
     if (comparisonFilter.submodel && product.submodel !== comparisonFilter.submodel) return false
-    if (comparisonFilter.maxPrice && product.latest_price > parseInt(comparisonFilter.maxPrice)) return false
+    const price = product.latest_price || 0
+    if (price < comparisonFilter.priceRange[0] || price > comparisonFilter.priceRange[1]) return false
     return true
   }) || []
 
@@ -180,76 +181,79 @@ export default function Compare() {
           <p className="text-sm text-muted-foreground mb-6">
             Usa los filtros para encontrar los modelos que te interesan
           </p>
-          <div className="grid gap-4 md:grid-cols-6 mb-6">
-            <Select 
-              value={comparisonFilter.category} 
-              onChange={(value) => setComparisonFilter(f => ({ ...f, category: value === "all" ? "" : value }))}
-              placeholder="Todas las categorías"
-              options={[
-                { value: 'all', label: 'Todas las categorías' },
-                ...categories.map(cat => ({ value: cat, label: cat }))
-              ]}
-            />
+          <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todas las marcas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las marcas</SelectItem>
+                {brands.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <Select 
-              value={comparisonFilter.brand} 
-              onChange={(value) => setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value }))}
-              placeholder="Todas las marcas"
-              options={[
-                { value: 'all', label: 'Todas las marcas' },
-                ...brands.map(brand => ({ value: brand, label: brand }))
-              ]}
-            />
+            <Select value={comparisonFilter.model || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value, submodel: "" }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todos los modelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los modelos</SelectItem>
+                {models.map(model => (
+                  <SelectItem key={model} value={model}>{model}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            <Select 
-              value={comparisonFilter.model} 
-              onChange={(value) => setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value }))}
-              placeholder="Todos los modelos"
-              options={[
-                { value: 'all', label: 'Todos los modelos' },
-                ...models.map(model => ({ value: model, label: model }))
-              ]}
-            />
-
-            <Select 
-              value={comparisonFilter.submodel} 
-              onChange={(value) => setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))}
-              placeholder="Todos los submodelos"
-              options={[
-                { value: 'all', label: 'Todos los submodelos' },
-                ...submodels.map(submodel => ({ value: submodel, label: submodel }))
-              ]}
-            />
-
-            <Select 
-              value={comparisonFilter.maxPrice} 
-              onChange={(value) => setComparisonFilter(f => ({ ...f, maxPrice: value === "all" ? "" : value }))}
-              placeholder="Precio máximo"
-              options={[
-                { value: 'all', label: 'Sin límite' },
-                { value: '300000', label: 'Hasta $300,000' },
-                { value: '500000', label: 'Hasta $500,000' },
-                { value: '800000', label: 'Hasta $800,000' },
-                { value: '1000000', label: 'Hasta $1,000,000' }
-              ]}
-            />
+            <Select value={comparisonFilter.submodel || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todos los submodelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los submodelos</SelectItem>
+                {submodels.map(submodel => (
+                  <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Button 
               onClick={() => {
                 setSelectedProducts([])
                 setComparisonFilter({
-                  category: '',
                   brand: '',
                   model: '',
                   submodel: '',
-                  maxPrice: '',
-                  ctx_precio: ''
+                  priceRange: [minPrice, maxPrice]
                 })
               }}
               variant="secondary"
+              className="w-full"
             >
               Limpiar Todo
             </Button>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-foreground">Rango de Precio</label>
+              <span className="text-sm text-muted-foreground">
+                {formatPrice(comparisonFilter.priceRange[0])} - {formatPrice(comparisonFilter.priceRange[1])}
+              </span>
+            </div>
+            <Slider
+              value={comparisonFilter.priceRange}
+              onValueChange={(value) => setComparisonFilter(f => ({ ...f, priceRange: value as [number, number] }))}
+              min={minPrice}
+              max={maxPrice}
+              step={10000}
+              className="w-full"
+            />
+            <div className="flex justify-between mt-1">
+              <span className="text-xs text-muted-foreground">{formatPrice(minPrice)}</span>
+              <span className="text-xs text-muted-foreground">{formatPrice(maxPrice)}</span>
+            </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
