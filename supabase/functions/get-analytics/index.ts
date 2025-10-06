@@ -313,13 +313,18 @@ Deno.serve(async (req) => {
       }> = [];
       
       Object.entries(productGroups).forEach(([key, data]) => {
-        if (data.length > 1) {
+        // Require at least 3 data points to ensure meaningful volatility
+        if (data.length > 2) {
           const sortedData = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          const variations = [];
+          const variations = [] as number[];
           
           for (let i = 1; i < sortedData.length; i++) {
-            const variation = Math.abs((sortedData[i].price - sortedData[i-1].price) / sortedData[i-1].price * 100);
-            variations.push(variation);
+            const prev = sortedData[i-1].price;
+            const curr = sortedData[i].price;
+            if (prev > 0) {
+              const variation = Math.abs((curr - prev) / prev * 100);
+              variations.push(variation);
+            }
           }
           
           const avgVariation = variations.length > 0 ? variations.reduce((a, b) => a + b, 0) / variations.length : 0;
