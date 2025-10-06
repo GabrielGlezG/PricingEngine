@@ -560,7 +560,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                   <Scatter 
                     name="Modelos" 
                     data={(analytics.chart_data?.models_by_principal || [])
-                      .slice(0, 15)
                       .map((item, index) => ({ ...item, index: index + 1 }))
                     }
                     fill="hsl(var(--primary))"
