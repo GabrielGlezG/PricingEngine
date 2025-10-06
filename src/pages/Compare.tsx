@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Card } from "@/components/custom/Card"
@@ -89,6 +89,13 @@ export default function Compare() {
   const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
   const minPrice = prices.length > 0 ? Math.min(...prices) : 0
   const maxPrice = prices.length > 0 ? Math.max(...prices) : 2000000
+  
+  // Initialize price range when products are loaded for the first time
+  useEffect(() => {
+    if (products && products.length > 0 && comparisonFilter.priceRange[0] === 0 && comparisonFilter.priceRange[1] === 2000000 && minPrice > 0 && maxPrice > 0) {
+      setComparisonFilter(f => ({ ...f, priceRange: [minPrice, maxPrice] }))
+    }
+  }, [products, minPrice, maxPrice])
 
   // Filter products based on current filters
   const filteredProducts = products?.filter(product => {
@@ -235,26 +242,28 @@ export default function Compare() {
             </Button>
           </div>
 
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-foreground">Rango de Precio</label>
-              <span className="text-sm text-muted-foreground">
-                {formatPrice(comparisonFilter.priceRange[0])} - {formatPrice(comparisonFilter.priceRange[1])}
-              </span>
+          {products && products.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground">Rango de Precio</label>
+                <span className="text-sm text-muted-foreground">
+                  {formatPrice(comparisonFilter.priceRange[0])} - {formatPrice(comparisonFilter.priceRange[1])}
+                </span>
+              </div>
+              <Slider
+                value={comparisonFilter.priceRange}
+                onValueChange={(value) => setComparisonFilter(f => ({ ...f, priceRange: value as [number, number] }))}
+                min={minPrice}
+                max={maxPrice}
+                step={10000}
+                className="w-full"
+              />
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-muted-foreground">{formatPrice(minPrice)}</span>
+                <span className="text-xs text-muted-foreground">{formatPrice(maxPrice)}</span>
+              </div>
             </div>
-            <Slider
-              value={comparisonFilter.priceRange}
-              onValueChange={(value) => setComparisonFilter(f => ({ ...f, priceRange: value as [number, number] }))}
-              min={minPrice}
-              max={maxPrice}
-              step={10000}
-              className="w-full"
-            />
-            <div className="flex justify-between mt-1">
-              <span className="text-xs text-muted-foreground">{formatPrice(minPrice)}</span>
-              <span className="text-xs text-muted-foreground">{formatPrice(maxPrice)}</span>
-            </div>
-          </div>
+          )}
 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.slice(0, 12).map(product => (
