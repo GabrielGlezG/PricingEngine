@@ -497,36 +497,76 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Modelos por Línea Principal
+                <Target className="h-5 w-5 text-primary" />
+                Precio vs Modelo Principal
               </CardTitle>
-              <CardDescription>Top 10 modelos más populares del inventario</CardDescription>
+              <CardDescription>Tamaño proporcional al volumen de variantes</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={(analytics.chart_data?.models_by_principal || []).slice(0, 10)}>
+              <ResponsiveContainer width="100%" height={400}>
+                <ScatterChart 
+                  margin={{ top: 20, right: 20, bottom: 80, left: 60 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
-                    dataKey="model_principal" 
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={100}
+                    type="number"
+                    dataKey="index"
+                    name="Modelo"
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
+                    label={{ value: 'Modelos', position: 'insideBottom', offset: -10, fill: 'hsl(var(--muted-foreground))' }}
                   />
-                  <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis 
+                    type="number"
+                    dataKey="avg_price"
+                    name="Precio Promedio"
+                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    stroke="hsl(var(--muted-foreground))"
+                    label={{ value: 'Precio Promedio', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <ZAxis 
+                    type="number" 
+                    dataKey="count" 
+                    range={[100, 1000]} 
+                    name="Volumen"
+                  />
                   <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
+                    cursor={{ strokeDasharray: '3 3' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload
+                        return (
+                          <div 
+                            style={{ 
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              padding: '12px',
+                              color: 'hsl(var(--foreground))'
+                            }}
+                          >
+                            <p style={{ fontWeight: 600, marginBottom: '8px' }}>{data.model_principal}</p>
+                            <p style={{ fontSize: '13px' }}>Precio Promedio: {formatPrice(data.avg_price)}</p>
+                            <p style={{ fontSize: '13px' }}>Volumen: {data.count} variantes</p>
+                            <p style={{ fontSize: '13px' }}>Rango: {formatPrice(data.min_price)} - {formatPrice(data.max_price)}</p>
+                          </div>
+                        )
+                      }
+                      return null
                     }}
-                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Cantidad" radius={[6, 6, 0, 0]} />
-                </BarChart>
+                  <Legend />
+                  <Scatter 
+                    name="Modelos" 
+                    data={(analytics.chart_data?.models_by_principal || [])
+                      .slice(0, 15)
+                      .map((item, index) => ({ ...item, index: index + 1 }))
+                    }
+                    fill="hsl(var(--primary))"
+                    opacity={0.7}
+                  />
+                </ScatterChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
