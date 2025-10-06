@@ -94,15 +94,15 @@ export default function Dashboard() {
     profileData: profile
   })
 
-  const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['analytics', filters, refreshTick],
+const { data: analytics, isLoading, refetch, isRefetching } = useQuery({
+    queryKey: ['analytics-v2', filters, refreshTick],
     queryFn: async () => {
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
       })
       
-      const { data, error } = await supabase.functions.invoke('get-analytics', {
+      const { data, error } = await supabase.functions.invoke('get-analytics-v2', {
         body: { params: params.toString() }
       })
       
