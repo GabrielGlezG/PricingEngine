@@ -410,7 +410,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
 
       {/* Tabs con visualizaciones organizadas */}
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 h-auto bg-card border border-border">
+        <TabsList className="grid w-full grid-cols-3 h-auto bg-card border border-border">
           <TabsTrigger value="general" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Visión General
           </TabsTrigger>
@@ -419,9 +419,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
           </TabsTrigger>
           <TabsTrigger value="marcas" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             Por Marca
-          </TabsTrigger>
-          <TabsTrigger value="tendencias" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            Tendencias
           </TabsTrigger>
         </TabsList>
 
@@ -714,10 +711,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Tab: Tendencias */}
-        <TabsContent value="tendencias" className="space-y-6">
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
