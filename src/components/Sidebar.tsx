@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { BarChart3, Upload, Lightbulb, Scale, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import logo from '@/assets/pricing-engine-logo.png'
-import { processLogoBackground } from '@/utils/processLogo'
+import logo from '@/assets/pricing-engine-logo-nobg.png'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [processedLogo, setProcessedLogo] = useState(logo)
   const location = useLocation()
   const { isAdmin } = useAuth()
-
-  useEffect(() => {
-    processLogoBackground().then(setProcessedLogo)
-  }, [])
   
   const items = [
     { title: 'Dashboard', url: '/', icon: BarChart3, requireAdmin: false },
@@ -38,7 +32,7 @@ export function Sidebar() {
       </button>
 
       <div className="pt-8 pb-6 px-4 flex flex-col items-center">
-        <img src={processedLogo} alt="PricingEngine" className={`${isCollapsed ? 'h-12 w-12' : 'h-24 w-auto'} object-contain transition-all duration-300`} />
+        <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-12 w-12' : 'h-24 w-auto'} object-contain transition-all duration-300`} />
       </div>
 
       <nav className="flex-1 p-4 space-y-2 mt-2">
