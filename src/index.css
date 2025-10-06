@@ -2,30 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Design System - Paleta de colores minimalista */
 
 @layer base {
   :root {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 100%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
     --primary: 25 38% 50%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 82%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 82%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 82%;
+    --muted-foreground: 0 0% 40%;
     --accent: 25 38% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
     --ring: 25 38% 50%;
     --radius: 1rem;
     
@@ -33,7 +31,7 @@ All colors MUST be HSL.
     --metric-card: 25 38% 50%;
     --metric-card-foreground: 0 0% 100%;
     
-    /* Chart colors con el esquema cobre */
+    /* Chart colors - copper scheme */
     --chart-1: 25 38% 50%;
     --chart-2: 25 50% 60%;
     --chart-3: 25 30% 40%;
@@ -55,7 +53,7 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 82%;
-    --muted: 0 0% 12%;
+    --muted: 0 0% 18%;
     --muted-foreground: 0 0% 82%;
     --accent: 25 38% 50%;
     --accent-foreground: 0 0% 100%;
@@ -65,7 +63,7 @@ All colors MUST be HSL.
     --input: 0 0% 18%;
     --ring: 25 38% 50%;
     
-    /* Chart colors con el esquema cobre */
+    /* Chart colors - copper scheme */
     --chart-1: 25 38% 50%;
     --chart-2: 25 50% 60%;
     --chart-3: 25 30% 40%;

@@ -314,52 +314,52 @@ export default function Dashboard() {
       </Card>
 
       {/* Métricas principales - Diseño inspirado en referencia */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-primary border-none shadow-md rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary-foreground">Total Modelos</CardTitle>
-            <Package className="h-5 w-5 text-primary-foreground/80" />
+            <Package className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary-foreground">{analytics.metrics.total_models}</div>
-            <p className="text-xs text-primary-foreground/70 mt-2">
+            <div className="text-3xl font-bold text-primary-foreground">{analytics.metrics.total_models}</div>
+            <p className="text-xs text-primary-foreground/70 mt-1">
               {analytics.metrics.total_brands} marcas activas
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <Card className="bg-primary border-none shadow-md rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary-foreground">Precio Promedio</CardTitle>
-            <DollarSign className="h-5 w-5 text-primary-foreground/80" />
+            <DollarSign className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.avg_price)}</div>
-            <p className="text-xs text-primary-foreground/70 mt-2">
+            <div className="text-3xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.avg_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-1">
               Variación: {analytics.metrics.variation_coefficient.toFixed(1)}%
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <Card className="bg-primary border-none shadow-md rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary-foreground">Precio Mínimo</CardTitle>
-            <TrendingDown className="h-5 w-5 text-primary-foreground/80" />
+            <TrendingDown className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.min_price)}</div>
-            <p className="text-xs text-primary-foreground/70 mt-2">Valor más accesible</p>
+            <div className="text-3xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.min_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-1">Valor más accesible</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/90 border-primary shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <Card className="bg-primary border-none shadow-md rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary-foreground">Precio Máximo</CardTitle>
-            <TrendingUp className="h-5 w-5 text-primary-foreground/80" />
+            <TrendingUp className="h-4 w-4 text-primary-foreground/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.max_price)}</div>
-            <p className="text-xs text-primary-foreground/70 mt-2">Valor premium</p>
+            <div className="text-3xl font-bold text-primary-foreground">{formatPrice(analytics.metrics.max_price)}</div>
+            <p className="text-xs text-primary-foreground/70 mt-1">Valor premium</p>
           </CardContent>
         </Card>
       </div>
@@ -393,25 +393,26 @@ export default function Dashboard() {
                 <CardDescription>Distribución de vehículos según tipo</CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={analytics.chart_data?.models_by_category || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis 
                       dataKey="category" 
-                      className="text-xs"
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                       stroke="hsl(var(--muted-foreground))"
                     />
-                    <YAxis stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))'
                       }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[8, 8, 0, 0]} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -426,7 +427,7 @@ export default function Dashboard() {
                 <CardDescription>Modelos en cada segmento de mercado</CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
                     <Pie
                       data={analytics.chart_data?.price_distribution || []}
@@ -434,7 +435,7 @@ export default function Dashboard() {
                       cy="50%"
                       labelLine={false}
                       label={({ range, percent }) => `${range} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={110}
+                      outerRadius={90}
                       fill="#8884d8"
                       dataKey="count"
                     >
@@ -444,10 +445,10 @@ export default function Dashboard() {
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))'
                       }}
                     />
                   </PieChart>
@@ -465,27 +466,29 @@ export default function Dashboard() {
               <CardDescription>Top 10 modelos más populares del inventario</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={380}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={(analytics.chart_data?.models_by_principal || []).slice(0, 10)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
                     dataKey="model_principal" 
-                    className="text-xs" 
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
                     angle={-45} 
                     textAnchor="end" 
                     height={100}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
+                      backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Cantidad" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Cantidad" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -504,21 +507,23 @@ export default function Dashboard() {
                 <CardDescription>Vehículos de mayor valor en el inventario</CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={analytics.chart_data?.top_5_expensive || []} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis dataKey="name" type="category" width={150} className="text-xs" stroke="hsl(var(--muted-foreground))" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))'
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="price" fill="hsl(var(--chart-5))" name="Precio" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="price" fill="hsl(var(--chart-5))" name="Precio" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -533,21 +538,23 @@ export default function Dashboard() {
                 <CardDescription>Vehículos de menor valor disponibles</CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={analytics.chart_data?.bottom_5_cheap || []} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis dataKey="name" type="category" width={150} className="text-xs" stroke="hsl(var(--muted-foreground))" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                    <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
-                        backgroundColor: 'hsl(var(--popover))',
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))'
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                    <Bar dataKey="price" fill="hsl(var(--chart-2))" name="Precio" radius={[0, 8, 8, 0]} />
+                    <Bar dataKey="price" fill="hsl(var(--chart-2))" name="Precio" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -563,25 +570,27 @@ export default function Dashboard() {
               <CardDescription>Comparación de rangos de precio por tipo de vehículo</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={320}>
                 <ComposedChart data={analytics.chart_data?.prices_by_category || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                  <XAxis dataKey="category" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => formatPrice(value)}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
+                      backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                   <Legend />
-                  <Bar dataKey="min_price" fill="hsl(var(--chart-6))" name="Mínimo" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="avg_price" fill="hsl(var(--primary))" name="Promedio" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="max_price" fill="hsl(var(--chart-5))" name="Máximo" radius={[8, 8, 0, 0]} />
-                  <Line type="monotone" dataKey="avg_price" stroke="hsl(var(--chart-3))" strokeWidth={3} />
+                  <Bar dataKey="min_price" fill="hsl(var(--chart-6))" name="Mínimo" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="avg_price" fill="hsl(var(--primary))" name="Promedio" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="max_price" fill="hsl(var(--chart-5))" name="Máximo" radius={[6, 6, 0, 0]} />
+                  <Line type="monotone" dataKey="avg_price" stroke="hsl(var(--chart-3))" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -599,28 +608,30 @@ export default function Dashboard() {
               <CardDescription>Comparación de precios entre fabricantes</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={analytics.chart_data?.prices_by_brand || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
                     dataKey="brand" 
                     angle={-45} 
                     textAnchor="end" 
                     height={100} 
-                    className="text-xs"
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => formatPrice(value)}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
+                      backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="avg_price" name="Precio Promedio" radius={[8, 8, 0, 0]}>
+                  <Bar dataKey="avg_price" name="Precio Promedio" radius={[6, 6, 0, 0]}>
                     {(analytics.chart_data?.prices_by_brand || []).map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -639,28 +650,30 @@ export default function Dashboard() {
               <CardDescription>Cambios entre periodos de scraping</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={380}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.chart_data?.brand_variations || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
                     dataKey="brand" 
                     angle={-45} 
                     textAnchor="end" 
                     height={100} 
-                    className="text-xs"
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis tickFormatter={(value) => `${value}%`} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
+                      backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="variation_percent" fill="hsl(var(--chart-6))" name="Variación %" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="variation_percent" fill="hsl(var(--chart-6))" name="Variación %" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -685,29 +698,31 @@ export default function Dashboard() {
               <CardDescription>Detección de cambios intermensual de precios</CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={380}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.chart_data?.monthly_volatility?.most_volatile || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                   <XAxis 
                     dataKey="name" 
                     angle={-45} 
                     textAnchor="end" 
                     height={120} 
-                    className="text-xs"
+                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     interval={0}
                     stroke="hsl(var(--muted-foreground))"
                   />
-                  <YAxis tickFormatter={(value) => `${value}%`} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                   <Tooltip 
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
-                      backgroundColor: 'hsl(var(--popover))',
+                      backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="avg_monthly_variation" fill="hsl(var(--chart-7))" name="Volatilidad %" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="avg_monthly_variation" fill="hsl(var(--chart-7))" name="Volatilidad %" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
