@@ -34,6 +34,8 @@ export default function Compare() {
   const [comparisonFilter, setComparisonFilter] = useState({
     category: '',
     brand: '',
+    model: '',
+    submodel: '',
     maxPrice: '',
     ctx_precio: ''
   })
@@ -70,16 +72,32 @@ export default function Compare() {
     }
   })
 
-  // Get brands and categories for filters
+  // Get brands, categories, models and submodels for filters
   const brands = [...new Set(products?.map(p => p.brand))].filter(Boolean)
   const categories = [...new Set(products?.map(p => p.category))].filter(Boolean)
+  
+  const models = [...new Set(
+    products
+      ?.filter(p => !comparisonFilter.brand || p.brand === comparisonFilter.brand)
+      ?.filter(p => !comparisonFilter.category || p.category === comparisonFilter.category)
+      ?.map(p => p.model)
+  )].filter(Boolean)
+  
+  const submodels = [...new Set(
+    products
+      ?.filter(p => !comparisonFilter.brand || p.brand === comparisonFilter.brand)
+      ?.filter(p => !comparisonFilter.category || p.category === comparisonFilter.category)
+      ?.filter(p => !comparisonFilter.model || p.model === comparisonFilter.model)
+      ?.map(p => p.submodel)
+  )].filter(Boolean)
 
   // Filter products based on current filters
   const filteredProducts = products?.filter(product => {
     if (comparisonFilter.category && product.category !== comparisonFilter.category) return false
     if (comparisonFilter.brand && product.brand !== comparisonFilter.brand) return false
+    if (comparisonFilter.model && product.model !== comparisonFilter.model) return false
+    if (comparisonFilter.submodel && product.submodel !== comparisonFilter.submodel) return false
     if (comparisonFilter.maxPrice && product.latest_price > parseInt(comparisonFilter.maxPrice)) return false
-    // Note: ctx_precio filter would need to be implemented at the price_data level
     return true
   }) || []
 
@@ -191,7 +209,7 @@ export default function Compare() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <div className="grid gap-4 md:grid-cols-6 mb-6">
             <Select value={comparisonFilter.category} onValueChange={(value) => 
               setComparisonFilter(f => ({ ...f, category: value === "all" ? "" : value }))
             }>
@@ -220,6 +238,34 @@ export default function Compare() {
               </SelectContent>
             </Select>
 
+            <Select value={comparisonFilter.model} onValueChange={(value) => 
+              setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value }))
+            }>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos los modelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los modelos</SelectItem>
+                {models.map(model => (
+                  <SelectItem key={model} value={model}>{model}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={comparisonFilter.submodel} onValueChange={(value) => 
+              setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))
+            }>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos los submodelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los submodelos</SelectItem>
+                {submodels.map(submodel => (
+                  <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={comparisonFilter.maxPrice} onValueChange={(value) => 
               setComparisonFilter(f => ({ ...f, maxPrice: value === "all" ? "" : value }))
             }>
@@ -236,11 +282,21 @@ export default function Compare() {
             </Select>
 
             <Button 
-              onClick={() => setSelectedProducts([])}
+              onClick={() => {
+                setSelectedProducts([])
+                setComparisonFilter({
+                  category: '',
+                  brand: '',
+                  model: '',
+                  submodel: '',
+                  maxPrice: '',
+                  ctx_precio: ''
+                })
+              }}
               variant="outline"
               className="w-full"
             >
-              Limpiar Selección
+              Limpiar Todo
             </Button>
           </div>
 

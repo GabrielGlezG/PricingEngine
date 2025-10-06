@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
 import { useState } from "react"
-import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
-import { ModelSubmodelSelector } from "@/components/ModelSubmodelSelector"
 
 interface AnalyticsData {
   metrics: {
@@ -236,40 +234,53 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <ModelSubmodelSelector
-        selectedBrand={filters.brand}
-        selectedCategory={filters.category}
-        selectedModel={filters.model}
-        selectedSubmodel={filters.submodel}
-        onBrandChange={(brand) => setFilters(f => ({ ...f, brand }))}
-        onCategoryChange={(category) => setFilters(f => ({ ...f, category }))}
-        onModelChange={(model) => setFilters(f => ({ ...f, model }))}
-        onSubmodelChange={(submodel) => setFilters(f => ({ ...f, submodel }))}
-        onClearFilters={() => setFilters({
-          brand: '',
-          category: '',
-          model: '',
-          submodel: '',
-          date_from: '',
-          date_to: '',
-          ctx_precio: '',
-          priceRange: ''
-        })}
-      />
-
-      {/* Filtros Adicionales */}
       <Card className="border-border/50 shadow-md">
         <CardHeader className="space-y-1 pb-4">
           <CardTitle className="flex items-center gap-2 text-lg">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Filtros Adicionales
+            Filtros
           </CardTitle>
           <CardDescription>
-            Refina tu análisis con criterios específicos de precio
+            Refina tu análisis con criterios específicos
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-6">
+            <Select value={filters.brand || "all"} onValueChange={(value) => setFilters(f => ({ ...f, brand: value === "all" ? "" : value }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todas las marcas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las marcas</SelectItem>
+                {brands?.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.model || "all"} onValueChange={(value) => setFilters(f => ({ ...f, model: value === "all" ? "" : value }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todos los modelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los modelos</SelectItem>
+                {models?.map(m => (
+                  <SelectItem key={m.model} value={m.model}>{m.model}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filters.submodel || "all"} onValueChange={(value) => setFilters(f => ({ ...f, submodel: value === "all" ? "" : value }))}>
+              <SelectTrigger className="bg-card border-border">
+                <SelectValue placeholder="Todos los submodelos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los submodelos</SelectItem>
+                {submodels?.map(sub => (
+                  <SelectItem key={sub} value={sub}>{sub}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={filters.ctx_precio || "all"} onValueChange={(value) => setFilters(f => ({ ...f, ctx_precio: value === "all" ? "" : value }))}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Tipo de precio" />
@@ -428,21 +439,14 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={analytics.chart_data?.price_distribution || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ range, percent }) => `${range} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="count"
-                    >
-                      {(analytics.chart_data?.price_distribution || []).map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <BarChart data={analytics.chart_data?.price_distribution || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                    <XAxis 
+                      dataKey="range" 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
@@ -450,8 +454,11 @@ export default function Dashboard() {
                         borderRadius: '8px',
                         color: 'hsl(var(--foreground))'
                       }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                  </PieChart>
+                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[6, 6, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -631,11 +638,7 @@ export default function Dashboard() {
                     labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
-                  <Bar dataKey="avg_price" name="Precio Promedio" radius={[6, 6, 0, 0]}>
-                    {(analytics.chart_data?.prices_by_brand || []).map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
+                   <Bar dataKey="avg_price" name="Precio Promedio" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -682,13 +685,6 @@ export default function Dashboard() {
 
         {/* Tab: Tendencias */}
         <TabsContent value="tendencias" className="space-y-6">
-          <PriceEvolutionChart
-            selectedBrand={filters.brand}
-            selectedCategory={filters.category}
-            selectedModel={filters.model}
-            selectedSubmodel={filters.submodel}
-          />
-
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">

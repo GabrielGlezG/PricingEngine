@@ -1,4 +1,4 @@
-import { BarChart3, Upload, Lightbulb, Scale } from "lucide-react"
+import { BarChart3, Upload, Lightbulb, Scale, TrendingUp } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import logo from "@/assets/pricing-engine-icon.png"
@@ -26,6 +26,7 @@ export function AppSidebar() {
     { title: "Dashboard", url: "/", icon: BarChart3, requireAdmin: false },
     { title: "Cargar Datos", url: "/upload", icon: Upload, requireAdmin: true },
     { title: "Comparar", url: "/compare", icon: Scale, requireAdmin: false },
+    { title: "Evolución de Precios", url: "/price-evolution", icon: TrendingUp, requireAdmin: false },
     { title: "Insights", url: "/insights", icon: Lightbulb, requireAdmin: false },
     { title: "Admin", url: "/admin", icon: BarChart3, requireAdmin: true },
   ]
