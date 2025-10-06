@@ -36,9 +36,8 @@ export function ProtectedRoute({
     } : null
   })
 
-  // Mostrar skeleton si está cargando o si el usuario existe pero el perfil no se ha cargado aún
-  // PERO permitir /subscription sin esperar el perfil si no requiere suscripción
-  if (loading || (user && !profile && requireSubscription)) {
+  // Mostrar skeleton solo mientras se carga el estado de autenticación
+  if (loading) {
     return (
       <div className="space-y-6 p-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -65,21 +64,9 @@ export function ProtectedRoute({
     return <Navigate to="/subscription" replace />
   }
 
-  // Si no tiene perfil pero está permitido (subscription page), mostrar un mensaje de carga
+  // Si no tiene perfil pero está permitido (subscription page), permitir ver el contenido
   if (!profile && allowWithoutProfile && user) {
-    return (
-      <div className="space-y-6 p-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <div className="animate-pulse space-y-4">
-              <Skeleton className="h-8 w-48 mx-auto" />
-              <Skeleton className="h-4 w-64 mx-auto" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <>{children}</>
   }
   
   // Verificar permisos solo si tiene perfil
