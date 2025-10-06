@@ -132,7 +132,14 @@ Deno.serve(async (req) => {
     console.log('Filtered data count:', filteredData.length);
 
     // Calculate comprehensive metrics
-    const prices = filteredData.map(item => parseFloat(item.price));
+    const getPrice = (item: any) => {
+      const primary = Number((item as any).precio_num ?? (item as any).precio_lista_num);
+      if (!Number.isNaN(primary) && primary > 0) return primary;
+      const cleaned = String((item as any).price ?? '').replace(/[^0-9.-]/g, '');
+      const parsed = Number(cleaned);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
+    const prices = filteredData.map((item: any) => getPrice(item)).filter((p: number) => p > 0);
     const brands = [...new Set(filteredData.map(item => item.products?.brand))].filter(Boolean);
     const categories = [...new Set(filteredData.map(item => item.products?.category))].filter(Boolean);
     
@@ -386,7 +393,7 @@ Deno.serve(async (req) => {
       return `$${(price / 1000).toFixed(0)}k`;
     };
 
-    // Calculate dynamic price segments based on min, max, and quartiles
+    // Calculate dynamic price segments based on min, max, and quartiles (robust)
     const priceDistribution: Array<{
       range: string;
       count: number;
@@ -394,24 +401,39 @@ Deno.serve(async (req) => {
       max_value: number;
     }> = [];
     if (prices.length > 0) {
-      // Use quartiles and min/max for meaningful segments
-      const segments = [
-        { label: 'Muy Bajo', min: minPrice, max: lowerQuartile },
-        { label: 'Bajo', min: lowerQuartile, max: medianPrice },
-        { label: 'Medio', min: medianPrice, max: upperQuartile },
-        { label: 'Alto', min: upperQuartile, max: maxPrice }
-      ];
+      // Ensure ordered unique boundaries
+      const bounds = [minPrice, lowerQuartile, medianPrice, upperQuartile, maxPrice]
+        .map(n => Math.max(0, Number(n)))
+        .sort((a, b) => a - b);
 
-      segments.forEach(segment => {
-        const count = prices.filter(p => p >= segment.min && p < segment.max).length;
-        // For the last segment, include the max value
-        const adjustedCount = segment.max === maxPrice 
-          ? prices.filter(p => p >= segment.min && p <= segment.max).length 
-          : count;
-        
+      // If quartiles collapse (all equal), fall back to 4 equal-width bins
+      const unique = [...new Set(bounds)];
+      let segments: Array<{ label: string; min: number; max: number }>;
+
+      if (unique.length < 5 || bounds[0] === bounds[4]) {
+        const minB = Math.min(...prices);
+        const maxB = Math.max(...prices);
+        const step = (maxB - minB) / 4 || 1;
+        segments = [
+          { label: 'Muy Bajo', min: minB, max: minB + step },
+          { label: 'Bajo', min: minB + step, max: minB + step * 2 },
+          { label: 'Medio', min: minB + step * 2, max: minB + step * 3 },
+          { label: 'Alto', min: minB + step * 3, max: maxB },
+        ];
+      } else {
+        segments = [
+          { label: 'Muy Bajo', min: bounds[0], max: bounds[1] },
+          { label: 'Bajo', min: bounds[1], max: bounds[2] },
+          { label: 'Medio', min: bounds[2], max: bounds[3] },
+          { label: 'Alto', min: bounds[3], max: bounds[4] },
+        ];
+      }
+
+      segments.forEach((segment, idx) => {
+        const count = prices.filter(p => p >= segment.min && (idx === segments.length - 1 ? p <= segment.max : p < segment.max)).length;
         priceDistribution.push({
           range: `${segment.label} (${formatPriceForRange(segment.min)}-${formatPriceForRange(segment.max)})`,
-          count: adjustedCount,
+          count,
           min_value: segment.min,
           max_value: segment.max
         });
