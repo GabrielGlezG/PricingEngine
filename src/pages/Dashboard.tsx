@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
-import { useState, useMemo } from "react"
+import { useState } from "react"
 
 
 interface AnalyticsData {
@@ -96,50 +96,20 @@ export default function Dashboard() {
   })
 
 const { data: analytics, isLoading, refetch, isRefetching, error: queryError } = useQuery({
-    queryKey: ['analytics-v2', filters, refreshTick],
+    queryKey: ['analytics', filters, refreshTick],
     queryFn: async () => {
-      console.log('Fetching analytics with filters:', filters)
       const params = new URLSearchParams()
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
       })
 
-      // Try v2 first, fallback to v1 if it fails
-      const tryInvoke = async (fnName: string) => {
-        return await supabase.functions.invoke(fnName, {
-          body: { params: params.toString() }
-        })
-      }
-
-      let data: any = null
-      let error: any = null
-      try {
-        const resV2 = await tryInvoke('get-analytics-v2')
-        data = resV2.data
-        error = resV2.error
-        console.log('Analytics v2 response:', { data, error })
-      } catch (e) {
-        console.warn('get-analytics-v2 failed, will try fallback:', e)
-      }
-
-      if (!data) {
-        try {
-          const resV1 = await tryInvoke('get-analytics')
-          data = resV1.data
-          error = resV1.error
-          console.log('Analytics v1 fallback response:', { data, error })
-        } catch (e) {
-          console.error('Fallback get-analytics failed:', e)
-        }
-      }
+      const { data, error } = await supabase.functions.invoke('get-analytics', {
+        body: { params: params.toString() }
+      })
 
       if (error) {
         console.error('Edge function error:', error)
-      }
-
-      if (!data) {
-        console.warn('No data returned from any edge function')
-        return null
+        throw error
       }
 
       return data as AnalyticsData
@@ -343,47 +313,9 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
         </div>
       </div>
     )
-  if (!analytics) {
-    if (localAnalytics?.chart_data?.price_distribution) {
-      return (
-        <div className="space-y-6">
-          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                Distribución por Rango de Precio
-              </CardTitle>
-              <CardDescription>Modelos en cada segmento de mercado</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={localAnalytics.chart_data.price_distribution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
-                  <XAxis 
-                    dataKey="range" 
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                    stroke="hsl(var(--muted-foreground))"
-                  />
-                  <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-      )
-    }
+  }
 
+  if (!analytics) {
     return (
       <div className="space-y-6">
         <Card>
@@ -615,7 +547,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={(localAnalytics?.chart_data?.price_distribution ?? analytics?.chart_data?.price_distribution ?? [])}>
+                  <BarChart data={analytics.chart_data?.price_distribution || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis 
                       dataKey="range" 
@@ -903,5 +835,4 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
       </Tabs>
     </div>
   )
-}
 }
