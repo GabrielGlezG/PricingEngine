@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Settings, LogOut, Crown, CreditCard } from 'lucide-react'
 import { Badge } from './custom/Badge'
+import { SidebarTrigger } from './ui/sidebar'
 import logo from '@/assets/pricing-engine-logo.png'
 
 export function TopBar() {
@@ -44,6 +45,7 @@ export function TopBar() {
   return (
     <div className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
       <div className="flex items-center gap-3">
+        <SidebarTrigger />
         <img src={logo} alt="PricingEngine" className="h-10 w-10 object-contain" />
         <h1 className="text-xl font-bold text-foreground">PricingEngine</h1>
       </div>
