@@ -129,6 +129,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
   // Debug: log price distribution and timestamp when analytics change
   if (analytics) {
     console.log('Analytics generated_at:', analytics.generated_at)
+    console.log('Applied filters (server):', analytics.applied_filters)
     console.log('Price distribution (server):', analytics.chart_data?.price_distribution)
   }
   if (priceDistributionLocal) {
