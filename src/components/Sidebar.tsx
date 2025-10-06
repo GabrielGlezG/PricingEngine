@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { BarChart3, Upload, Lightbulb, Scale, TrendingUp, Users, Menu, X } from 'lucide-react'
+import { BarChart3, Upload, Lightbulb, Scale, TrendingUp, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import logo from '@/assets/pricing-engine-logo.png'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -22,26 +21,18 @@ export function Sidebar() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className={`${isCollapsed ? 'w-20' : 'w-64'} h-full bg-card border-r border-border flex flex-col transition-all duration-300`}>
-      <div className="p-4 flex items-center justify-between border-b border-border">
-        {!isCollapsed && (
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="PricingEngine" className="h-10 w-10 object-contain" />
-            <span className="font-bold text-lg text-foreground">PricingEngine</span>
-          </div>
-        )}
-        {isCollapsed && (
-          <img src={logo} alt="PricingEngine" className="h-10 w-10 object-contain mx-auto" />
-        )}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
-        >
-          {isCollapsed ? <Menu className="h-5 w-5 text-foreground" /> : <X className="h-5 w-5 text-foreground" />}
-        </button>
-      </div>
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} h-full bg-card border-r border-border flex flex-col transition-all duration-300 relative`}>
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-6 z-10 h-6 w-6 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110"
+        aria-label={isCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+      >
+        {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </button>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <div className="h-16 border-b border-border" />
+
+      <nav className="flex-1 p-4 space-y-2 mt-2">
         {filteredItems.map((item) => (
           <NavLink
             key={item.url}
