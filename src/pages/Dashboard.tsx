@@ -117,7 +117,9 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
     retry: (failureCount, error) => {
       console.error('Analytics query error:', error)
       return failureCount < 2
-    }
+    },
+    staleTime: 0, // Force refetch to get updated dynamic price ranges
+    refetchOnMount: true,
   })
 
   // Log query errors

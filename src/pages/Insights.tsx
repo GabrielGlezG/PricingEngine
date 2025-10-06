@@ -33,7 +33,9 @@ export default function Insights() {
       const { data, error } = await supabase.functions.invoke('get-analytics')
       if (error) throw error
       return data
-    }
+    },
+    staleTime: 0, // Force refetch to get updated dynamic price ranges
+    refetchOnMount: true,
   })
 
   // Fetch recent price trends
