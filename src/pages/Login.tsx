@@ -135,8 +135,8 @@ export default function Login() {
           <div className="flex items-center justify-center mb-6">
             <img src={logo} alt="PricingEngine" className="h-32 w-auto object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
-          <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p>
+          {/* <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
+          <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p> */}
         </div>
 
         <Card>
