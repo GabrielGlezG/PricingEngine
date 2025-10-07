@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
-  const { user, signIn, signUp, makeFirstAdmin } = useAuth()
+  const { user, profile, signIn, signUp, makeFirstAdmin } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
   
@@ -40,6 +40,11 @@ export default function Login() {
     if (justRegistered) {
       return <Navigate to="/subscription" replace />
     }
+    // Si no tiene perfil, redirigir a subscription
+    if (!profile) {
+      return <Navigate to="/subscription" replace />
+    }
+    // Si tiene perfil, ir a dashboard
     const from = location.state?.from?.pathname || '/dashboard'
     return <Navigate to={from} replace />
   }
