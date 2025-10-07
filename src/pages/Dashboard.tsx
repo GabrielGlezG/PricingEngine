@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarIcon, DollarSign, Package, TrendingUp, BarChart3, RefreshCw, Target, Award, AlertTriangle, Building2, Activity, TrendingDown, X } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter, Legend, ZAxis, ComposedChart } from 'recharts'
 import { useState } from "react"
 import { usePriceDistribution } from "@/hooks/usePriceDistribution"
 
@@ -428,21 +428,14 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
               </CardHeader>
               <CardContent className="pt-2">
                 <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={priceDistributionLocal || analytics.chart_data?.price_distribution || []}
-                      dataKey="count"
-                      nameKey="range"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ range, count }) => `${range}: ${count}`}
-                      labelLine={false}
-                    >
-                      {(priceDistributionLocal || analytics.chart_data?.price_distribution || []).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <BarChart data={priceDistributionLocal || analytics.chart_data?.price_distribution || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                    <XAxis 
+                      dataKey="range" 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      stroke="hsl(var(--muted-foreground))"
+                    />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
@@ -453,7 +446,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                       labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
-                  </PieChart>
+                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Cantidad" radius={[6, 6, 0, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -479,6 +473,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     name="Modelo"
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
+                    label={{ value: 'Modelos', position: 'insideBottom', offset: -10, fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <YAxis 
                     type="number"
@@ -487,7 +482,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
-                    label={{ value: 'Precio Promedio (MXN)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Precio Promedio', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <ZAxis 
                     type="number" 
@@ -520,8 +515,9 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                       return null
                     }}
                   />
+                  <Legend />
                   <Scatter 
-                    name="Modelo Principal" 
+                    name="Modelos" 
                     data={(analytics.chart_data?.models_by_principal || [])
                       .map((item, index) => ({ ...item, index: index + 1 }))
                     }
