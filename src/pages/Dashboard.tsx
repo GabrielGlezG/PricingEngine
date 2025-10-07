@@ -427,7 +427,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                 <CardDescription>Modelos en cada segmento de mercado</CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
                     <Pie
                       data={priceDistributionLocal || analytics.chart_data?.price_distribution || []}
@@ -436,7 +436,14 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
-                      label={({ range, count }) => `${range}: ${count}`}
+                      label={(entry) => {
+                        const data = priceDistributionLocal || analytics.chart_data?.price_distribution || []
+                        const total = data.reduce((sum, item) => sum + item.count, 0)
+                        const percentage = ((entry.count / total) * 100).toFixed(1)
+                        // Extract only the price range from the range string
+                        const priceRange = entry.range.split(':')[0].trim()
+                        return `${priceRange}\n${entry.count} (${percentage}%)`
+                      }}
                       labelLine={false}
                     >
                       {(priceDistributionLocal || analytics.chart_data?.price_distribution || []).map((entry, index) => (
@@ -487,7 +494,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     stroke="hsl(var(--muted-foreground))"
-                    label={{ value: 'Precio Promedio (MXN)', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
                   />
                   <ZAxis 
                     type="number" 

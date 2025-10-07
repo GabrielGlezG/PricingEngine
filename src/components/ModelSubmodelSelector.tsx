@@ -164,13 +164,16 @@ export function ModelSubmodelSelector({
         </div>
 
         <div className={`grid gap-4 ${hideCategory ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
-          <Select value={selectedBrand || "all"} onValueChange={(value) => onBrandChange(value === "all" ? "" : value)}>
+          <Select value={selectedBrand || "all"} onValueChange={(value) => {
+            onBrandChange(value === "all" ? "" : value)
+            setSearchQuery("")
+          }}>
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todas las marcas" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las marcas</SelectItem>
-              {filteredBrands.map(brand => (
+              {(searchQuery ? filteredBrands : brands || []).map(brand => (
                 <SelectItem key={brand} value={brand}>{brand}</SelectItem>
               ))}
               {searchQuery && filteredBrands.length === 0 && (
@@ -195,13 +198,16 @@ export function ModelSubmodelSelector({
             </Select>
           )}
 
-          <Select value={selectedModel || "all"} onValueChange={(value) => onModelChange(value === "all" ? "" : value)}>
+          <Select value={selectedModel || "all"} onValueChange={(value) => {
+            onModelChange(value === "all" ? "" : value)
+            setSearchQuery("")
+          }}>
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todos los modelos" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los modelos</SelectItem>
-              {filteredModels.map(model => (
+              {(searchQuery ? filteredModels : models || []).map(model => (
                 <SelectItem key={model} value={model}>{model}</SelectItem>
               ))}
               {searchQuery && filteredModels.length === 0 && (
@@ -212,13 +218,16 @@ export function ModelSubmodelSelector({
             </SelectContent>
           </Select>
 
-          <Select value={selectedSubmodel || "all"} onValueChange={(value) => onSubmodelChange(value === "all" ? "" : value)}>
+          <Select value={selectedSubmodel || "all"} onValueChange={(value) => {
+            onSubmodelChange(value === "all" ? "" : value)
+            setSearchQuery("")
+          }}>
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todos los submodelos" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los submodelos</SelectItem>
-              {filteredSubmodels.map(submodel => (
+              {(searchQuery ? filteredSubmodels : submodels || []).map(submodel => (
                 <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
               ))}
               {searchQuery && filteredSubmodels.length === 0 && (

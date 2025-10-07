@@ -228,13 +228,16 @@ export default function Compare() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-4 mb-6">
-            <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))}>
+            <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => {
+              setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))
+              setSearchQuery("")
+            }}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todas las marcas" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
-                {filteredBrands.map(brand => (
+                {(searchQuery ? filteredBrands : brands).map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
                 {searchQuery && filteredBrands.length === 0 && (
@@ -245,13 +248,16 @@ export default function Compare() {
               </SelectContent>
             </Select>
 
-            <Select value={comparisonFilter.model || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value, submodel: "" }))}>
+            <Select value={comparisonFilter.model || "all"} onValueChange={(value) => {
+              setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value, submodel: "" }))
+              setSearchQuery("")
+            }}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los modelos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los modelos</SelectItem>
-                {filteredModels.map(model => (
+                {(searchQuery ? filteredModels : models).map(model => (
                   <SelectItem key={model} value={model}>{model}</SelectItem>
                 ))}
                 {searchQuery && filteredModels.length === 0 && (
@@ -262,13 +268,16 @@ export default function Compare() {
               </SelectContent>
             </Select>
 
-            <Select value={comparisonFilter.submodel || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))}>
+            <Select value={comparisonFilter.submodel || "all"} onValueChange={(value) => {
+              setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))
+              setSearchQuery("")
+            }}>
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los submodelos" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los submodelos</SelectItem>
-                {filteredSubmodels.map(submodel => (
+                {(searchQuery ? filteredSubmodels : submodels).map(submodel => (
                   <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
                 ))}
                 {searchQuery && filteredSubmodels.length === 0 && (
