@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+# ModelPulse - Análisis de Precios Automotrices 🚗
 
-## Project info
+## Descripción
+PricingEngine es una plataforma web moderna diseñada para el análisis avanzado del mercado automotriz. Permite visualizar, comparar y analizar precios de vehículos de forma intuitiva y profesional.
 
-**URL**: https://lovable.dev/projects/c6a0ee72-ef4d-4b6b-8fb9-105dd4ae5522
+## 🚀 Características Principales
 
-## How can I edit this code?
+### Dashboard Interactivo
+- Visualización de métricas clave
+- Gráficos dinámicos de tendencias
+- Análisis por marca y segmento
+- Comparativas de precios en tiempo real
 
-There are several ways of editing your application.
+### Sistema de Usuarios
+- Registro y autenticación segura
+- Perfiles personalizados
+- Guardado de búsquedas favoritas
+- Historial de análisis
 
-**Use Lovable**
+### Herramientas de Análisis
+- Comparador de hasta 4 vehículos
+- Filtros avanzados de búsqueda
+- Exportación de reportes
+- Notificaciones de cambios de precio
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c6a0ee72-ef4d-4b6b-8fb9-105dd4ae5522) and start prompting.
+## 🛠️ Tecnologías
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: 
+  - React 18
+  - TypeScript
+  - Vite (para desarrollo rápido)
+  - Tailwind CSS (estilos)
+  - shadcn/ui (componentes)
 
-**Use your preferred IDE**
+## 📋 Requisitos Previos
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v16 o superior)
+- npm o yarn
+- Git
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🔧 Instalación
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. **Clonar el repositorio**
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd model-pulse
 ```
 
-**Edit a file directly in GitHub**
+2. **Instalar dependencias**
+```bash
+npm install
+# o
+yarn install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. **Iniciar el servidor de desarrollo**
+```bash
+npm run dev
+# o
+yarn dev
+```
 
-**Use GitHub Codespaces**
+4. **Abrir en el navegador**
+- Navegar a `http://localhost:5173`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 👥 Guía de Usuario
 
-## What technologies are used for this project?
+### Para Iniciar
+1. Crear una cuenta nueva
+2. Verificar email
+3. Completar perfil
+4. Explorar el dashboard
 
-This project is built with:
+### Funciones Principales
+- **Dashboard**: Vista general del mercado
+- **Buscador**: Encontrar vehículos específicos
+- **Comparador**: Análisis lado a lado
+- **Reportes**: Generar informes personalizados
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🔍 Ejemplos de Uso
 
-## How can I deploy this project?
+### Búsqueda de Vehículos
+1. Ir a la sección "Buscador"
+2. Aplicar filtros (marca, modelo, año)
+3. Ordenar resultados
+4. Guardar búsqueda (opcional)
 
-Simply open [Lovable](https://lovable.dev/projects/c6a0ee72-ef4d-4b6b-8fb9-105dd4ae5522) and click on Share -> Publish.
+### Comparación de Modelos
+1. Seleccionar vehículos
+2. Clic en "Comparar"
+3. Analizar diferencias
+4. Exportar resultados
 
-## Can I connect a custom domain to my Lovable project?
+## 📱 Responsive Design
+- Diseño adaptable a todos los dispositivos
+- Experiencia optimizada en móviles
+- Interfaz intuitiva en tablets
 
-Yes, you can!
+## 🆘 Soporte
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Contacto
+- Email: gonzalezgutierrez.gab@gmail.com
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Reportar Problemas
+- Usar la sección de Issues
+- Incluir capturas de pantalla
+- Detallar los pasos para reproducir el error
+
+## 🔄 Actualizaciones
+
+- Actualizaciones automáticas
+- Notificaciones de nuevas funciones
+- Changelog público
+
+## 📜 Licencia
+Todos los derechos reservados © 2025 PricingEngine
+
+---
+
+Para más información, consulte nuestra [documentación completa](docs/index.md) o contacte a nuestro equipo de soporte.
