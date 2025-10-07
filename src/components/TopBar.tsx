@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { User, Settings, LogOut, Crown, CreditCard } from 'lucide-react'
 import { Badge } from './custom/Badge'
+import { CurrencySelector } from './CurrencySelector'
 
 export function TopBar() {
   const { user, profile, signOut, isAdmin, hasActiveSubscription } = useAuth()
@@ -44,7 +45,8 @@ export function TopBar() {
   const displayEmail = profile?.email || user.email || ''
 
   return (
-    <div className="h-16 bg-card border-b border-border flex items-center justify-end px-6">
+    <div className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
+      <CurrencySelector />
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}

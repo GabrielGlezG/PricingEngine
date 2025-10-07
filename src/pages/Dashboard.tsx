@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useAuth } from "@/contexts/AuthContext"
+import { useCurrency } from "@/contexts/CurrencyContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -74,6 +75,7 @@ const COLORS = [
 ]
 
 export default function Dashboard() {
+  const { formatPrice } = useCurrency()
   const [filters, setFilters] = useState({
     brand: '',
     model: '',
@@ -229,15 +231,6 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
         </Card>
       </div>
     )
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
   }
 
   return (

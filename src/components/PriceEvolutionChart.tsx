@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { useCurrency } from "@/contexts/CurrencyContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ export function PriceEvolutionChart({
   selectedModel, 
   selectedSubmodel 
 }: PriceEvolutionProps) {
+  const { formatPrice } = useCurrency()
   const [timeRange, setTimeRange] = useState('6months')
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('week')
 
@@ -177,15 +179,6 @@ export function PriceEvolutionChart({
       default:
         return dateKey
     }
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
   }
 
   const getLineColor = (index: number) => {

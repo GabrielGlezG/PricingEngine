@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { useCurrency } from "@/contexts/CurrencyContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,7 @@ interface Insight {
 }
 
 export default function Insights() {
+  const { formatPrice } = useCurrency()
   const { data: insights, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['insights'],
     queryFn: async () => {
@@ -114,15 +116,6 @@ export default function Insights() {
       default:
         return <Badge variant="outline">Sin Prioridad</Badge>
     }
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
   }
 
   const renderInsightData = (insight: Insight) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
+import { useCurrency } from "@/contexts/CurrencyContext"
 import { Card } from "@/components/custom/Card"
 import { Badge } from "@/components/custom/Badge"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ interface ComparisonData {
 }
 
 export default function Compare() {
+  const { formatPrice } = useCurrency()
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [comparisonFilter, setComparisonFilter] = useState({
@@ -162,15 +164,6 @@ export default function Compare() {
   }
 
   const comparisonData = getComparisonData(selectedProducts)
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
 
 
   const addProduct = (productId: string) => {
