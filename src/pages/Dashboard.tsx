@@ -395,7 +395,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                       stroke="hsl(var(--muted-foreground))"
                     />
                     <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
+                    <Tooltip
+                      cursor={false} 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
@@ -558,7 +559,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
+                    <Tooltip
+                      cursor={false} 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
@@ -589,7 +591,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
                     <XAxis type="number" tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis dataKey="name" type="category" width={150} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
+                    <Tooltip
+                      cursor={false} 
                       formatter={(value: number) => formatPrice(value)}
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--card))',
@@ -636,7 +639,7 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                   <Bar dataKey="min_price" fill="hsl(var(--chart-6))" name="Mínimo" radius={[6, 6, 0, 0]} />
                   <Bar dataKey="avg_price" fill="hsl(var(--primary))" name="Promedio" radius={[6, 6, 0, 0]} />
                   <Bar dataKey="max_price" fill="hsl(var(--chart-5))" name="Máximo" radius={[6, 6, 0, 0]} />
-                  <Line type="monotone" dataKey="avg_price" stroke="hsl(var(--chart-3))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_price" name="avg_precio" stroke="hsl(var(--chart-3))" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
             </CardContent>
@@ -666,7 +669,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     stroke="hsl(var(--muted-foreground))"
                   />
                   <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
+                  <Tooltip
+                    cursor={false} 
                     formatter={(value: number) => formatPrice(value)}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))',
@@ -704,7 +708,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     stroke="hsl(var(--muted-foreground))"
                   />
                   <YAxis tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
+                  <Tooltip
+                    cursor={false}  
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))',
@@ -743,7 +748,8 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                     stroke="hsl(var(--muted-foreground))"
                   />
                   <YAxis tickFormatter={(value) => `${value}%`} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
+                  <Tooltip
+                    cursor={false} 
                     formatter={(value: number) => `${value.toFixed(2)}%`}
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))',

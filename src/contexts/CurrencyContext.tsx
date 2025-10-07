@@ -1,33 +1,24 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Currency = 'CLP' | 'USD' | 'GBP' | 'JPY' | 'CNY'
+export type Currency = 'CLP' | 'USD' | 'GBP' | 'JPY' | 'CNY';
 
 interface ExchangeRates {
-  CLP: number
-  USD: number
-  GBP: number
-  JPY: number
-  CNY: number
+  CLP: number;
+  USD: number;
+  GBP: number;
+  JPY: number;
+  CNY: number;
 }
 
 interface CurrencyContextType {
-  currency: Currency
-  setCurrency: (currency: Currency) => void
-  convertPrice: (priceInCLP: number) => number
-  formatPrice: (price: number, includeCurrency?: boolean) => string
+  currency: Currency;
+  setCurrency: (currency: Currency) => void;
+  convertPrice: (priceInCLP: number) => number;
+  formatPrice: (price: number, includeCurrency?: boolean) => string;
+  loadingRates: boolean;
 }
 
-const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined)
-
-// Exchange rates from CLP (Chilean Peso) to other currencies
-// These are approximate rates and should be updated periodically
-const EXCHANGE_RATES: ExchangeRates = {
-  CLP: 1,
-  USD: 0.0011,     // 1 CLP ≈ 0.0011 USD
-  GBP: 0.00085,    // 1 CLP ≈ 0.00085 GBP
-  JPY: 0.16,       // 1 CLP ≈ 0.16 JPY
-  CNY: 0.0078,     // 1 CLP ≈ 0.0078 CNY
-}
+const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 const CURRENCY_SYMBOLS: Record<Currency, string> = {
   CLP: '$',
@@ -35,7 +26,7 @@ const CURRENCY_SYMBOLS: Record<Currency, string> = {
   GBP: '£',
   JPY: '¥',
   CNY: '¥',
-}
+};
 
 const CURRENCY_NAMES: Record<Currency, string> = {
   CLP: 'Peso Chileno',
@@ -43,70 +34,85 @@ const CURRENCY_NAMES: Record<Currency, string> = {
   GBP: 'Libra',
   JPY: 'Yen',
   CNY: 'Yuan',
-}
+};
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
-  const [currency, setCurrency] = useState<Currency>('CLP')
+  const [currency, setCurrency] = useState<Currency>('CLP');
+  const [exchangeRates, setExchangeRates] = useState<ExchangeRates>({
+    CLP: 1,
+    USD: 0,
+    GBP: 0,
+    JPY: 0,
+    CNY: 0,
+  });
+  const [loadingRates, setLoadingRates] = useState(true);
+
+  const fetchExchangeRates = async () => {
+    try {
+      setLoadingRates(true);
+      const res = await fetch('https://open.er-api.com/v6/latest/CLP');
+      const data = await res.json();
+      setExchangeRates({
+        CLP: 1,
+        USD: data.rates.USD,
+        GBP: data.rates.GBP,
+        JPY: data.rates.JPY,
+        CNY: data.rates.CNY,
+      });
+    } catch (error) {
+      console.error('Error al obtener tasas de cambio:', error);
+    } finally {
+      setLoadingRates(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExchangeRates();
+  }, []);
 
   const convertPrice = (priceInCLP: number): number => {
-    return priceInCLP * EXCHANGE_RATES[currency]
-  }
+    return priceInCLP * exchangeRates[currency];
+  };
 
   const formatPrice = (priceInCLP: number, includeCurrency: boolean = true): string => {
-    const convertedPrice = convertPrice(priceInCLP)
-    const symbol = CURRENCY_SYMBOLS[currency]
-    
-    // Format based on currency
-    let formattedNumber: string
-    
+    if (loadingRates) return '...';
+    const convertedPrice = convertPrice(priceInCLP);
+    const symbol = CURRENCY_SYMBOLS[currency];
+
+    let formattedNumber: string;
     switch (currency) {
       case 'JPY':
-        // JPY doesn't use decimals
-        formattedNumber = Math.round(convertedPrice).toLocaleString('ja-JP')
-        break
+        formattedNumber = Math.round(convertedPrice).toLocaleString('ja-JP');
+        break;
       case 'CNY':
-        formattedNumber = convertedPrice.toLocaleString('zh-CN', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })
-        break
+        formattedNumber = convertedPrice.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        break;
       case 'GBP':
-        formattedNumber = convertedPrice.toLocaleString('en-GB', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })
-        break
+        formattedNumber = convertedPrice.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        break;
       case 'USD':
-        formattedNumber = convertedPrice.toLocaleString('en-US', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })
-        break
+        formattedNumber = convertedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        break;
       case 'CLP':
       default:
-        formattedNumber = convertedPrice.toLocaleString('es-CL', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })
-        break
+        formattedNumber = convertedPrice.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        break;
     }
 
-    return includeCurrency ? `${symbol}${formattedNumber}` : formattedNumber
-  }
+    return includeCurrency ? `${symbol}${formattedNumber}` : formattedNumber;
+  };
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, convertPrice, formatPrice }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, convertPrice, formatPrice, loadingRates }}>
       {children}
     </CurrencyContext.Provider>
-  )
+  );
 }
 
 export function useCurrency() {
-  const context = useContext(CurrencyContext)
-  if (!context) {
-    throw new Error('useCurrency must be used within a CurrencyProvider')
-  }
-  return context
+  const context = useContext(CurrencyContext);
+  if (!context) throw new Error('useCurrency debe ser usado dentro de CurrencyProvider');
+  return context;
 }
 
-export { CURRENCY_SYMBOLS, CURRENCY_NAMES }
+export { CURRENCY_SYMBOLS, CURRENCY_NAMES };
