@@ -81,6 +81,14 @@ export default function Login() {
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente."
       })
+
+      // Asegurar creación de perfil del usuario
+      try {
+        const { supabase } = await import('@/integrations/supabase/client')
+        await supabase.functions.invoke('ensure-user-profile', { body: {} })
+      } catch (err) {
+        console.warn('No se pudo asegurar el perfil del usuario (login):', err)
+      }
       
       // Verificar si necesita configurar el primer admin
       setTimeout(() => {
@@ -88,9 +96,6 @@ export default function Login() {
       }, 2000)
     }
     
-    setIsLoading(false)
-  }
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -119,6 +124,15 @@ export default function Login() {
       })
     } else {
       setJustRegistered(true)
+
+      // Intentar crear el perfil del usuario también al registrarse
+      try {
+        const { supabase } = await import('@/integrations/supabase/client')
+        await supabase.functions.invoke('ensure-user-profile', { body: { name: signupForm.name } })
+      } catch (err) {
+        console.warn('No se pudo asegurar el perfil del usuario (signup):', err)
+      }
+
       toast({
         title: "¡Registro exitoso!",
         description: "Serás redirigido a la página de suscripción."
