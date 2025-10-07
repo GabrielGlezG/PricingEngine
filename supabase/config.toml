@@ -1,13 +1,1 @@
 project_id = "beybdwxmocwaeuizghnf"
-
-[functions.upload-json]
-verify_jwt = false
-
-[functions.get-insights]
-verify_jwt = false
-
-[functions.get-analytics]
-verify_jwt = false
-
-[functions.get-analytics-v2]
-verify_jwt = false
