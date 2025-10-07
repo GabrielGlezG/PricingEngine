@@ -117,17 +117,17 @@ export function ModelSubmodelSelector({
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
   // Filter options based on search query
-  const filteredBrands = brands?.filter(brand => 
+  const filteredBrands = (brands || []).filter(brand => 
     brand.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  )
 
-  const filteredModels = models?.filter(model => 
+  const filteredModels = (models || []).filter(model => 
     model.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  )
 
-  const filteredSubmodels = submodels?.filter(submodel => 
+  const filteredSubmodels = (submodels || []).filter(submodel => 
     submodel.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  )
 
   return (
     <Card className="border-border/50 shadow-md">
