@@ -234,7 +234,7 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todas las marcas" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent key={`brands-${searchQuery}`}>
                 <SelectItem value="all">Todas las marcas</SelectItem>
                 {filteredBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
@@ -253,7 +253,7 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los modelos" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent key={`models-${searchQuery}`}>
                 <SelectItem value="all">Todos los modelos</SelectItem>
                 {filteredModels.map(model => (
                   <SelectItem key={model} value={model}>{model}</SelectItem>
@@ -272,7 +272,7 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los submodelos" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent key={`submodels-${searchQuery}`}>
                 <SelectItem value="all">Todos los submodelos</SelectItem>
                 {filteredSubmodels.map(submodel => (
                   <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
