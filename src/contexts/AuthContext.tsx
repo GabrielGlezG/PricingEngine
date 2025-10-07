@@ -60,7 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               user_id: user.id,
               email: user.email || '',
               name: user.user_metadata?.name || user.email || '',
-              role: 'user'
+              role: 'user',
+              subscription_status: 'cancelled',
+              subscription_plan: null,
+              subscription_expires_at: null
             })
             .select()
             .single()

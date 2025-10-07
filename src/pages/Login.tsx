@@ -34,20 +34,22 @@ export default function Login() {
     name: ''
   })
 
-  // Redirect if already logged in
-  if (user) {
-    // Si acaba de registrarse, redirigir a subscription
-    if (justRegistered) {
-      return <Navigate to="/subscription" replace />
-    }
-    // Si no tiene perfil, redirigir a subscription
-    if (!profile) {
-      return <Navigate to="/subscription" replace />
-    }
-    // Si tiene perfil, ir a dashboard
+  if (user && profile) {
+  // Si acaba de registrarse, ir a subscription
+  if (justRegistered) {
+    return <Navigate to="/subscription" replace />
+  }
+
+  // Si es admin o tiene suscripción activa → ir al dashboard
+  if (profile.role === 'admin' || profile.subscription_status === 'active') {
     const from = location.state?.from?.pathname || '/dashboard'
     return <Navigate to={from} replace />
   }
+
+  // Si tiene perfil pero NO tiene suscripción activa → ir a subscription
+  return <Navigate to="/subscription" replace />
+}
+
 
   const handleMakeFirstAdmin = async () => {
     if (!user?.email) return
