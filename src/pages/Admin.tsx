@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Settings, Users, CreditCard, Package, Plus, CreditCard as Edit, Trash2 } from "lucide-react"
+import { Settings, Users, CreditCard, Package, Plus, Edit, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
@@ -54,37 +54,22 @@ export default function Admin() {
     }
   ]
 
-  // Fetch user profiles using the admin function
+  // Fetch user profiles
   const { data: users } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('list_all_users')
-
-      if (error) {
-        console.error('Error fetching users:', error)
-        throw error
-      }
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (error) throw error
       return data
-    },
-    enabled: isAdmin
+    }
   })
 
-  // Fetch subscriptions from user_profiles
-  const { data: subscriptions } = useQuery({
-    queryKey: ['admin-subscriptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('list_all_users')
-
-      if (error) {
-        console.error('Error fetching subscriptions:', error)
-        throw error
-      }
-      return data?.filter((user: any) => user.subscription_status) || []
-    },
-    enabled: isAdmin
-  })
-
-  // Mock data for payments
+  // Mock data for subscriptions and payments
+  const subscriptions = []
   const payments = []
 
   const updateUserRole = useMutation({
@@ -294,24 +279,26 @@ export default function Admin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscriptions?.map((sub: any) => (
-                    <TableRow key={sub.user_id}>
+                  {subscriptions?.map((sub) => (
+                    <TableRow key={sub.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{sub.name}</p>
-                          <p className="text-sm text-muted-foreground">{sub.email}</p>
+                          <p className="font-medium">{sub.user_profiles?.name}</p>
+                          <p className="text-sm text-muted-foreground">{sub.user_profiles?.email}</p>
                         </div>
                       </TableCell>
-                      <TableCell>{sub.subscription_plan || 'N/A'}</TableCell>
-                      <TableCell>{getStatusBadge(sub.subscription_status)}</TableCell>
+                      <TableCell>{sub.subscription_plans?.name}</TableCell>
+                      <TableCell>{getStatusBadge(sub.status)}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">N/A</Badge>
+                        <Badge variant="outline">
+                          {sub.billing_cycle === 'yearly' ? 'Anual' : 'Mensual'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        {sub.created_at ? new Date(sub.created_at).toLocaleDateString('es-MX') : 'N/A'}
+                        {new Date(sub.current_period_start).toLocaleDateString('es-MX')}
                       </TableCell>
                       <TableCell>
-                        {sub.subscription_expires_at ? new Date(sub.subscription_expires_at).toLocaleDateString('es-MX') : 'N/A'}
+                        {new Date(sub.current_period_end).toLocaleDateString('es-MX')}
                       </TableCell>
                     </TableRow>
                   ))}
