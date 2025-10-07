@@ -40,10 +40,9 @@ export default function Login() {
     return <Navigate to="/subscription" replace />
   }
 
-  // Si es admin o tiene suscripción activa → ir al dashboard
+  // Si es admin o tiene suscripción activa → ir siempre al dashboard
   if (profile.role === 'admin' || profile.subscription_status === 'active') {
-    const from = location.state?.from?.pathname || '/dashboard'
-    return <Navigate to={from} replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   // Si tiene perfil pero NO tiene suscripción activa → ir a subscription
