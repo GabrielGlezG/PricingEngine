@@ -116,18 +116,10 @@ export function ModelSubmodelSelector({
 
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
-  // Filter options based on search query
-  const filteredBrands = (brands || []).filter(brand => 
-    brand.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredModels = (models || []).filter(model => 
-    model.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredSubmodels = (submodels || []).filter(submodel => 
-    submodel.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Don't filter options - search is not used for filtering dropdowns
+  const filteredBrands = brands || []
+  const filteredModels = models || []
+  const filteredSubmodels = submodels || []
 
   return (
     <Card className="border-border/50 shadow-md">
@@ -170,16 +162,11 @@ export function ModelSubmodelSelector({
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todas las marcas" />
             </SelectTrigger>
-            <SelectContent key={`brands-${searchQuery}`}>
+            <SelectContent>
               <SelectItem value="all">Todas las marcas</SelectItem>
               {filteredBrands.map(brand => (
                 <SelectItem key={brand} value={brand}>{brand}</SelectItem>
               ))}
-              {searchQuery && filteredBrands.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-2">
-                  No se encontraron marcas
-                </div>
-              )}
             </SelectContent>
           </Select>
 
@@ -203,16 +190,11 @@ export function ModelSubmodelSelector({
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todos los modelos" />
             </SelectTrigger>
-            <SelectContent key={`models-${searchQuery}`}>
+            <SelectContent>
               <SelectItem value="all">Todos los modelos</SelectItem>
               {filteredModels.map(model => (
                 <SelectItem key={model} value={model}>{model}</SelectItem>
               ))}
-              {searchQuery && filteredModels.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-2">
-                  No se encontraron modelos
-                </div>
-              )}
             </SelectContent>
           </Select>
 
@@ -222,16 +204,11 @@ export function ModelSubmodelSelector({
             <SelectTrigger className="bg-card border-border">
               <SelectValue placeholder="Todos los submodelos" />
             </SelectTrigger>
-            <SelectContent key={`submodels-${searchQuery}`}>
+            <SelectContent>
               <SelectItem value="all">Todos los submodelos</SelectItem>
               {filteredSubmodels.map(submodel => (
                 <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
               ))}
-              {searchQuery && filteredSubmodels.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-2">
-                  No se encontraron submodelos
-                </div>
-              )}
             </SelectContent>
           </Select>
 

@@ -88,18 +88,10 @@ export default function Compare() {
       ?.map(p => p.submodel)
   )].filter(Boolean).sort()
 
-  // Filter options based on search query
-  const filteredBrands = brands.filter(brand => 
-    brand.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredModels = models.filter(model => 
-    model.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredSubmodels = submodels.filter(submodel => 
-    submodel.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Don't filter dropdown options based on search
+  const filteredBrands = brands
+  const filteredModels = models
+  const filteredSubmodels = submodels
 
   // Calculate min and max prices from available products
   const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
@@ -113,13 +105,25 @@ export default function Compare() {
     }
   }, [products, minPrice, maxPrice])
 
-  // Filter products based on current filters
+  // Filter products based on current filters AND search query
   const filteredProducts = products?.filter(product => {
     if (comparisonFilter.brand && product.brand !== comparisonFilter.brand) return false
     if (comparisonFilter.model && product.model !== comparisonFilter.model) return false
     if (comparisonFilter.submodel && product.submodel !== comparisonFilter.submodel) return false
     const price = product.latest_price || 0
     if (price < comparisonFilter.priceRange[0] || price > comparisonFilter.priceRange[1]) return false
+    
+    // Apply search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const matchesBrand = product.brand.toLowerCase().includes(query)
+      const matchesModel = product.model.toLowerCase().includes(query)
+      const matchesSubmodel = product.submodel?.toLowerCase().includes(query)
+      const matchesName = product.name.toLowerCase().includes(query)
+      
+      if (!matchesBrand && !matchesModel && !matchesSubmodel && !matchesName) return false
+    }
+    
     return true
   }) || []
 
@@ -234,16 +238,11 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todas las marcas" />
               </SelectTrigger>
-              <SelectContent key={`brands-${searchQuery}`}>
+              <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
                 {filteredBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
-                {searchQuery && filteredBrands.length === 0 && (
-                  <div className="text-sm text-muted-foreground text-center py-2">
-                    No se encontraron marcas
-                  </div>
-                )}
               </SelectContent>
             </Select>
 
@@ -253,16 +252,11 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los modelos" />
               </SelectTrigger>
-              <SelectContent key={`models-${searchQuery}`}>
+              <SelectContent>
                 <SelectItem value="all">Todos los modelos</SelectItem>
                 {filteredModels.map(model => (
                   <SelectItem key={model} value={model}>{model}</SelectItem>
                 ))}
-                {searchQuery && filteredModels.length === 0 && (
-                  <div className="text-sm text-muted-foreground text-center py-2">
-                    No se encontraron modelos
-                  </div>
-                )}
               </SelectContent>
             </Select>
 
@@ -272,16 +266,11 @@ export default function Compare() {
               <SelectTrigger className="bg-card border-border">
                 <SelectValue placeholder="Todos los submodelos" />
               </SelectTrigger>
-              <SelectContent key={`submodels-${searchQuery}`}>
+              <SelectContent>
                 <SelectItem value="all">Todos los submodelos</SelectItem>
                 {filteredSubmodels.map(submodel => (
                   <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
                 ))}
-                {searchQuery && filteredSubmodels.length === 0 && (
-                  <div className="text-sm text-muted-foreground text-center py-2">
-                    No se encontraron submodelos
-                  </div>
-                )}
               </SelectContent>
             </Select>
 
