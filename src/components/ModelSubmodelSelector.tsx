@@ -1,10 +1,12 @@
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Car, Filter, X } from "lucide-react"
+import { Input } from "@/components/custom/Input"
+import { Car, Filter, X, Search } from "lucide-react"
 
 interface ModelSubmodelSelectorProps {
   selectedBrand: string
@@ -33,6 +35,7 @@ export function ModelSubmodelSelector({
   hideCategory = false,
   copperClearButton = false
 }: ModelSubmodelSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState("")
   
   const { data: brands } = useQuery({
     queryKey: ['brands-selector'],
@@ -113,6 +116,19 @@ export function ModelSubmodelSelector({
 
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
+  // Filter options based on search query
+  const filteredBrands = brands?.filter(brand => 
+    brand.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  const filteredModels = models?.filter(model => 
+    model.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  const filteredSubmodels = submodels?.filter(submodel => 
+    submodel.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
   return (
     <Card className="border-border/50 shadow-md">
       <CardHeader className="space-y-1 pb-4">
@@ -125,6 +141,28 @@ export function ModelSubmodelSelector({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar marca, modelo o submodelo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className={`grid gap-4 ${hideCategory ? 'md:grid-cols-4' : 'md:grid-cols-5'}`}>
           <Select value={selectedBrand || "all"} onValueChange={(value) => onBrandChange(value === "all" ? "" : value)}>
             <SelectTrigger className="bg-card border-border">
@@ -132,9 +170,14 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las marcas</SelectItem>
-              {brands?.map(brand => (
+              {filteredBrands.map(brand => (
                 <SelectItem key={brand} value={brand}>{brand}</SelectItem>
               ))}
+              {searchQuery && filteredBrands.length === 0 && (
+                <div className="text-sm text-muted-foreground text-center py-2">
+                  No se encontraron marcas
+                </div>
+              )}
             </SelectContent>
           </Select>
 
@@ -158,9 +201,14 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los modelos</SelectItem>
-              {models?.map(model => (
+              {filteredModels.map(model => (
                 <SelectItem key={model} value={model}>{model}</SelectItem>
               ))}
+              {searchQuery && filteredModels.length === 0 && (
+                <div className="text-sm text-muted-foreground text-center py-2">
+                  No se encontraron modelos
+                </div>
+              )}
             </SelectContent>
           </Select>
 
@@ -170,9 +218,14 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los submodelos</SelectItem>
-              {submodels?.map(submodel => (
+              {filteredSubmodels.map(submodel => (
                 <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
               ))}
+              {searchQuery && filteredSubmodels.length === 0 && (
+                <div className="text-sm text-muted-foreground text-center py-2">
+                  No se encontraron submodelos
+                </div>
+              )}
             </SelectContent>
           </Select>
 

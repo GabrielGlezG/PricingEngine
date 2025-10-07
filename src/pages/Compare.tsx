@@ -5,6 +5,8 @@ import { Card } from "@/components/custom/Card"
 import { Badge } from "@/components/custom/Badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/custom/Input"
+import { Search } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { X, Plus, Scale } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
@@ -30,6 +32,7 @@ interface ComparisonData {
 
 export default function Compare() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
   const [comparisonFilter, setComparisonFilter] = useState({
     brand: '',
     model: '',
@@ -84,6 +87,19 @@ export default function Compare() {
       ?.filter(p => !comparisonFilter.model || p.model === comparisonFilter.model)
       ?.map(p => p.submodel)
   )].filter(Boolean).sort()
+
+  // Filter options based on search query
+  const filteredBrands = brands.filter(brand => 
+    brand.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredModels = models.filter(model => 
+    model.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredSubmodels = submodels.filter(submodel => 
+    submodel.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   // Calculate min and max prices from available products
   const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
@@ -188,6 +204,29 @@ export default function Compare() {
           <p className="text-sm text-muted-foreground mb-6">
             Usa los filtros para encontrar los modelos que te interesan
           </p>
+
+          {/* Search Input */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar marca, modelo o submodelo..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-4 mb-6">
             <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))}>
               <SelectTrigger className="bg-card border-border">
@@ -195,9 +234,14 @@ export default function Compare() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
-                {brands.map(brand => (
+                {filteredBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
+                {searchQuery && filteredBrands.length === 0 && (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    No se encontraron marcas
+                  </div>
+                )}
               </SelectContent>
             </Select>
 
@@ -207,9 +251,14 @@ export default function Compare() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los modelos</SelectItem>
-                {models.map(model => (
+                {filteredModels.map(model => (
                   <SelectItem key={model} value={model}>{model}</SelectItem>
                 ))}
+                {searchQuery && filteredModels.length === 0 && (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    No se encontraron modelos
+                  </div>
+                )}
               </SelectContent>
             </Select>
 
@@ -219,9 +268,14 @@ export default function Compare() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los submodelos</SelectItem>
-                {submodels.map(submodel => (
+                {filteredSubmodels.map(submodel => (
                   <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
                 ))}
+                {searchQuery && filteredSubmodels.length === 0 && (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    No se encontraron submodelos
+                  </div>
+                )}
               </SelectContent>
             </Select>
 
