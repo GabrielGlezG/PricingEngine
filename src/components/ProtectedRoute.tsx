@@ -21,22 +21,7 @@ export function ProtectedRoute({
   const { user, loading, isAdmin, hasActiveSubscription, profile } = useAuth()
   const location = useLocation()
 
-  // Debug logging para identificar problemas
-  console.log('ProtectedRoute Debug:', {
-    user: !!user,
-    profile: !!profile,
-    isAdmin,
-    hasActiveSubscription,
-    requireAdmin,
-    requireSubscription,
-    profileData: profile ? {
-      role: profile.role,
-      subscription_status: profile.subscription_status,
-      subscription_expires_at: profile.subscription_expires_at
-    } : null
-  })
-
-  // Mostrar skeleton solo mientras se carga el estado de autenticación
+  // Mostrar skeleton mientras se carga
   if (loading) {
     return (
       <div className="space-y-6 p-6">

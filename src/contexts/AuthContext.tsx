@@ -35,11 +35,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
   const { toast } = useToast()
 
   // Fetch user profile
-  const { data: profile, refetch: refetchProfile } = useQuery({
+  const { data: profile, refetch: refetchProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
       if (!user) return null
@@ -79,7 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return data as UserProfile
     },
     enabled: !!user,
-    retry: 1
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   })
 
   const isAdmin = Boolean(profile?.role === 'admin')
@@ -100,32 +101,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refetchProfile()
   }
 
+  // Loading combinado: esperamos tanto auth como profile
+  const loading = authLoading || (!!user && profileLoading)
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      setLoading(false)
+      setAuthLoading(false)
     })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
-        setLoading(false)
-        
-        if (session?.user) {
-          // Pequeño delay para asegurar que el trigger de creación de perfil se ejecute
-          setTimeout(() => {
-            refetchProfile()
-          }, 500)
-        }
+        setAuthLoading(false)
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [refetchProfile])
+  }, [])
 
   // Función para hacer bootstrap del primer admin
   const makeFirstAdmin = async (email: string) => {
@@ -143,10 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "El usuario ha sido convertido en administrador."
       })
       
-      // Refrescar el perfil después de un pequeño delay
-      setTimeout(() => {
-        refetchProfile()
-      }, 1000)
+      // Refrescar el perfil inmediatamente
+      refetchProfile()
     } catch (error: any) {
       console.error('Error making first admin:', error)
       toast({
