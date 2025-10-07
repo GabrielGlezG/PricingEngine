@@ -11,6 +11,3 @@ verify_jwt = false
 
 [functions.get-analytics-v2]
 verify_jwt = false
-
-[functions.ensure-user-profile]
-verify_jwt = true
