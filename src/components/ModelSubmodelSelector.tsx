@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -116,10 +116,45 @@ export function ModelSubmodelSelector({
 
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
-  // Don't filter options - search is not used for filtering dropdowns
-  const filteredBrands = brands || []
-  const filteredModels = models || []
-  const filteredSubmodels = submodels || []
+  // Filter options based on search query
+  const filteredBrands = (brands || []).filter(brand => 
+    brand.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredModels = (models || []).filter(model => 
+    model.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const filteredSubmodels = (submodels || []).filter(submodel => 
+    submodel.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Auto-apply first result when searching
+  useEffect(() => {
+    if (searchQuery && searchQuery.length > 0) {
+      // Priority: brand -> model -> submodel
+      if (filteredBrands.length === 1 && !selectedBrand) {
+        onBrandChange(filteredBrands[0])
+      } else if (filteredBrands.length > 1 && filteredBrands[0] !== selectedBrand) {
+        // Apply first brand match if different
+        onBrandChange(filteredBrands[0])
+      }
+      
+      if (selectedBrand && filteredModels.length === 1 && !selectedModel) {
+        onModelChange(filteredModels[0])
+      } else if (selectedBrand && filteredModels.length > 1 && filteredModels[0] !== selectedModel) {
+        // Apply first model match if different
+        onModelChange(filteredModels[0])
+      }
+      
+      if (selectedModel && filteredSubmodels.length === 1 && !selectedSubmodel) {
+        onSubmodelChange(filteredSubmodels[0])
+      } else if (selectedModel && filteredSubmodels.length > 1 && filteredSubmodels[0] !== selectedSubmodel) {
+        // Apply first submodel match if different
+        onSubmodelChange(filteredSubmodels[0])
+      }
+    }
+  }, [searchQuery, filteredBrands, filteredModels, filteredSubmodels, selectedBrand, selectedModel, selectedSubmodel])
 
   return (
     <Card className="border-border/50 shadow-md">
@@ -164,7 +199,7 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las marcas</SelectItem>
-              {filteredBrands.map(brand => (
+              {(searchQuery ? filteredBrands : brands || []).map(brand => (
                 <SelectItem key={brand} value={brand}>{brand}</SelectItem>
               ))}
             </SelectContent>
@@ -192,7 +227,7 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los modelos</SelectItem>
-              {filteredModels.map(model => (
+              {(searchQuery ? filteredModels : models || []).map(model => (
                 <SelectItem key={model} value={model}>{model}</SelectItem>
               ))}
             </SelectContent>
@@ -206,7 +241,7 @@ export function ModelSubmodelSelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los submodelos</SelectItem>
-              {filteredSubmodels.map(submodel => (
+              {(searchQuery ? filteredSubmodels : submodels || []).map(submodel => (
                 <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
               ))}
             </SelectContent>
