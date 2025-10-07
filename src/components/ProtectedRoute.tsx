@@ -59,6 +59,11 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  // Si está en /subscription pero ya tiene perfil, redirigir a /dashboard
+  if (allowWithoutProfile && profile && location.pathname === '/subscription') {
+    return <Navigate to="/dashboard" replace />
+  }
+
   // Si el usuario está autenticado pero no tiene perfil y no está en /subscription, redirigir
   if (user && !profile && !loading && !allowWithoutProfile) {
     return <Navigate to="/subscription" replace />
