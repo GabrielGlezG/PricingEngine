@@ -440,11 +440,9 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                         const data = priceDistributionLocal || analytics.chart_data?.price_distribution || []
                         const total = data.reduce((sum, item) => sum + item.count, 0)
                         const percentage = ((entry.count / total) * 100).toFixed(1)
-                        // Extract only the price range from the range string
-                        const priceRange = entry.range.split(':')[0].trim()
-                        return `${priceRange}\n${entry.count} (${percentage}%)`
+                        return `${percentage}%`
                       }}
-                      labelLine={false}
+                      labelLine={true}
                     >
                       {(priceDistributionLocal || analytics.chart_data?.price_distribution || []).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -459,6 +457,16 @@ const { data: analytics, isLoading, refetch, isRefetching, error: queryError } =
                       }}
                       labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(value: number, name: string, props: any) => {
+                        const priceRange = props.payload.range.split(':')[0].trim()
+                        return [`${value} modelos`, priceRange]
+                      }}
+                    />
+                    <Legend 
+                      formatter={(value, entry: any) => {
+                        const priceRange = entry.payload.range.split(':')[0].trim()
+                        return `${priceRange}: ${entry.payload.count} modelos`
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
