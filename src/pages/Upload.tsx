@@ -214,22 +214,22 @@ export default function UploadComponent() {
   const totalCount = jobsData?.totalCount || 0;
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-            <Upload className="h-4 md:h-5 w-4 md:w-5" />
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
             Cargar Datos de Productos
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm">
+          <CardDescription>
             Sube archivos JSON/CSV/Excel con datos de precios de productos
             automotrices para su análisis
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 md:space-y-6">
+        <CardContent className="space-y-6">
           {/* Área de drag & drop */}
           <div
-            className={`border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-muted-foreground/50"
@@ -239,14 +239,14 @@ export default function UploadComponent() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <FileJson className="h-10 md:h-12 w-10 md:w-12 mx-auto mb-3 md:mb-4 text-muted-foreground" />
+            <FileJson className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <div className="space-y-2">
-              <p className="text-base md:text-lg font-medium">
+              <p className="text-lg font-medium">
                 {selectedFile
                   ? selectedFile.name
                   : "Arrastra tu archivo JSON/CSV/Excel aquí"}
               </p>
-              <p className="text-xs md:text-sm text-muted-foreground">o</p>
+              <p className="text-sm text-muted-foreground">o</p>
               <Label htmlFor="file-upload">
                 <Button variant="outline" asChild>
                   <span>Seleccionar archivo</span>

@@ -336,16 +336,16 @@ export default function Dashboard() {
       {/* Filtros */}
       <Card className="border-border/50 shadow-md">
         <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <BarChart3 className="h-4 md:h-5 w-4 md:w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="h-5 w-5 text-primary" />
             Filtros
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm">
+          <CardDescription>
             Refina tu análisis con criterios específicos
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-5">
             <Select
               value={filters.brand || "all"}
               onValueChange={(value) =>

@@ -433,13 +433,13 @@ export default function Insights() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             Insights Automáticos
           </h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+          <p className="text-muted-foreground">
             Análisis inteligente basado en datos históricos del mercado
           </p>
         </div>
