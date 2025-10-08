@@ -45,9 +45,11 @@ export function TopBar() {
   const displayEmail = profile?.email || user.email || ''
 
   return (
-    <div className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
-      <CurrencySelector />
-      <div className="relative" ref={dropdownRef}>
+    <div className="h-14 md:h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6">
+      <div className="flex-1 min-w-0">
+        <CurrencySelector />
+      </div>
+      <div className="relative flex-shrink-0 ml-2" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}
           className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted transition-colors"

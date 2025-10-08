@@ -183,10 +183,10 @@ export default function Compare() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Comparador de Vehículos</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Comparador de Vehículos</h1>
+        <p className="text-sm md:text-base text-muted-foreground">
           Compara hasta 4 modelos para encontrar la mejor opción para ti
         </p>
       </div>
@@ -224,7 +224,7 @@ export default function Compare() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-4 md:mb-6">
             <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => {
               setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))
             }}>
@@ -308,7 +308,7 @@ export default function Compare() {
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.slice(0, 12).map(product => (
               <div 
                 key={product.id} 
@@ -358,11 +358,11 @@ export default function Compare() {
         <>
           {/* Tabla de Comparación */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-card-foreground mb-2">Comparación Detallada</h2>
-              <p className="text-sm text-muted-foreground mb-6">Análisis lado a lado de los modelos seleccionados</p>
+            <div className="p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-semibold text-card-foreground mb-2">Comparación Detallada</h2>
+              <p className="text-xs md:text-sm text-muted-foreground mb-4 md:mb-6">Análisis lado a lado de los modelos seleccionados</p>
               
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 md:mx-0">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b border-border">
@@ -422,9 +422,9 @@ export default function Compare() {
 
           {/* Gráfico de Evolución de Precios */}
           <Card>
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-card-foreground mb-2">Evolución de Precios</h2>
-              <p className="text-sm text-muted-foreground mb-6">Comparación de precios históricos</p>
+            <div className="p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-semibold text-card-foreground mb-2">Evolución de Precios</h2>
+              <p className="text-xs md:text-sm text-muted-foreground mb-4 md:mb-6">Comparación de precios históricos</p>
               
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={comparisonData[0]?.priceData || []}>
