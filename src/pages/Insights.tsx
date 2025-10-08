@@ -539,6 +539,7 @@ export default function Insights() {
               Cantidad de modelos en cada rango de precio del mercado
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart
@@ -548,7 +549,34 @@ export default function Insights() {
                 }
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="range" />
+                <XAxis
+                  dataKey="range"
+                  tickFormatter={(range: string) => {
+                    const priceMatch = range.match(/\$[\d,.]+[MK]?/gi);
+                    if (priceMatch && priceMatch.length >= 2) {
+                      const parsePrice = (priceStr: string): number => {
+                        const cleanStr = priceStr
+                          .replace("$", "")
+                          .replace(/,/g, "");
+                        if (cleanStr.toUpperCase().includes("M"))
+                          return (
+                            parseFloat(cleanStr.replace(/M/gi, "")) * 1_000_000
+                          );
+                        if (cleanStr.toUpperCase().includes("K"))
+                          return (
+                            parseFloat(cleanStr.replace(/K/gi, "")) * 1_000
+                          );
+                        return parseFloat(cleanStr);
+                      };
+                      const minPrice = parsePrice(priceMatch[0]);
+                      const maxPrice = parsePrice(priceMatch[1]);
+                      return `${formatPrice(minPrice)} - ${formatPrice(
+                        maxPrice
+                      )}`;
+                    }
+                    return range.split(":")[0].trim();
+                  }}
+                />
                 <YAxis />
                 <Tooltip
                   cursor={false}
@@ -559,12 +587,38 @@ export default function Insights() {
                     color: "hsl(var(--foreground))",
                   }}
                   labelStyle={{
-                    color: "hsl(var(--foreground))",
-                    fontWeight: 600,
+                    display: "none", // ❌ Oculta la etiqueta de rango
                   }}
                   itemStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number) => [`${value}`, "Cantidad"]} // 👈 Agrega esta línea
-                  labelFormatter={(label) => `Rango: ${label}`} // 👈 Cambié "Período" por "Rango"
+                  formatter={(value: number, name: string, props: any) => {
+                    const range = props.payload.range;
+                    const priceMatch = range.match(/\$[\d,.]+[MK]?/gi);
+
+                    if (priceMatch && priceMatch.length >= 2) {
+                      const parsePrice = (priceStr: string): number => {
+                        const cleanStr = priceStr
+                          .replace("$", "")
+                          .replace(/,/g, "");
+                        if (cleanStr.toUpperCase().includes("M"))
+                          return (
+                            parseFloat(cleanStr.replace(/M/gi, "")) * 1_000_000
+                          );
+                        if (cleanStr.toUpperCase().includes("K"))
+                          return (
+                            parseFloat(cleanStr.replace(/K/gi, "")) * 1_000
+                          );
+                        return parseFloat(cleanStr);
+                      };
+                      const minPrice = parsePrice(priceMatch[0]);
+                      const maxPrice = parsePrice(priceMatch[1]);
+                      return [
+                        `${value} modelos`,
+                        `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`,
+                      ];
+                    }
+
+                    return [`${value} modelos`, range.split(":")[0].trim()];
+                  }}
                 />
                 <Area
                   type="monotone"
