@@ -1,4 +1,4 @@
-# ModelPulse - Análisis de Precios Automotrices 🚗
+# Pricing Engine - Análisis de Precios Automotrices 🚗
 
 ## Descripción
 PricingEngine es una plataforma web moderna diseñada para el análisis avanzado del mercado automotriz. Permite visualizar, comparar y analizar precios de vehículos de forma intuitiva y profesional.
