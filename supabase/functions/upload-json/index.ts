@@ -61,31 +61,50 @@ Deno.serve(async (req) => {
 
     for (const item of jsonData as JsonData[]) {
       try {
-        // Create or get product
-        console.log('Processing item:', JSON.stringify(item, null, 2));
+        // Validate required fields first
+        const categoria = item["Categoría"] || item.Categoría;
+        const modeloPrincipal = item["Modelo Principal"];
+        const modelo = item.Modelo;
+        const precioTexto = item.Precio_Texto;
+
+        if (!categoria || categoria.trim() === '') {
+          console.error('Missing or empty Categoría field');
+          results.push({ item, error: 'Campo obligatorio faltante: Categoría' });
+          continue;
+        }
+        if (!modeloPrincipal || modeloPrincipal.trim() === '') {
+          console.error('Missing or empty Modelo Principal field');
+          results.push({ item, error: 'Campo obligatorio faltante: Modelo Principal' });
+          continue;
+        }
+        if (!modelo || modelo.trim() === '') {
+          console.error('Missing or empty Modelo field');
+          results.push({ item, error: 'Campo obligatorio faltante: Modelo' });
+          continue;
+        }
+        if (!precioTexto || precioTexto.trim() === '') {
+          console.error('Missing or empty Precio_Texto field');
+          results.push({ item, error: 'Campo obligatorio faltante: Precio_Texto' });
+          continue;
+        }
+
+        // Generate missing fields
+        const uid = item.UID || crypto.randomUUID().replace(/-/g, '').substring(0, 12);
+        const fecha = item.Fecha || new Date().toISOString().split('T')[0];
+        const timestamp = item.Timestamp || new Date().toISOString();
+
+        console.log('Processing item with UID:', uid);
         
         const productData = {
-          brand: item["Categoría"] || item.Categoría,
-          category: item["Categoría"] || item.Categoría,
-          model: item["Modelo Principal"],
-          name: item.Modelo,
+          brand: categoria,
+          category: categoria,
+          model: modeloPrincipal,
+          name: modelo,
           id_base: item.ID_Base,
-          submodel: item.Modelo
+          submodel: modelo
         };
         
         console.log('Product data:', JSON.stringify(productData, null, 2));
-
-        // Validate required fields
-        if (!productData.brand) {
-          console.error('Missing brand field');
-          results.push({ item, error: 'Missing brand field' });
-          continue;
-        }
-        if (!productData.category) {
-          console.error('Missing category field');
-          results.push({ item, error: 'Missing category field' });
-          continue;
-        }
 
         let { data: product, error: productError } = await supabaseClient
           .from('products')
@@ -111,19 +130,19 @@ Deno.serve(async (req) => {
         // Insert price data
         const priceData = {
           product_id: product.id,
-          uid: item.UID,
-          store: (item["Categoría"] || item.Categoría) + ' Store',
-          price: Number(item.precio_num),
-          date: new Date(item.Fecha).toISOString(),
-          ctx_precio: item.ctx_precio,
-          precio_num: Number(item.precio_num),
+          uid: uid,
+          store: categoria + ' Store',
+          price: item.precio_num ? Number(item.precio_num) : 0,
+          date: new Date(fecha).toISOString(),
+          ctx_precio: item.ctx_precio || null,
+          precio_num: item.precio_num ? Number(item.precio_num) : 0,
           precio_lista_num: item.precio_lista_num ? Number(item.precio_lista_num) : null,
           bono_num: item.bono_num ? Number(item.bono_num) : null,
-          precio_texto: item.Precio_Texto,
-          fuente_texto_raw: item.fuente_texto_raw,
-          modelo_url: item.Modelo_URL,
-          archivo_origen: item.Archivo_Origen,
-          timestamp_data: new Date(item.Timestamp).toISOString(),
+          precio_texto: precioTexto,
+          fuente_texto_raw: item.fuente_texto_raw || null,
+          modelo_url: item.Modelo_URL || null,
+          archivo_origen: item.Archivo_Origen || null,
+          timestamp_data: new Date(timestamp).toISOString(),
         };
         
         console.log('Price data:', JSON.stringify(priceData, null, 2));
