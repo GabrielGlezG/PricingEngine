@@ -198,7 +198,8 @@ export function PriceEvolutionChart({
       sortedTimeKeys.forEach((timeKey) => {
         const timeGroup = groupedData.get(timeKey)!;
         const dataPoint: any = {
-          date_key: timeKey,
+          date: timeKey,
+          formattedDate: formatDateForDisplay(timeKey, groupBy),
         };
 
         timeGroup.forEach((prices, modelKey) => {
@@ -229,7 +230,7 @@ export function PriceEvolutionChart({
     enabled: !!(selectedBrand || selectedCategory || selectedModel),
   });
 
-  const formatDateForDisplay = (dateKey: string) => {
+  const formatDateForDisplay = (dateKey: string, groupBy: string) => {
     const date = new Date(dateKey);
     switch (groupBy) {
       case "day":
@@ -279,9 +280,6 @@ export function PriceEvolutionChart({
       </Card>
     );
   }
-
-  const chartData = evolutionData?.chartData || [];
-  const models = evolutionData?.models || [];
 
   return (
     <Card>
@@ -352,11 +350,11 @@ export function PriceEvolutionChart({
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-64 w-full" />
           </div>
-        ) : chartData.length > 0 ? (
+        ) : evolutionData && evolutionData.chartData.length > 0 ? (
           <div className="space-y-4">
             {/* Models Legend */}
             <div className="flex flex-wrap gap-2">
-              {models.map((model, index) => (
+              {evolutionData.models.map((model, index) => (
                 <Badge key={model} variant="outline" className="text-xs">
                   <div
                     className="w-2 h-2 rounded-full mr-2"
@@ -369,39 +367,51 @@ export function PriceEvolutionChart({
 
             {/* Price Evolution Chart */}
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="date_key"
-                  tickFormatter={formatDateForDisplay}
-                  stroke="hsl(var(--muted-foreground))"
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+              <LineChart data={evolutionData.chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="formattedDate"
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
                 />
-                <YAxis 
+                <YAxis
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  stroke="hsl(var(--muted-foreground))"
-                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  domain={["dataMin * 0.95", "dataMax * 1.05"]}
                 />
-                <Tooltip 
-                  formatter={(value: number) => formatPrice(value)}
+                <Tooltip
+                  cursor={false}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    color: 'hsl(var(--foreground))'
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    color: "hsl(var(--foreground))",
                   }}
+                  labelStyle={{
+                    color: "hsl(var(--foreground))",
+                    fontWeight: 600,
+                  }}
+                  itemStyle={{ color: "hsl(var(--foreground))" }}
+                  formatter={(value: number, name: string) => [
+                    formatPrice(value),
+                    name,
+                  ]}
+                  labelFormatter={(label) => `Período: ${label}`}
                 />
-                <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
-                {models.map((model, index) => (
+                <Legend />
+                {evolutionData.models.map((model, index) => (
                   <Line
                     key={model}
                     type="monotone"
                     dataKey={model}
                     stroke={getLineColor(index)}
                     strokeWidth={2}
-                    dot={{ r: 4 }}
-                    name={model}
-                    connectNulls
+                    dot={{ fill: getLineColor(index), strokeWidth: 2, r: 4 }}
+                    activeDot={{
+                      r: 6,
+                      stroke: getLineColor(index),
+                      strokeWidth: 2,
+                    }}
+                    connectNulls={false}
                   />
                 ))}
               </LineChart>
@@ -409,8 +419,8 @@ export function PriceEvolutionChart({
 
             {/* Summary Statistics */}
             <div className="grid gap-4 md:grid-cols-3">
-              {models.map((model, index) => {
-                const modelData = chartData
+              {evolutionData.models.map((model, index) => {
+                const modelData = evolutionData.chartData
                   .map((d) => d[model])
                   .filter((price) => price !== undefined && price !== null);
 
@@ -477,13 +487,13 @@ export function PriceEvolutionChart({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
+            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">
               No hay datos históricos
             </h3>
             <p className="text-muted-foreground text-center">
               No se encontraron datos de precios para los filtros y período
-              seleccionados.
+              seleccionados. Intenta ajustar los filtros o el rango de tiempo.
             </p>
           </div>
         )}
