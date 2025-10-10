@@ -10,7 +10,27 @@ import { Input } from "@/components/custom/Input"
 import { Search } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { X, Plus, Scale } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title as ChartTitle,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ChartTitle,
+  ChartTooltip,
+  ChartLegend
+);
 
 interface Product {
   id: string
@@ -426,48 +446,85 @@ export default function Compare() {
               <h2 className="text-xl font-semibold text-card-foreground mb-2">Evolución de Precios</h2>
               <p className="text-sm text-muted-foreground mb-6">Comparación de precios históricos</p>
               
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={comparisonData[0]?.priceData || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis 
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => formatPrice(value)}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  {comparisonData.map((item, index) => {
-                    const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim()
-                    return (
-                      <Line
-                        key={index}
-                        type="monotone"
-                        dataKey={label}
-                        stroke={getProductColor(index)}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        name={label}
-                        connectNulls
-                      />
-                    )
-                  })}
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="relative" style={{ height: '400px' }}>
+                <Line 
+                  data={{
+                    labels: comparisonData[0]?.priceData.map(d => d.date) || [],
+                    datasets: comparisonData.map((item, index) => {
+                      const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim()
+                      return {
+                        label: label,
+                        data: item.priceData.map(d => d[label] as number || null),
+                        borderColor: getProductColor(index),
+                        backgroundColor: getProductColor(index),
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.4,
+                        spanGaps: true
+                      }
+                    })
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                    },
+                    plugins: {
+                      legend: {
+                        display: true,
+                        position: 'bottom' as const,
+                        labels: {
+                          color: 'hsl(var(--foreground))',
+                          padding: 15,
+                          usePointStyle: true
+                        }
+                      },
+                      tooltip: {
+                        backgroundColor: 'hsl(var(--card))',
+                        titleColor: 'hsl(var(--foreground))',
+                        bodyColor: 'hsl(var(--foreground))',
+                        borderColor: 'hsl(var(--border))',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                          label: (context) => {
+                            const value = context.parsed.y;
+                            return `${context.dataset.label}: ${formatPrice(value)}`;
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      y: {
+                        ticks: {
+                          color: 'hsl(var(--muted-foreground))',
+                          callback: (value) => `$${(Number(value) / 1000).toFixed(0)}k`
+                        },
+                        grid: {
+                          color: 'hsl(var(--border))',
+                        },
+                        border: {
+                          color: 'hsl(var(--muted-foreground))'
+                        }
+                      },
+                      x: {
+                        ticks: {
+                          color: 'hsl(var(--muted-foreground))'
+                        },
+                        grid: {
+                          color: 'hsl(var(--border))',
+                        },
+                        border: {
+                          color: 'hsl(var(--muted-foreground))'
+                        }
+                      }
+                    }
+                  }}
+                />
+              </div>
             </div>
           </Card>
         </>

@@ -18,18 +18,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Line } from 'react-chartjs-2';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
   Tooltip,
-  ResponsiveContainer,
   Legend,
-} from "recharts";
+  Filler
+} from 'chart.js';
 import { TrendingUp, Calendar, RefreshCw } from "lucide-react";
 import { useState } from "react";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface PriceEvolutionProps {
   selectedBrand?: string;
@@ -198,8 +211,7 @@ export function PriceEvolutionChart({
       sortedTimeKeys.forEach((timeKey) => {
         const timeGroup = groupedData.get(timeKey)!;
         const dataPoint: any = {
-          date: timeKey,
-          formattedDate: formatDateForDisplay(timeKey, groupBy),
+          date_key: timeKey,
         };
 
         timeGroup.forEach((prices, modelKey) => {
@@ -230,7 +242,7 @@ export function PriceEvolutionChart({
     enabled: !!(selectedBrand || selectedCategory || selectedModel),
   });
 
-  const formatDateForDisplay = (dateKey: string, groupBy: string) => {
+  const formatDateForDisplay = (dateKey: string) => {
     const date = new Date(dateKey);
     switch (groupBy) {
       case "day":
@@ -280,6 +292,9 @@ export function PriceEvolutionChart({
       </Card>
     );
   }
+
+  const chartData = evolutionData?.chartData || [];
+  const models = evolutionData?.models || [];
 
   return (
     <Card>
@@ -350,11 +365,11 @@ export function PriceEvolutionChart({
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-64 w-full" />
           </div>
-        ) : evolutionData && evolutionData.chartData.length > 0 ? (
+        ) : chartData.length > 0 ? (
           <div className="space-y-4">
             {/* Models Legend */}
             <div className="flex flex-wrap gap-2">
-              {evolutionData.models.map((model, index) => (
+              {models.map((model, index) => (
                 <Badge key={model} variant="outline" className="text-xs">
                   <div
                     className="w-2 h-2 rounded-full mr-2"
@@ -366,61 +381,87 @@ export function PriceEvolutionChart({
             </div>
 
             {/* Price Evolution Chart */}
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={evolutionData.chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="formattedDate"
-                  tick={{ fontSize: 12 }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  domain={["dataMin * 0.95", "dataMax * 1.05"]}
-                />
-                <Tooltip
-                  cursor={false}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    color: "hsl(var(--foreground))",
-                  }}
-                  labelStyle={{
-                    color: "hsl(var(--foreground))",
-                    fontWeight: 600,
-                  }}
-                  itemStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number, name: string) => [
-                    formatPrice(value),
-                    name,
-                  ]}
-                  labelFormatter={(label) => `Período: ${label}`}
-                />
-                <Legend />
-                {evolutionData.models.map((model, index) => (
-                  <Line
-                    key={model}
-                    type="monotone"
-                    dataKey={model}
-                    stroke={getLineColor(index)}
-                    strokeWidth={2}
-                    dot={{ fill: getLineColor(index), strokeWidth: 2, r: 4 }}
-                    activeDot={{
-                      r: 6,
-                      stroke: getLineColor(index),
-                      strokeWidth: 2,
-                    }}
-                    connectNulls={false}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="relative" style={{ height: '400px' }}>
+              <Line 
+                data={{
+                  labels: chartData.map(d => formatDateForDisplay(d.date_key)),
+                  datasets: models.map((model, index) => ({
+                    label: model,
+                    data: chartData.map(d => d[model] as number || null),
+                    borderColor: getLineColor(index),
+                    backgroundColor: getLineColor(index),
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.4,
+                    spanGaps: true
+                  }))
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  interaction: {
+                    mode: 'index',
+                    intersect: false,
+                  },
+                  plugins: {
+                    legend: {
+                      display: true,
+                      position: 'bottom' as const,
+                      labels: {
+                        color: 'hsl(var(--foreground))',
+                        padding: 15,
+                        usePointStyle: true
+                      }
+                    },
+                    tooltip: {
+                      backgroundColor: 'hsl(var(--card))',
+                      titleColor: 'hsl(var(--foreground))',
+                      bodyColor: 'hsl(var(--foreground))',
+                      borderColor: 'hsl(var(--border))',
+                      borderWidth: 1,
+                      padding: 12,
+                      callbacks: {
+                        label: (context) => {
+                          const value = context.parsed.y;
+                          return `${context.dataset.label}: ${formatPrice(value)}`;
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    y: {
+                      ticks: {
+                        color: 'hsl(var(--muted-foreground))',
+                        callback: (value) => `$${(Number(value) / 1000).toFixed(0)}k`
+                      },
+                      grid: {
+                        color: 'hsl(var(--border))',
+                      },
+                      border: {
+                        color: 'hsl(var(--muted-foreground))'
+                      }
+                    },
+                    x: {
+                      ticks: {
+                        color: 'hsl(var(--muted-foreground))'
+                      },
+                      grid: {
+                        color: 'hsl(var(--border))',
+                      },
+                      border: {
+                        color: 'hsl(var(--muted-foreground))'
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
 
             {/* Summary Statistics */}
             <div className="grid gap-4 md:grid-cols-3">
-              {evolutionData.models.map((model, index) => {
-                const modelData = evolutionData.chartData
+              {models.map((model, index) => {
+                const modelData = chartData
                   .map((d) => d[model])
                   .filter((price) => price !== undefined && price !== null);
 
@@ -487,13 +528,13 @@ export function PriceEvolutionChart({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
-            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+            <TrendingUp className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">
               No hay datos históricos
             </h3>
             <p className="text-muted-foreground text-center">
               No se encontraron datos de precios para los filtros y período
-              seleccionados. Intenta ajustar los filtros o el rango de tiempo.
+              seleccionados.
             </p>
           </div>
         )}
