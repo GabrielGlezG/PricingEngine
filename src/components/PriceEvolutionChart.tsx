@@ -18,31 +18,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
+  ResponsiveContainer,
   Legend,
-  Filler
-} from 'chart.js';
+} from "recharts";
 import { TrendingUp, Calendar, RefreshCw } from "lucide-react";
 import { useState } from "react";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 interface PriceEvolutionProps {
   selectedBrand?: string;
@@ -381,82 +368,44 @@ export function PriceEvolutionChart({
             </div>
 
             {/* Price Evolution Chart */}
-            <div className="relative" style={{ height: '400px' }}>
-              <Line 
-                data={{
-                  labels: chartData.map(d => formatDateForDisplay(d.date_key)),
-                  datasets: models.map((model, index) => ({
-                    label: model,
-                    data: chartData.map(d => d[model] as number || null),
-                    borderColor: getLineColor(index),
-                    backgroundColor: getLineColor(index),
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    tension: 0.4,
-                    spanGaps: true
-                  }))
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  interaction: {
-                    mode: 'index',
-                    intersect: false,
-                  },
-                  plugins: {
-                    legend: {
-                      display: true,
-                      position: 'bottom' as const,
-                      labels: {
-                        color: 'hsl(var(--foreground))',
-                        padding: 15,
-                        usePointStyle: true
-                      }
-                    },
-                    tooltip: {
-                      backgroundColor: 'hsl(var(--card))',
-                      titleColor: 'hsl(var(--foreground))',
-                      bodyColor: 'hsl(var(--foreground))',
-                      borderColor: 'hsl(var(--border))',
-                      borderWidth: 1,
-                      padding: 12,
-                      callbacks: {
-                        label: (context) => {
-                          const value = context.parsed.y;
-                          return `${context.dataset.label}: ${formatPrice(value)}`;
-                        }
-                      }
-                    }
-                  },
-                  scales: {
-                    y: {
-                      ticks: {
-                        color: 'hsl(var(--muted-foreground))',
-                        callback: (value) => `$${(Number(value) / 1000).toFixed(0)}k`
-                      },
-                      grid: {
-                        color: 'hsl(var(--border))',
-                      },
-                      border: {
-                        color: 'hsl(var(--muted-foreground))'
-                      }
-                    },
-                    x: {
-                      ticks: {
-                        color: 'hsl(var(--muted-foreground))'
-                      },
-                      grid: {
-                        color: 'hsl(var(--border))',
-                      },
-                      border: {
-                        color: 'hsl(var(--muted-foreground))'
-                      }
-                    }
-                  }
-                }}
-              />
-            </div>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="date_key"
+                  tickFormatter={formatDateForDisplay}
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <Tooltip 
+                  formatter={(value: number) => formatPrice(value)}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                />
+                <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
+                {models.map((model, index) => (
+                  <Line
+                    key={model}
+                    type="monotone"
+                    dataKey={model}
+                    stroke={getLineColor(index)}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    name={model}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
 
             {/* Summary Statistics */}
             <div className="grid gap-4 md:grid-cols-3">
