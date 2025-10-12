@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useCurrency } from "@/contexts/CurrencyContext"
+import { hslVar } from "@/lib/utils"
 import { Card } from "@/components/custom/Card"
 import { Badge } from "@/components/custom/Badge"
 import { Button } from "@/components/ui/button"
@@ -10,7 +11,27 @@ import { Input } from "@/components/custom/Input"
 import { Search } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { X, Plus, Scale } from "lucide-react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  ChartTooltip,
+  ChartLegend
+)
 
 interface Product {
   id: string
@@ -176,10 +197,10 @@ export default function Compare() {
     setSelectedProducts(selectedProducts.filter(id => id !== productId))
   }
 
-  // Get colors for each product line
+  // Get colors for each product line using theme colors (resolved for Canvas)
   const getProductColor = (index: number) => {
-    const colors = ['hsl(var(--primary))', '#B17A50', 'hsl(var(--muted-foreground))', '#D0D0D0']
-    return colors[index % colors.length]
+    const idx = (index % 8) + 1
+    return hslVar(`--chart-${idx}`)
   }
 
   return (
@@ -224,7 +245,7 @@ export default function Compare() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
             <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => {
               setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))
             }}>
@@ -308,7 +329,7 @@ export default function Compare() {
             </div>
           )}
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.slice(0, 12).map(product => (
               <div 
                 key={product.id} 
@@ -426,48 +447,78 @@ export default function Compare() {
               <h2 className="text-xl font-semibold text-card-foreground mb-2">Evolución de Precios</h2>
               <p className="text-sm text-muted-foreground mb-6">Comparación de precios históricos</p>
               
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={comparisonData[0]?.priceData || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <YAxis 
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                    stroke="hsl(var(--muted-foreground))"
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <Tooltip 
-                    formatter={(value: number) => formatPrice(value)}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  {comparisonData.map((item, index) => {
-                    const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim()
-                    return (
-                      <Line
-                        key={index}
-                        type="monotone"
-                        dataKey={label}
-                        stroke={getProductColor(index)}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        name={label}
-                        connectNulls
-                      />
-                    )
-                  })}
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="h-[300px] sm:h-[400px]">
+                <Line
+                  data={{
+                    labels: comparisonData[0]?.priceData.map(d => d.date) || [],
+                    datasets: comparisonData.map((item, index) => {
+                      const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim()
+                      return {
+                        label,
+                        data: comparisonData[0]?.priceData.map(d => d[label]) || [],
+                        borderColor: getProductColor(index),
+                        backgroundColor: getProductColor(index),
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.4,
+                        spanGaps: true,
+                      }
+                    })
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: true,
+                        position: 'top' as const,
+                        labels: {
+                          color: hslVar('--foreground'),
+                          padding: 15,
+                          font: { size: 12 }
+                        }
+                      },
+                      tooltip: {
+                        backgroundColor: hslVar('--card'),
+                        borderColor: hslVar('--border'),
+                        borderWidth: 1,
+                        titleColor: hslVar('--foreground'),
+                        bodyColor: hslVar('--foreground'),
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                          label: (context) => {
+                            const value = context.parsed.y
+                            return value ? `${context.dataset.label}: ${formatPrice(value)}` : ''
+                          }
+                        }
+                      }
+                    },
+                    scales: {
+                      x: {
+                        grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                        ticks: { 
+                          color: hslVar('--foreground'),
+                          font: { size: 12 }
+                        }
+                      },
+                      y: {
+                        grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                        ticks: { 
+                          color: hslVar('--foreground'),
+                          font: { size: 12 },
+                          callback: (value) => `$${((value as number) / 1000).toFixed(0)}k`
+                        }
+                      }
+                    },
+                    interaction: {
+                      mode: 'index' as const,
+                      intersect: false,
+                    }
+                  }}
+                />
+              </div>
             </div>
           </Card>
         </>

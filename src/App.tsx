@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
+import { LastUpdateProvider } from "./contexts/LastUpdateContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { NewLayout } from "./components/NewLayout";
 import Dashboard from "./pages/Dashboard";
@@ -28,7 +29,8 @@ const App = () => (
         <Sonner />
         <AuthProvider>
           <CurrencyProvider>
-            <BrowserRouter>
+            <LastUpdateProvider>
+              <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -85,6 +87,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </LastUpdateProvider>
           </CurrencyProvider>
         </AuthProvider>
       </TooltipProvider>
