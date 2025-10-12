@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { hslVar } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -26,20 +27,25 @@ import {
   TrendingDown,
   Calendar,
 } from "lucide-react";
+import { Bar } from 'react-chartjs-2'
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  ChartTooltip,
+  ChartLegend
+)
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 
 interface Insight {
@@ -255,7 +261,7 @@ export default function Insights() {
                     </div>
                     <Badge className="bg-green-600">Oportunidad</Badge>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
                     <div className="text-center p-2 bg-background/50 rounded">
                       <p className="text-xs text-muted-foreground">Actual</p>
                       <p className="font-bold text-primary">
@@ -357,7 +363,7 @@ export default function Insights() {
       case "category_comparison":
         return (
           <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
               <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/10">
                 <h4 className="font-semibold text-destructive mb-2 flex items-center gap-2">
                   🔴 Segmento Más Caro
@@ -455,7 +461,7 @@ export default function Insights() {
 
       {/* Market Overview Cards */}
       {marketStats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -541,94 +547,79 @@ export default function Insights() {
           </CardHeader>
 
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart
-                data={
-                  priceDistributionLocal ||
-                  marketStats.chart_data.price_distribution
-                }
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="range"
-                  tickFormatter={(range: string) => {
-                    const priceMatch = range.match(/\$[\d,.]+[MK]?/gi);
+            <div className="h-[300px]">
+              <Bar
+                data={{
+                  labels: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => {
+                    const range = item.range
+                    const priceMatch = range.match(/\$[\d,.]+[MK]?/gi)
                     if (priceMatch && priceMatch.length >= 2) {
                       const parsePrice = (priceStr: string): number => {
-                        const cleanStr = priceStr
-                          .replace("$", "")
-                          .replace(/,/g, "");
+                        const cleanStr = priceStr.replace("$", "").replace(/,/g, "")
                         if (cleanStr.toUpperCase().includes("M"))
-                          return (
-                            parseFloat(cleanStr.replace(/M/gi, "")) * 1_000_000
-                          );
+                          return parseFloat(cleanStr.replace(/M/gi, "")) * 1_000_000
                         if (cleanStr.toUpperCase().includes("K"))
-                          return (
-                            parseFloat(cleanStr.replace(/K/gi, "")) * 1_000
-                          );
-                        return parseFloat(cleanStr);
-                      };
-                      const minPrice = parsePrice(priceMatch[0]);
-                      const maxPrice = parsePrice(priceMatch[1]);
-                      return `${formatPrice(minPrice)} - ${formatPrice(
-                        maxPrice
-                      )}`;
+                          return parseFloat(cleanStr.replace(/K/gi, "")) * 1_000
+                        return parseFloat(cleanStr)
+                      }
+                      const minPrice = parsePrice(priceMatch[0])
+                      const maxPrice = parsePrice(priceMatch[1])
+                      return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`
                     }
-                    return range.split(":")[0].trim();
-                  }}
-                />
-                <YAxis />
-                <Tooltip
-                  cursor={false}
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    color: "hsl(var(--foreground))",
-                  }}
-                  labelStyle={{
-                    display: "none", // ❌ Oculta la etiqueta de rango
-                  }}
-                  itemStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number, name: string, props: any) => {
-                    const range = props.payload.range;
-                    const priceMatch = range.match(/\$[\d,.]+[MK]?/gi);
-
-                    if (priceMatch && priceMatch.length >= 2) {
-                      const parsePrice = (priceStr: string): number => {
-                        const cleanStr = priceStr
-                          .replace("$", "")
-                          .replace(/,/g, "");
-                        if (cleanStr.toUpperCase().includes("M"))
-                          return (
-                            parseFloat(cleanStr.replace(/M/gi, "")) * 1_000_000
-                          );
-                        if (cleanStr.toUpperCase().includes("K"))
-                          return (
-                            parseFloat(cleanStr.replace(/K/gi, "")) * 1_000
-                          );
-                        return parseFloat(cleanStr);
-                      };
-                      const minPrice = parsePrice(priceMatch[0]);
-                      const maxPrice = parsePrice(priceMatch[1]);
-                      return [
-                        `${value} modelos`,
-                        `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`,
-                      ];
+                    return range.split(":")[0].trim()
+                  }),
+                  datasets: [
+                    {
+                      label: 'Modelos',
+                      data: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => item.count),
+                      backgroundColor: hslVar('--chart-1'),
+                      borderColor: hslVar('--chart-1'),
+                      borderWidth: 1,
                     }
-
-                    return [`${value} modelos`, range.split(":")[0].trim()];
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.6}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false
+                    },
+                    tooltip: {
+                      backgroundColor: hslVar('--card'),
+                      borderColor: hslVar('--border'),
+                      borderWidth: 1,
+                      titleColor: hslVar('--foreground'),
+                      bodyColor: hslVar('--foreground'),
+                      padding: 12,
+                      cornerRadius: 8,
+                      callbacks: {
+                        label: (context) => `${context.parsed.y} modelos`
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                      ticks: { 
+                        color: hslVar('--foreground'),
+                        font: { size: 11 },
+                        maxRotation: 45,
+                        minRotation: 45
+                      }
+                    },
+                    y: {
+                      grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                      ticks: { 
+                        color: hslVar('--foreground'),
+                        font: { size: 12 },
+                        stepSize: 1
+                      }
+                    }
+                  }
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
       )}
@@ -647,7 +638,7 @@ export default function Insights() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {marketStats.chart_data.best_value_models
                   .slice(0, 6)
                   .map((model: any, index: number) => (
