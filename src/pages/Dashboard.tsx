@@ -34,7 +34,6 @@ import {
   Activity,
   TrendingDown,
   X,
-  Download,
 } from "lucide-react";
 import {
   BarChart,
@@ -57,7 +56,6 @@ import {
 } from "recharts";
 import { useState } from "react";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
-import * as XLSX from "xlsx";
 
 interface AnalyticsData {
   metrics: {
@@ -294,153 +292,6 @@ export default function Dashboard() {
 
   // Removed local analytics fallback - now always uses dynamic backend data
 
-  const handleDownloadExcel = async () => {
-    if (!analytics) return;
-
-    // Crear un nuevo libro de Excel
-    const wb = XLSX.utils.book_new();
-
-    // Hoja 1: Métricas principales
-    const metricsData = [
-      ["Métrica", "Valor"],
-      ["Total de Modelos", analytics.metrics.total_models],
-      ["Total de Marcas", analytics.metrics.total_brands],
-      ["Total de Categorías", analytics.metrics.total_categories],
-      ["Precio Promedio", analytics.metrics.avg_price],
-      ["Precio Mediano", analytics.metrics.median_price],
-      ["Precio Mínimo", analytics.metrics.min_price],
-      ["Precio Máximo", analytics.metrics.max_price],
-      ["Desviación Estándar", analytics.metrics.price_std_dev],
-      ["Rango de Precios", analytics.metrics.price_range],
-      ["Coeficiente de Variación", analytics.metrics.variation_coefficient],
-      ["Cuartil Inferior", analytics.metrics.lower_quartile],
-      ["Cuartil Superior", analytics.metrics.upper_quartile],
-    ];
-    const wsMetrics = XLSX.utils.aoa_to_sheet(metricsData);
-    XLSX.utils.book_append_sheet(wb, wsMetrics, "Métricas");
-
-    // Hoja 2: Precios por Marca
-    if (analytics.chart_data.prices_by_brand?.length > 0) {
-      const wsBrands = XLSX.utils.json_to_sheet(
-        analytics.chart_data.prices_by_brand.map((b) => ({
-          Marca: b.brand,
-          "Precio Promedio": b.avg_price,
-          "Precio Mínimo": b.min_price,
-          "Precio Máximo": b.max_price,
-          Cantidad: b.count,
-          "Puntaje de Valor": b.value_score,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsBrands, "Precios por Marca");
-    }
-
-    // Hoja 3: Precios por Categoría
-    if (analytics.chart_data.prices_by_category?.length > 0) {
-      const wsCategories = XLSX.utils.json_to_sheet(
-        analytics.chart_data.prices_by_category.map((c) => ({
-          Categoría: c.category,
-          "Precio Promedio": c.avg_price,
-          "Precio Mínimo": c.min_price,
-          "Precio Máximo": c.max_price,
-          Cantidad: c.count,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsCategories, "Precios por Categoría");
-    }
-
-    // Hoja 4: Modelos por Categoría
-    if (analytics.chart_data.models_by_category?.length > 0) {
-      const wsModelsCategory = XLSX.utils.json_to_sheet(
-        analytics.chart_data.models_by_category.map((m) => ({
-          Categoría: m.category,
-          Cantidad: m.count,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsModelsCategory, "Modelos por Categoría");
-    }
-
-    // Hoja 5: Distribución de Precios
-    if (analytics.chart_data.price_distribution?.length > 0) {
-      const wsPriceDist = XLSX.utils.json_to_sheet(
-        analytics.chart_data.price_distribution.map((p) => ({
-          Rango: p.range,
-          Cantidad: p.count,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsPriceDist, "Distribución de Precios");
-    }
-
-    // Hoja 6: Top 5 Más Caros
-    if (analytics.chart_data.top_5_expensive?.length > 0) {
-      const wsTopExpensive = XLSX.utils.json_to_sheet(
-        analytics.chart_data.top_5_expensive.map((t) => ({
-          Nombre: t.name,
-          Marca: t.brand,
-          Precio: t.price,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsTopExpensive, "Top 5 Más Caros");
-    }
-
-    // Hoja 7: Top 5 Más Baratos
-    if (analytics.chart_data.bottom_5_cheap?.length > 0) {
-      const wsBottomCheap = XLSX.utils.json_to_sheet(
-        analytics.chart_data.bottom_5_cheap.map((b) => ({
-          Nombre: b.name,
-          Marca: b.brand,
-          Precio: b.price,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsBottomCheap, "Top 5 Más Baratos");
-    }
-
-    // Hoja 8: Variaciones por Marca
-    if (analytics.chart_data.brand_variations?.length > 0) {
-      const wsBrandVar = XLSX.utils.json_to_sheet(
-        analytics.chart_data.brand_variations.map((v) => ({
-          Marca: v.brand,
-          "Precio Promedio Inicial": v.first_avg_price,
-          "Precio Promedio Final": v.last_avg_price,
-          "Variación %": v.variation_percent,
-          "Sesiones de Scraping": v.scraping_sessions,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsBrandVar, "Variaciones por Marca");
-    }
-
-    // Hoja 9: Modelos Más Volátiles
-    if (analytics.chart_data.monthly_volatility?.most_volatile?.length > 0) {
-      const wsVolatile = XLSX.utils.json_to_sheet(
-        analytics.chart_data.monthly_volatility.most_volatile.map((v) => ({
-          Marca: v.brand,
-          Modelo: v.model,
-          Nombre: v.name,
-          "Variación Mensual Promedio": v.avg_monthly_variation,
-          "Puntos de Datos": v.data_points,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsVolatile, "Modelos Volátiles");
-    }
-
-    // Hoja 10: Mejores Oportunidades
-    if (analytics.chart_data.best_value_models?.length > 0) {
-      const wsBestValue = XLSX.utils.json_to_sheet(
-        analytics.chart_data.best_value_models.map((b) => ({
-          Marca: b.brand,
-          Nombre: b.name,
-          Categoría: b.category,
-          Precio: b.price,
-          "Calificación de Valor": b.value_rating,
-        }))
-      );
-      XLSX.utils.book_append_sheet(wb, wsBestValue, "Mejores Oportunidades");
-    }
-
-    // Generar archivo y descargarlo
-    const fileName = `dashboard-analytics-${new Date().toISOString().split("T")[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-  };
-
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -584,17 +435,6 @@ export default function Dashboard() {
                 <RefreshCw className="h-4 w-4 mr-2" />
               )}
               Actualizar Datos
-            </Button>
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button
-              onClick={handleDownloadExcel}
-              variant="default"
-              className="w-full md:w-auto"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Descargar Datos en Excel
             </Button>
           </div>
         </CardContent>
