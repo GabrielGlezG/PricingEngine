@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "next-themes";
 import { hslVar } from "@/lib/utils";
 import {
   Card,
@@ -37,6 +38,7 @@ import {
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
 } from 'chart.js'
+import { useEffect, useState } from "react";
 
 ChartJS.register(
   CategoryScale,
@@ -46,6 +48,10 @@ ChartJS.register(
   ChartTooltip,
   ChartLegend
 )
+
+// Set default chart colors - will be updated dynamically
+ChartJS.defaults.color = "hsl(var(--foreground))";
+
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 
 interface Insight {
@@ -58,6 +64,21 @@ interface Insight {
 
 export default function Insights() {
   const { formatPrice } = useCurrency();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Update ChartJS defaults and force remount when theme changes
+  useEffect(() => {
+    ChartJS.defaults.color = hslVar('--foreground');
+    setMounted(false);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, [theme]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const {
     data: insights,
     isLoading,
@@ -548,7 +569,7 @@ export default function Insights() {
 
           <CardContent>
             <div className="h-[300px]">
-              <Bar
+              {mounted && <Bar
                 data={{
                   labels: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => {
                     const range = item.range
@@ -618,7 +639,7 @@ export default function Insights() {
                     }
                   }
                 }}
-              />
+              />}
             </div>
           </CardContent>
         </Card>
