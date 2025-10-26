@@ -146,8 +146,12 @@ export default function Compare() {
     }
   }, [products, minPrice, maxPrice])
 
+  // Check if any filter is active
+  const hasActiveFilters = comparisonFilter.brand || comparisonFilter.model || comparisonFilter.submodel || searchQuery
+
   // Filter products based on current filters AND search query
-  const filteredProducts = products?.filter(product => {
+  // Only filter if there are active filters or search query
+  const filteredProducts = hasActiveFilters ? (products?.filter(product => {
     if (comparisonFilter.brand && product.brand !== comparisonFilter.brand) return false
     if (comparisonFilter.model && product.model !== comparisonFilter.model) return false
     if (comparisonFilter.submodel && product.submodel !== comparisonFilter.submodel) return false
@@ -166,7 +170,7 @@ export default function Compare() {
     }
     
     return true
-  }) || []
+  }) || []) : []
 
   // Get comparison data for selected products
   const getComparisonData = (productIds: string[]): ComparisonData[] => {
@@ -347,8 +351,19 @@ export default function Compare() {
             </div>
           )}
 
-          <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProducts.slice(0, 12).map(product => (
+          {!hasActiveFilters ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Scale className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                Selecciona filtros para ver vehículos
+              </h3>
+              <p className="text-muted-foreground">
+                Aplica filtros de marca, modelo o submodelo, o utiliza el buscador para encontrar vehículos y compararlos.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProducts.slice(0, 12).map(product => (
               <div 
                 key={product.id} 
                 className={`p-3 border rounded-lg cursor-pointer transition-all ${
@@ -379,7 +394,8 @@ export default function Compare() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {selectedProducts.length > 0 && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
