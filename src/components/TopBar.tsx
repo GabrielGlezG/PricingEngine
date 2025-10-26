@@ -1,7 +1,8 @@
-import { Menu, LogOut, Crown, CreditCard, CalendarClock } from 'lucide-react'
+import { Menu, LogOut, Crown, CreditCard, CalendarClock, Sun, Moon } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLastUpdate } from '@/contexts/LastUpdateContext'
 import { useNavigate } from 'react-router-dom'
+import { useTheme } from 'next-themes'
 import { Badge } from './custom/Badge'
 import {
   DropdownMenu,
@@ -18,6 +19,7 @@ interface TopBarProps {
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { user, profile, signOut, isAdmin, hasActiveSubscription } = useAuth()
   const { lastUpdate } = useLastUpdate()
+  const { theme, setTheme } = useTheme()
   const navigate = useNavigate()
 
   const getInitials = (name: string) => {
@@ -62,6 +64,14 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           </span>
         </div>
       )}
+
+      <button
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        className="h-10 w-10 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center transition-colors flex-shrink-0 mr-2"
+        aria-label="Cambiar tema"
+      >
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </button>
 
       {user && (
         <DropdownMenu>

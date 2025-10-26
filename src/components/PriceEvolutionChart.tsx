@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTheme } from "next-themes";
 import { hslVar } from "@/lib/utils";
 import {
   Card,
@@ -32,7 +33,7 @@ import {
   Filler,
 } from "chart.js";
 import { TrendingUp, Calendar, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 // Register ChartJS components
 ChartJS.register(
@@ -46,6 +47,9 @@ ChartJS.register(
   Filler
 );
 
+// Set default chart colors - will be updated dynamically
+ChartJS.defaults.color = "hsl(var(--foreground))";
+
 interface PriceEvolutionProps {
   selectedBrand?: string;
   selectedCategory?: string;
@@ -53,13 +57,7 @@ interface PriceEvolutionProps {
   selectedSubmodel?: string;
 }
 
-const CHART_COLORS = [
-  hslVar('--chart-1'),
-  hslVar('--chart-2'),
-  hslVar('--chart-3'),
-  hslVar('--chart-4'),
-  hslVar('--chart-5'),
-];
+/* Colors are now computed via useMemo inside component for theme reactivity */
 
 export function PriceEvolutionChart({
   selectedBrand,
@@ -68,8 +66,29 @@ export function PriceEvolutionChart({
   selectedSubmodel,
 }: PriceEvolutionProps) {
   const { formatPrice } = useCurrency();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const chartColors = useMemo(() => [
+    hslVar('--chart-1'),
+    hslVar('--chart-2'),
+    hslVar('--chart-3'),
+    hslVar('--chart-4'),
+    hslVar('--chart-5'),
+  ], [theme]);
   const [timeRange, setTimeRange] = useState("6months");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
+
+  // Update ChartJS defaults and force remount when theme changes
+  useEffect(() => {
+    ChartJS.defaults.color = hslVar('--foreground');
+    setMounted(false);
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, [theme]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const {
     data: evolutionData,
@@ -226,15 +245,15 @@ export function PriceEvolutionChart({
       const datasets: any[] = models.map((model, index) => ({
         label: model,
         data: [],
-        borderColor: CHART_COLORS[index % CHART_COLORS.length],
-        backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+        borderColor: chartColors[index % chartColors.length],
+        backgroundColor: chartColors[index % chartColors.length],
         borderWidth: 2,
         pointRadius: 4,
         pointHoverRadius: 6,
-        pointBackgroundColor: CHART_COLORS[index % CHART_COLORS.length],
-        pointBorderColor: CHART_COLORS[index % CHART_COLORS.length],
-        pointHoverBackgroundColor: CHART_COLORS[index % CHART_COLORS.length],
-        pointHoverBorderColor: CHART_COLORS[index % CHART_COLORS.length],
+        pointBackgroundColor: chartColors[index % chartColors.length],
+        pointBorderColor: chartColors[index % chartColors.length],
+        pointHoverBackgroundColor: chartColors[index % chartColors.length],
+        pointHoverBorderColor: chartColors[index % chartColors.length],
         tension: 0.4,
       }));
 
@@ -309,7 +328,7 @@ export function PriceEvolutionChart({
   };
 
   const getLineColor = (index: number) => {
-    return CHART_COLORS[index % CHART_COLORS.length];
+    return chartColors[index % chartColors.length];
   };
 
   if (!selectedBrand && !selectedCategory && !selectedModel) {
@@ -414,7 +433,7 @@ export function PriceEvolutionChart({
             </div>
 
             <div className="h-[400px]">
-              <Line
+              {mounted && <Line
                 data={{
                   labels: evolutionData.labels,
                   datasets: evolutionData.datasets,
@@ -466,7 +485,7 @@ export function PriceEvolutionChart({
                     intersect: false,
                   }
                 }}
-              />
+              />}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
