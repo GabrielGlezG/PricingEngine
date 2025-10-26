@@ -1,8 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 // @ts-ignore - Papa parse types
 import Papa from "papaparse";
 import { supabase } from "@/integrations/supabase/client";
+import { useLastUpdate } from "@/contexts/LastUpdateContext";
+
 import {
   Card,
   CardContent,
@@ -45,6 +47,8 @@ export default function UploadComponent() {
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { setLastUpdate } = useLastUpdate();
+
 
   const { data: jobsData, refetch: refetchJobs } = useQuery({
     queryKey: ["scraping-jobs", currentPage],
@@ -73,6 +77,13 @@ export default function UploadComponent() {
     },
     refetchInterval: 5000,
   });
+
+  useEffect(() => {
+  if (jobsData?.jobs?.length) {
+    const lastDate = jobsData.jobs[0].created_at;
+    setLastUpdate(lastDate);
+  }
+}, [jobsData, setLastUpdate]);
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -329,7 +340,8 @@ export default function UploadComponent() {
   "Modelo_URL": "https://www.automotrizcarmona.cl/project/a1-sportback/",
   "Archivo_Origen": "audi_a1-sportback.xlsx",
   "Fecha": "2025-09-08",
-  "Timestamp": "2025-09-08T06:34:36+00:00"
+  "Timestamp": "2025-09-08T06:34:36+00:00",
+  "estado"
 }`}
               </pre>
             </CardContent>

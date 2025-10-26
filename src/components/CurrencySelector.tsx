@@ -1,5 +1,12 @@
 import { Currency, useCurrency, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '@/contexts/CurrencyContext'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Check } from 'lucide-react'
 
 const currencies: Currency[] = ['CLP', 'USD', 'GBP', 'JPY', 'CNY']
 
@@ -11,35 +18,51 @@ const CURRENCY_FLAGS: Record<Currency, string> = {
   CNY: 'https://flagcdn.com/w20/cn.png'
 }
 
-export function CurrencySelector() {
+export function CurrencySelectorCompact() {
   const { currency, setCurrency } = useCurrency()
 
   return (
-    <div className="flex items-center justify-center w-full max-w-3xl mx-auto px-2">
-      <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="gap-2 min-w-[100px] h-10"
+        >
+          <img 
+            src={CURRENCY_FLAGS[currency]} 
+            alt={`${currency} flag`}
+            className="w-4 h-3 object-cover rounded-sm"
+            loading="lazy"
+          />
+          <span className="font-semibold text-sm">{CURRENCY_SYMBOLS[currency]}</span>
+          <span className="text-xs text-muted-foreground">{currency}</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
         {currencies.map((curr) => (
-          <Button
+          <DropdownMenuItem
             key={curr}
-            variant={currency === curr ? 'default' : 'outline'}
-            size="sm"
             onClick={() => setCurrency(curr)}
-            className={`min-w-[60px] sm:min-w-[80px] h-8 px-2 sm:px-3 flex items-center gap-1.5 ${
-              currency === curr
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-card text-card-foreground hover:bg-primary/10'
-            }`}
-            title={CURRENCY_NAMES[curr]}
+            className="flex items-center justify-between cursor-pointer py-2.5"
           >
-            <img 
-              src={CURRENCY_FLAGS[curr]} 
-              alt={`${curr} flag`}
-              className="w-4 h-3 object-cover rounded-sm"
-            />
-            <span className="font-semibold text-xs sm:text-sm">{CURRENCY_SYMBOLS[curr]}</span>
-            <span className="text-[9px] sm:text-xs">{curr}</span>
-          </Button>
+            <div className="flex items-center gap-3">
+              <img 
+                src={CURRENCY_FLAGS[curr]} 
+                alt={`${curr} flag`}
+                className="w-5 h-4 object-cover rounded-sm"
+              />
+              <div>
+                <div className="font-medium text-sm">{CURRENCY_SYMBOLS[curr]} {curr}</div>
+                <div className="text-xs text-muted-foreground">{CURRENCY_NAMES[curr]}</div>
+              </div>
+            </div>
+            {currency === curr && (
+              <Check className="h-4 w-4 text-primary" />
+            )}
+          </DropdownMenuItem>
         ))}
-      </div>
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
