@@ -12,16 +12,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/custom/Badge";
-import { Package } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
+import { Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 interface ModelsTableProps {
@@ -251,54 +243,73 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
           </Table>
         </div>
         
+        {/* ✅ Nueva paginación optimizada para mobile */}
         {totalPages > 1 && (
-          <div className="mt-4 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                  />
-                </PaginationItem>
-                
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  // Show first page, last page, current page, and pages around current
-                  if (
-                    pageNum === 1 ||
-                    pageNum === totalPages ||
-                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                  ) {
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(pageNum)}
-                          isActive={currentPage === pageNum}
-                          className="cursor-pointer"
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                    return (
-                      <PaginationItem key={pageNum}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    );
-                  }
-                  return null;
-                })}
-                
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+          <div className="mt-4">
+            <div className="flex items-center justify-between gap-2">
+              {/* Botón Previous */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Anterior</span>
+              </Button>
+
+              {/* Indicador de página */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+              </div>
+
+              {/* Botón Next */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="gap-1"
+              >
+                <span className="hidden sm:inline">Siguiente</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Números de página - solo en desktop */}
+            <div className="hidden sm:flex justify-center mt-3 gap-1">
+              {[...Array(totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="w-9 h-9 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                  return (
+                    <span key={pageNum} className="flex items-center px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
           </div>
         )}
       </CardContent>

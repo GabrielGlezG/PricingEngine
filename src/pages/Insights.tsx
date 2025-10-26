@@ -66,14 +66,20 @@ export default function Insights() {
   const { formatPrice } = useCurrency();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [chartKey, setChartKey] = useState(0);
+
 
   // Update ChartJS defaults and force remount when theme changes
   useEffect(() => {
     ChartJS.defaults.color = hslVar('--foreground');
     setMounted(false);
-    const timer = setTimeout(() => setMounted(true), 0);
+    setChartKey((prev) => prev + 1);
+    const isMobile = window.innerWidth < 768;
+    const delay = isMobile ? 100 : 50;
+  
+    const timer = setTimeout(() => setMounted(true), delay);
     return () => clearTimeout(timer);
-  }, [theme]);
+}, [theme]);
 
   useEffect(() => {
     setMounted(true);
@@ -570,6 +576,7 @@ export default function Insights() {
           <CardContent>
             <div className="h-[300px]">
               {mounted && <Bar
+              key={`bar-price-segment-${chartKey}`} // ✅ Key única
                 data={{
                   labels: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => {
                     const range = item.range
