@@ -21,6 +21,17 @@ interface JsonData {
   Archivo_Origen: string;
   Fecha: string;
   Timestamp: string;
+  Estado?: string;
+  estado?: string;
+}
+
+// Helper to normalize 'estado' values from Excel/JSON
+function normalizeEstado(value: any): 'nuevo' | 'vigente' | 'inactivo' {
+  const s = String(value ?? '').trim().toLowerCase();
+  if (s === 'nuevo' || s === 'new') return 'nuevo';
+  if (s === 'inactivo' || s === 'inactive') return 'inactivo';
+  if (s === 'vigente' || s === 'activo' || s === 'active') return 'vigente';
+  return 'vigente';
 }
 
 Deno.serve(async (req) => {
@@ -95,13 +106,25 @@ Deno.serve(async (req) => {
 
         console.log('Processing item with UID:', uid);
         
+        // Extract 'estado' from the incoming data (case-insensitive), default to 'vigente'
+        let rawEstado: unknown = null;
+        for (const key in item as any) {
+          if (key && key.toLowerCase() === 'estado') {
+            rawEstado = (item as any)[key];
+            break;
+          }
+        }
+        const estado = normalizeEstado(rawEstado);
+        console.log('Determined estado:', estado);
+
         const productData = {
           brand: categoria,
           category: categoria,
           model: modeloPrincipal,
           name: modelo,
           id_base: item.ID_Base,
-          submodel: modelo
+          submodel: modelo,
+          estado: estado
         };
         
         console.log('Product data:', JSON.stringify(productData, null, 2));
@@ -125,6 +148,15 @@ Deno.serve(async (req) => {
             continue;
           }
           product = newProduct;
+        } else {
+          // Update estado on existing product to reflect Excel/JSON
+          const { error: updateError } = await supabaseClient
+            .from('products')
+            .update({ estado })
+            .eq('id', product.id);
+          if (updateError) {
+            console.error('Error updating product estado:', updateError);
+          }
         }
 
         // Insert price data
