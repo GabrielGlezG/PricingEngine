@@ -52,7 +52,7 @@ import {
 } from "chart.js";
 import { useState, useEffect, useMemo } from "react";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
-import { CurrencySelector } from "@/components/CurrencySelector";
+// import { CurrencySelector } from "@/components/CurrencySelector";
 import { hslVar, chartPalette } from "@/lib/utils";
 import { ModelsTable } from "@/components/ModelsTable";
 import { useTheme } from "next-themes";
@@ -360,7 +360,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex justify-center">
-        <CurrencySelector />
+        {/* <CurrencySelector /> */}
       </div>
 
       <Card className="border-border/50 shadow-md">
