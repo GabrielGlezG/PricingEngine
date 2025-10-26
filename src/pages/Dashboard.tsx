@@ -157,12 +157,13 @@ interface AnalyticsData {
   generated_at: string;
 }
 
-// COLORS will be computed per-theme inside component
-
 export default function Dashboard() {
   const { formatPrice } = useCurrency();
   const { setLastUpdate } = useLastUpdate();
   const { theme } = useTheme();
+  
+  // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
+  const [chartKey, setChartKey] = useState(0);
   const [mounted, setMounted] = useState(false);
   const COLORS = useMemo(() => chartPalette(12), [theme]);
 
@@ -175,11 +176,18 @@ export default function Dashboard() {
     submodel: "",
   });
 
-  // Update ChartJS defaults and force remount when theme changes
+  // ✅ Update ChartJS defaults and force remount when theme changes
   useEffect(() => {
     ChartJS.defaults.color = hslVar("--foreground");
     setMounted(false);
-    const timer = setTimeout(() => setMounted(true), 0);
+    // Incrementa la key para forzar remount de TODOS los gráficos
+    setChartKey((prev) => prev + 1);
+    
+    // Delay más largo en mobile para mejor renderizado
+    const isMobile = window.innerWidth < 768;
+    const delay = isMobile ? 100 : 50;
+    
+    const timer = setTimeout(() => setMounted(true), delay);
     return () => clearTimeout(timer);
   }, [theme]);
 
@@ -188,13 +196,6 @@ export default function Dashboard() {
   }, []);
 
   const { user, profile, isAdmin, hasActiveSubscription } = useAuth();
-  console.log("Dashboard Auth Debug:", {
-    user: !!user,
-    profile: !!profile,
-    isAdmin,
-    hasActiveSubscription,
-    profileData: profile,
-  });
 
   const {
     data: analytics,
@@ -203,7 +204,7 @@ export default function Dashboard() {
     isRefetching,
     error: queryError,
   } = useQuery({
-    queryKey: ["analytics", filters], // ✅ Sin refreshTick
+    queryKey: ["analytics", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -225,9 +226,9 @@ export default function Dashboard() {
       console.error("Analytics query error:", error);
       return failureCount < 2;
     },
-    staleTime: 5 * 60 * 1000, // ✅ Cache de 5 minutos
-    refetchOnMount: false, // ✅ No refetch automático
-    placeholderData: (previousData) => previousData, // ✅ Mantiene datos mientras carga
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    placeholderData: (previousData) => previousData,
   });
 
   if (queryError) {
@@ -254,17 +255,6 @@ export default function Dashboard() {
   }, [setLastUpdate]);
 
   const { data: priceDistributionLocal } = usePriceDistribution(filters);
-
-  if (analytics) {
-    console.log("Analytics generated_at:", analytics.generated_at);
-    console.log(
-      "Price distribution (server):",
-      analytics.chart_data?.price_distribution
-    );
-  }
-  if (priceDistributionLocal) {
-    console.log("Price distribution (local DB):", priceDistributionLocal);
-  }
 
   const { data: brands } = useQuery({
     queryKey: ["brands"],
@@ -461,7 +451,7 @@ export default function Dashboard() {
             </Button>
 
             <Button
-              onClick={() => refetch()} // ✅ Sin refreshTick
+              onClick={() => refetch()}
               disabled={isRefetching}
               className="w-full"
             >
@@ -598,6 +588,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
+                      key={`bar-category-${chartKey}`}
                       data={{
                         labels: (
                           analytics.chart_data?.models_by_category || []
@@ -664,6 +655,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Pie
+                      key={`pie-distribution-${chartKey}`}
                       data={{
                         labels: (
                           priceDistributionLocal ||
@@ -809,6 +801,7 @@ export default function Dashboard() {
               <div className="h-[400px]">
                 {mounted && (
                   <Bubble
+                    key={`bubble-principal-${chartKey}`}
                     data={{
                       datasets: [
                         {
@@ -927,6 +920,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
+                      key={`bar-expensive-${chartKey}`}
                       data={{
                         labels: (
                           analytics.chart_data?.top_5_expensive || []
@@ -1000,6 +994,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
+                      key={`bar-cheap-${chartKey}`}
                       data={{
                         labels: (
                           analytics.chart_data?.bottom_5_cheap || []
@@ -1074,6 +1069,7 @@ export default function Dashboard() {
               <div className="h-[320px]">
                 {mounted && (
                   <Bar
+                    key={`bar-price-category-${chartKey}`}
                     data={{
                       labels: (
                         analytics.chart_data?.prices_by_category || []
@@ -1174,6 +1170,7 @@ export default function Dashboard() {
               <div className="h-[280px] sm:h-[320px]">
                 {mounted && (
                   <Bar
+                    key={`bar-brand-${chartKey}`}
                     data={{
                       labels: (analytics.chart_data?.prices_by_brand || []).map(
                         (d) => d.brand
@@ -1248,6 +1245,7 @@ export default function Dashboard() {
               <div className="h-[260px] sm:h-[300px]">
                 {mounted && (
                   <Bar
+                    key={`bar-variation-${chartKey}`}
                     data={{
                       labels: (
                         analytics.chart_data?.brand_variations || []
@@ -1322,6 +1320,7 @@ export default function Dashboard() {
               <div className="h-[300px]">
                 {mounted && (
                   <Bar
+                    key={`bar-volatility-${chartKey}`}
                     data={{
                       labels: (
                         analytics.chart_data?.monthly_volatility
