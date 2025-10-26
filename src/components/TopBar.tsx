@@ -8,9 +8,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { format } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { CurrencySelectorCompact } from './CurrencySelector'
 
 interface TopBarProps {
   onMenuClick: () => void
@@ -43,10 +46,11 @@ export function TopBar({ onMenuClick }: TopBarProps) {
   const displayEmail = profile?.email || user?.email || ''
 
   return (
-    <div className="h-16 bg-card border-b border-border flex items-center px-4 sm:px-6 justify-between">
+    <div className="h-16 bg-card border-b border-border flex items-center px-3 sm:px-6 justify-between gap-2">
+      {/* Menu Button - Solo mobile */}
       <button
         onClick={onMenuClick}
-        className="md:hidden h-10 w-10 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors flex-shrink-0"
+        className="md:hidden h-9 w-9 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center transition-colors flex-shrink-0"
         aria-label="Abrir menú"
       >
         <Menu className="h-5 w-5" />
@@ -54,33 +58,41 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       
       <div className="flex-1" />
 
+      {/* Última actualización - Desktop (visible para todos) */}
       {lastUpdate && (
-        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 mr-2 sm:mr-3 text-muted-foreground">
-          <CalendarClock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+        <div className="hidden lg:flex items-center gap-2 mr-3 text-muted-foreground">
+          <CalendarClock className="h-4 w-4 flex-shrink-0" />
           <span className="text-xs whitespace-nowrap">
-            <span className="hidden lg:inline">Última actualización: </span>
-            {format(new Date(lastUpdate), "d MMM", { locale: es })}
-            <span className="hidden md:inline">{format(new Date(lastUpdate), ", yyyy", { locale: es })}</span>
+          Última actualización: {formatDistanceToNow(new Date(lastUpdate), { addSuffix: true, locale: es })}
           </span>
+
         </div>
       )}
 
+      {/* Currency Selector - Desktop/Tablet */}
+      <div className="hidden sm:flex mr-2">
+        <CurrencySelectorCompact />
+      </div>
+
+      {/* Theme Toggle */}
       <button
         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        className="h-10 w-10 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center transition-colors flex-shrink-0 mr-2"
+        className="h-9 w-9 rounded-lg bg-muted hover:bg-muted/80 text-foreground flex items-center justify-center transition-colors flex-shrink-0 mr-2"
         aria-label="Cambiar tema"
       >
-        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        {theme === 'dark' ? <Sun className="h-4 w-4 sm:h-5 sm:w-5" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5" />}
       </button>
 
+      {/* User Menu */}
       {user && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex-shrink-0">
+            <button className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors flex-shrink-0">
               {getInitials(displayName)}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 p-3 space-y-3 bg-card z-50">
+          <DropdownMenuContent align="end" className="w-72 sm:w-64 p-3 space-y-3 bg-card z-50">
+            {/* User Info */}
             <div className="flex items-center gap-3 px-2">
               <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-sm flex-shrink-0">
                 {getInitials(displayName)}
@@ -95,6 +107,34 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </div>
             </div>
 
+            {/* Mobile Only - Última actualización (visible para todos) */}
+            {lastUpdate && (
+              <div className="lg:hidden px-2">
+                <DropdownMenuSeparator className="my-2" />
+                <div className="flex items-start gap-2 text-muted-foreground py-1">
+                  <CalendarClock className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium">Última actualización:</span>
+                    <span className="text-xs">
+                      {format(new Date(lastUpdate), "d 'de' MMMM, yyyy", { locale: es })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Only - Currency Selector */}
+            <div className="sm:hidden px-2">
+              <DropdownMenuSeparator className="my-2" />
+              <div className="py-1">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Moneda</p>
+                <CurrencySelectorCompact />
+              </div>
+            </div>
+
+            <DropdownMenuSeparator />
+
+            {/* Subscription Button */}
             {profile && !isAdmin && (
               <button
                 onClick={() => navigate('/subscription')}
@@ -105,6 +145,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </button>
             )}
 
+            {/* Logout Button */}
             <button
               onClick={async () => {
                 await signOut()
