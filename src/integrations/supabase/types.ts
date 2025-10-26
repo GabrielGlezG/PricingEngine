@@ -87,6 +87,7 @@ export type Database = {
           brand: string
           category: string
           created_at: string | null
+          estado: string | null
           id: string
           id_base: string | null
           image_url: string | null
@@ -99,6 +100,7 @@ export type Database = {
           brand: string
           category: string
           created_at?: string | null
+          estado?: string | null
           id?: string
           id_base?: string | null
           image_url?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           brand?: string
           category?: string
           created_at?: string | null
+          estado?: string | null
           id?: string
           id_base?: string | null
           image_url?: string | null
@@ -199,7 +202,7 @@ export type Database = {
     }
     Functions: {
       generate_automatic_insights: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           data: Json
           description: string

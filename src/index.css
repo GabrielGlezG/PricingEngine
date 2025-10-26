@@ -2,72 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System - Paleta de colores minimalista */
+/* Design System - Paleta de colores claros y profesionales */
 
 @layer base {
   :root {
-    --background: 216 12% 7%;
-    --foreground: 0 0% 100%;
-    --card: 216 12% 12%;
-    --card-foreground: 0 0% 100%;
-    --popover: 216 12% 12%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 25 38% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 216 12% 12%;
-    --secondary-foreground: 0 0% 82%;
-    --muted: 216 12% 16%;
-    --muted-foreground: 0 0% 82%;
-    --accent: 25 38% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 25 38% 50%;
+    --background: 60 14% 98%;        /* #FAFAF8 */
+    --foreground: 0 0% 15%;          /* Texto oscuro para contraste */
+    --card: 0 0% 100%;               /* Blanco puro para cards */
+    --card-foreground: 0 0% 15%;     /* Texto oscuro en cards */
+    --popover: 0 0% 100%;            /* Blanco para popovers */
+    --popover-foreground: 0 0% 15%;  /* Texto oscuro en popovers */
+    --primary: 30 49% 58%;           /* #C99563 - Color del logo */
+    --primary-foreground: 0 0% 100%; /* Texto blanco sobre primary */
+    --secondary: 40 25% 94%;         /* #F5F1EB - Secundario claro */
+    --secondary-foreground: 0 0% 20%; /* Texto oscuro sobre secondary */
+    --muted: 40 20% 92%;             /* Gris cálido claro */
+    --muted-foreground: 0 0% 40%;    /* Texto medio */
+    --accent: 30 49% 58%;            /* #C99563 - Mismo que primary */
+    --accent-foreground: 0 0% 100%;  /* Texto blanco sobre accent */
+    --destructive: 0 84% 60%;        /* Rojo para destructive */
+    --destructive-foreground: 0 0% 100%; /* Texto blanco sobre destructive */
+    --border: 30 15% 88%;            /* Bordes suaves */
+    --input: 30 15% 88%;             /* Bordes de inputs */
+    --ring: 30 49% 58%;              /* Ring color = primary */
     --radius: 1rem;
     
-    /* Chart colors - copper scheme (#B17A50 base and variations) */
-    --chart-1: 25 38% 52%;   /* Base copper: #B17A50 */
-    --chart-2: 25 45% 58%;   /* Lighter copper */
-    --chart-3: 25 50% 65%;   /* Light copper */
-    --chart-4: 30 40% 55%;   /* Golden copper */
-    --chart-5: 20 42% 50%;   /* Warm copper */
-    --chart-6: 25 48% 60%;   /* Bright copper */
-    --chart-7: 28 38% 53%;   /* Yellow copper */
-    --chart-8: 22 40% 48%;   /* Deep copper */
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 30 49% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 25% 94%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 30 15% 88%;
+    --sidebar-ring: 30 49% 58%;
+    
+    /* Chart colors - variaciones del color del logo #C99563 */
+    --chart-1: 30 49% 58%;   /* Base: #C99563 */
+    --chart-2: 30 49% 65%;   /* Más claro */
+    --chart-3: 30 49% 72%;   /* Aún más claro */
+    --chart-4: 35 45% 60%;   /* Variación dorada */
+    --chart-5: 25 52% 56%;   /* Variación cálida */
+    --chart-6: 30 49% 50%;   /* Más oscuro */
+    --chart-7: 32 47% 62%;   /* Variación intermedia */
+    --chart-8: 28 51% 54%;   /* Variación profunda */
   }
 
   .dark {
-    --background: 216 12% 7%;
-    --foreground: 0 0% 100%;
-    --card: 216 12% 12%;
-    --card-foreground: 0 0% 100%;
-    --popover: 216 12% 12%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 25 38% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 216 12% 12%;
-    --secondary-foreground: 0 0% 82%;
-    --muted: 216 12% 16%;
-    --muted-foreground: 0 0% 82%;
-    --accent: 25 38% 50%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 25 38% 50%;
+    --background: 0 0% 10%;          /* Fondo oscuro */
+    --foreground: 0 0% 95%;          /* Texto claro */
+    --card: 0 0% 14%;                /* Cards oscuros */
+    --card-foreground: 0 0% 95%;     /* Texto claro en cards */
+    --popover: 0 0% 14%;             /* Popovers oscuros */
+    --popover-foreground: 0 0% 95%;  /* Texto claro en popovers */
+    --primary: 30 49% 58%;           /* Mantener color del logo */
+    --primary-foreground: 0 0% 100%; /* Texto blanco sobre primary */
+    --secondary: 0 0% 20%;           /* Secundario oscuro */
+    --secondary-foreground: 0 0% 95%; /* Texto claro sobre secondary */
+    --muted: 0 0% 20%;               /* Gris oscuro */
+    --muted-foreground: 0 0% 65%;    /* Texto medio claro */
+    --accent: 30 49% 58%;            /* Mantener color del logo */
+    --accent-foreground: 0 0% 100%;  /* Texto blanco sobre accent */
+    --destructive: 0 84% 60%;        /* Rojo para destructive */
+    --destructive-foreground: 0 0% 100%; /* Texto blanco sobre destructive */
+    --border: 0 0% 25%;              /* Bordes oscuros */
+    --input: 0 0% 25%;               /* Bordes de inputs oscuros */
+    --ring: 30 49% 58%;              /* Ring color = primary */
     
-    /* Chart colors - copper scheme (#B17A50 base and variations) */
-    --chart-1: 25 38% 52%;   /* Base copper: #B17A50 */
-    --chart-2: 25 45% 58%;   /* Lighter copper */
-    --chart-3: 25 50% 65%;   /* Light copper */
-    --chart-4: 30 40% 55%;   /* Golden copper */
-    --chart-5: 20 42% 50%;   /* Warm copper */
-    --chart-6: 25 48% 60%;   /* Bright copper */
-    --chart-7: 28 38% 53%;   /* Yellow copper */
-    --chart-8: 22 40% 48%;   /* Deep copper */
+    /* Sidebar colors */
+    --sidebar-background: 0 0% 14%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 30 49% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 25%;
+    --sidebar-ring: 30 49% 58%;
+    
+    /* Chart colors - variaciones del color del logo */
+    --chart-1: 30 49% 58%;
+    --chart-2: 30 49% 65%;
+    --chart-3: 30 49% 72%;
+    --chart-4: 35 45% 60%;
+    --chart-5: 25 52% 56%;
+    --chart-6: 30 49% 50%;
+    --chart-7: 32 47% 62%;
+    --chart-8: 28 51% 54%;
   }
 }
 
