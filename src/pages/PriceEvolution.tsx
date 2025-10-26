@@ -1,13 +1,37 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PriceEvolutionChart } from "@/components/PriceEvolutionChart"
 import { ModelSubmodelSelector } from "@/components/ModelSubmodelSelector"
+import { useTheme } from "next-themes"
+import { Chart as ChartJS } from "chart.js"
+import { hslVar } from "@/lib/utils"
 
 export default function PriceEvolution() {
+  const { theme } = useTheme()
+  const [chartKey, setChartKey] = useState(0)
+  const [mounted, setMounted] = useState(false)
+  
   const [filters, setFilters] = useState({
     brand: '',
     model: '',
     submodel: ''
   })
+
+  // Update ChartJS defaults and force remount when theme changes
+  useEffect(() => {
+    ChartJS.defaults.color = hslVar("--foreground")
+    setMounted(false)
+    setChartKey((prev) => prev + 1)
+    
+    const isMobile = window.innerWidth < 768
+    const delay = isMobile ? 100 : 50
+    
+    const timer = setTimeout(() => setMounted(true), delay)
+    return () => clearTimeout(timer)
+  }, [theme])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -36,12 +60,15 @@ export default function PriceEvolution() {
         copperClearButton
       />
 
-      <PriceEvolutionChart
-        selectedBrand={filters.brand}
-        selectedCategory=""
-        selectedModel={filters.model}
-        selectedSubmodel={filters.submodel}
-      />
+      {mounted && (
+        <PriceEvolutionChart
+          key={`price-evolution-${chartKey}`}
+          selectedBrand={filters.brand}
+          selectedCategory=""
+          selectedModel={filters.model}
+          selectedSubmodel={filters.submodel}
+        />
+      )}
     </div>
   )
 }
