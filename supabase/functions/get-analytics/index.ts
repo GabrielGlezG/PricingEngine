@@ -93,9 +93,6 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Keep unfiltered data for certain charts (top 5 expensive/cheap)
-    const unfilteredData = Array.from(latestPrices.values());
-    
     let filteredData = Array.from(latestPrices.values());
 
     // Apply filters (only brand, model, submodel)
@@ -475,8 +472,8 @@ Deno.serve(async (req) => {
         value_rating: ((medianPrice - parseFloat(item.price)) / medianPrice * 100).toFixed(1)
       }));
 
-    // Top 5 most expensive and cheapest (always use unfiltered data)
-    const sortedByPrice = [...unfilteredData].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    // Top 5 most expensive and cheapest (use filtered data)
+    const sortedByPrice = [...filteredData].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
     const top5Expensive = sortedByPrice.slice(0, 5).map(item => ({
       brand: item.products?.brand,
       model: item.products?.name,
