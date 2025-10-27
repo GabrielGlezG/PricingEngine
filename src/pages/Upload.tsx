@@ -326,21 +326,21 @@ export default function UploadComponent() {
             <CardContent>
               <pre className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto text-foreground">
                 {`{
-  "UID": "9d16db5ca272",
-  "ID_Base": "audi|a1-sportback|a1 sportback 30 tfsi",
-  "Categoría": "Audi",
-  "Modelo Principal": "A1 Sportback",
-  "Modelo": "A1 Sportback 30 TFSI",
-  "ctx_precio": "financiamiento:marca",
-  "precio_num": 24900000,
-  "precio_lista_num": 27100000,
-  "bono_num": 2200000,
-  "Precio_Texto": "$24.900.000",
-  "fuente_texto_raw": "A1 Sportback 30 TFSI...",
-  "Modelo_URL": "https://www.automotrizcarmona.cl/project/a1-sportback/",
-  "Archivo_Origen": "audi_a1-sportback.xlsx",
-  "Fecha": "2025-09-08",
-  "Timestamp": "2025-09-08T06:34:36+00:00",
+  "UID"
+  "ID_Base"
+  "Categoría"
+  "Modelo Principal"
+  "Modelo"
+  "ctx_precio"
+  "precio_num"
+  "precio_lista_num"
+  "bono_num"
+  "Precio_Texto"
+  "fuente_texto_raw"
+  "Modelo_URL"
+  "Archivo_Origen"
+  "Fecha"
+  "Timestamp"
   "estado"
 }`}
               </pre>
