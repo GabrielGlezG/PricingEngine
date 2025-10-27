@@ -239,15 +239,13 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLastUploadDate = async () => {
       const { data, error } = await supabase
-        .from("scraping_jobs")
-        .select("completed_at")
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .single();
+        .from("price_data")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (!error && data?.completed_at) {
-        setLastUpdate(data.completed_at);
+      if (!error && data && data.length > 0 && data[0].created_at) {
+        setLastUpdate(data[0].created_at);
       }
     };
 
