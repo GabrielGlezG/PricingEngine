@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useTheme } from "next-themes";
 import { hslVar } from "@/lib/utils";
+import { lineChartColors, tooltipColors, getScaleOptions } from "@/config/chartColors";
 import {
   Card,
   CardContent,
@@ -68,13 +69,9 @@ export function PriceEvolutionChart({
   const { formatPrice } = useCurrency();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const chartColors = useMemo(() => [
-    hslVar('--chart-1'),
-    hslVar('--chart-2'),
-    hslVar('--chart-3'),
-    hslVar('--chart-4'),
-    hslVar('--chart-5'),
-  ], [theme]);
+  const chartColors = useMemo(() => 
+    lineChartColors.lines.map(fn => fn())
+  , [theme]);
   const [timeRange, setTimeRange] = useState("6months");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
 
@@ -242,20 +239,23 @@ export function PriceEvolutionChart({
 
       const models = Array.from(uniqueModels);
       const labels: string[] = [];
-      const datasets: any[] = models.map((model, index) => ({
-        label: model,
-        data: [],
-        borderColor: chartColors[index % chartColors.length],
-        backgroundColor: chartColors[index % chartColors.length],
-        borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: chartColors[index % chartColors.length],
-        pointBorderColor: chartColors[index % chartColors.length],
-        pointHoverBackgroundColor: chartColors[index % chartColors.length],
-        pointHoverBorderColor: chartColors[index % chartColors.length],
-        tension: 0.4,
-      }));
+      const datasets: any[] = models.map((model, index) => {
+        const color = lineChartColors.getLineColor(index);
+        return {
+          label: model,
+          data: [],
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: lineChartColors.borderWidth,
+          pointRadius: lineChartColors.pointRadius,
+          pointHoverRadius: lineChartColors.pointHoverRadius,
+          pointBackgroundColor: color,
+          pointBorderColor: color,
+          pointHoverBackgroundColor: color,
+          pointHoverBorderColor: color,
+          tension: lineChartColors.tension,
+        };
+      });
 
       sortedTimeKeys.forEach((timeKey) => {
         labels.push(formatDateForDisplay(timeKey, groupBy));
@@ -328,7 +328,7 @@ export function PriceEvolutionChart({
   };
 
   const getLineColor = (index: number) => {
-    return chartColors[index % chartColors.length];
+    return lineChartColors.getLineColor(index);
   };
 
   if (!selectedBrand && !selectedCategory && !selectedModel) {
@@ -446,13 +446,13 @@ export function PriceEvolutionChart({
                       display: false
                     },
                      tooltip: {
-                      backgroundColor: hslVar('--card'),
-                      borderColor: hslVar('--border'),
-                      borderWidth: 1,
-                      titleColor: hslVar('--foreground'),
-                      bodyColor: hslVar('--foreground'),
-                      padding: 12,
-                      cornerRadius: 8,
+                      backgroundColor: tooltipColors.backgroundColor(),
+                      borderColor: tooltipColors.borderColor(),
+                      borderWidth: tooltipColors.borderWidth,
+                      titleColor: tooltipColors.titleColor(),
+                      bodyColor: tooltipColors.bodyColor(),
+                      padding: tooltipColors.padding,
+                      cornerRadius: tooltipColors.cornerRadius,
                       callbacks: {
                         label: (context) => {
                           return `${context.dataset.label}: ${formatPrice(context.parsed.y)}`;
@@ -463,19 +463,17 @@ export function PriceEvolutionChart({
                   },
                   scales: {
                      x: {
-                      grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                      ...getScaleOptions(),
                       ticks: { 
-                        color: hslVar('--foreground'),
-                        font: { size: 12 },
+                        ...getScaleOptions().ticks,
                         maxRotation: 45,
                         minRotation: 0
                       }
                     },
                      y: {
-                      grid: { color: hslVar('--border'), lineWidth: 0.5 },
+                      ...getScaleOptions(),
                       ticks: { 
-                        color: hslVar('--foreground'),
-                        font: { size: 12 },
+                        ...getScaleOptions().ticks,
                         callback: (value) => `$${((value as number) / 1000).toFixed(0)}k`
                       }
                     }
