@@ -1,740 +1,426 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrency } from "@/contexts/CurrencyContext";
-import { useTheme } from "next-themes";
-import { hslVar } from "@/lib/utils";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Lightbulb,
-  TrendingUp,
-  DollarSign,
-  BarChart3,
-  RefreshCw,
-  Target,
-  Award,
-  Users,
-  ShoppingCart,
-  TrendingDown,
-  Calendar,
-  Zap,
-  ArrowDown,
-  ArrowUp,
-} from "lucide-react";
-import { Bar, Line, Doughnut } from 'react-chartjs-2'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip as ChartTooltip,
-  Legend as ChartLegend,
-  Filler,
-  ArcElement,
-} from 'chart.js'
-import { useEffect, useState } from "react";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  ChartTooltip,
-  ChartLegend,
-  Filler,
-  ArcElement
-)
-
-ChartJS.defaults.color = "hsl(var(--foreground))";
-
-interface Insight {
-  insight_type: string;
-  title: string;
-  description: string;
-  data: any;
-  priority: number;
-}
+import { TrendingUp, TrendingDown, DollarSign, AlertCircle, Target, Activity, Award, Sparkles } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export default function Insights() {
   const { formatPrice } = useCurrency();
-  const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [chartKey, setChartKey] = useState(0);
 
-  useEffect(() => {
-    ChartJS.defaults.color = hslVar('--foreground');
-    setMounted(false);
-    setChartKey((prev) => prev + 1);
-    const isMobile = window.innerWidth < 768;
-    const delay = isMobile ? 100 : 50;
-  
-    const timer = setTimeout(() => setMounted(true), delay);
-    return () => clearTimeout(timer);
-  }, [theme]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const {
-    data: insights,
-    isLoading,
-    refetch,
-    isRefetching,
-  } = useQuery({
-    queryKey: ["insights"],
+  const { data: insightsData, isLoading: insightsLoading } = useQuery({
+    queryKey: ['insights'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("get-insights");
-      if (error) throw error;
-      return data.insights as Insight[];
-    },
-  });
-
-  const { data: marketStats } = useQuery({
-    queryKey: ["market-stats-destacados"],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("get-analytics");
+      const { data, error } = await supabase.functions.invoke('get-insights');
       if (error) throw error;
       return data;
     },
-    staleTime: 0,
-    refetchOnMount: true,
   });
 
-  if (isLoading) {
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['analytics-summary'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-analytics');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (insightsLoading || analyticsLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-96" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
         </div>
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-96" />
       </div>
     );
   }
 
-  // Extract price reduction insights (highlighted in red)
-  const priceReductions = insights?.filter(i => 
-    i.insight_type === 'price_trend' && i.data.direction === 'down'
-  ) || [];
+  const insights = insightsData?.insights || [];
+  const analytics = analyticsData?.metrics || {};
+  const topExpensive = analyticsData?.top_5_expensive || [];
+  const topCheapest = analyticsData?.top_5_cheapest || [];
+  const brandVariations = analyticsData?.brand_variations || [];
 
-  const priceIncreases = insights?.filter(i => 
-    i.insight_type === 'price_trend' && i.data.direction === 'up'
-  ) || [];
+  // Extract key insights
+  const priceTrends = insights.filter((i: any) => i.insight_type === 'price_trend').sort((a: any, b: any) => a.priority - b.priority);
+  const bestValue = insights.find((i: any) => i.insight_type === 'best_value');
+  const priceStability = insights.find((i: any) => i.insight_type === 'price_stability');
+  const historicalOpp = insights.find((i: any) => i.insight_type === 'historical_opportunity');
+  const categoryComp = insights.find((i: any) => i.insight_type === 'category_comparison');
 
-  const bestValues = insights?.find(i => i.insight_type === 'best_value');
-  const historicalOpportunities = insights?.find(i => i.insight_type === 'historical_opportunity');
-  const categoryComparison = insights?.find(i => i.insight_type === 'category_comparison');
-  const priceStability = insights?.find(i => i.insight_type === 'price_stability');
+  // Helper to format large numbers
+  const formatLargeNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(0)}k`;
+    return num.toString();
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Destacados del Mercado
-          </h1>
-          <p className="text-muted-foreground">
-            Información clave y análisis destacados para compradores inteligentes
-          </p>
-        </div>
-        <Button onClick={() => refetch()} disabled={isRefetching} size="sm">
-          {isRefetching ? (
-            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Actualizar
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Destacados del Mercado</h1>
+        <p className="text-muted-foreground">
+          Análisis automático basado en {insightsData?.data_analyzed?.total_records || 0} registros históricos de {insightsData?.data_analyzed?.products_tracked || 0} productos
+        </p>
       </div>
 
-      {/* Quick Stats Overview */}
-      {marketStats && (
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Modelos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {marketStats.metrics?.total_models || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {marketStats.metrics?.total_brands || 0} marcas
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Precio Promedio
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatPrice(marketStats.metrics?.avg_price || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Mediana: {formatPrice(marketStats.metrics?.median_price || 0)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Rango
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">
-                {formatPrice(marketStats.metrics?.min_price || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Max: {formatPrice(marketStats.metrics?.max_price || 0)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Sesiones
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {marketStats.metrics?.total_scraping_sessions || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                de scraping
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* HIGHLIGHTED: Price Reductions (RED) */}
-      {priceReductions.length > 0 && (
-        <Card className="border-red-500/50 bg-gradient-to-br from-red-500/10 to-red-500/5">
-          <CardHeader>
-            <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
-              <TrendingDown className="h-5 w-5" />
-              🔥 Reducciones de Precio Detectadas
-            </CardTitle>
-            <CardDescription>
-              Marcas con bajadas significativas en los últimos 30 días
-            </CardDescription>
+      {/* Market Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Modelos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {priceReductions.slice(0, 6).map((insight, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 rounded-lg border border-red-500/30 bg-card"
+            <div className="text-2xl font-bold">{analytics.total_models || 0}</div>
+            <p className="text-xs text-muted-foreground">{analytics.total_brands || 0} marcas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Precio Promedio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatPrice(analytics.avg_price || 0)}</div>
+            <p className="text-xs text-muted-foreground">Mediana: {formatPrice(analytics.median_price || 0)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Más Caro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatPrice(analytics.max_price || 0)}</div>
+            {topExpensive[0] && (
+              <p className="text-xs text-muted-foreground">{topExpensive[0].brand} {topExpensive[0].model}</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Más Accesible</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatPrice(analytics.min_price || 0)}</div>
+            {topCheapest[0] && (
+              <p className="text-xs text-muted-foreground">{topCheapest[0].brand} {topCheapest[0].model}</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Key Insights - Automatic Highlights */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Insights Históricos Automáticos</h2>
+
+        {/* Price Trends - Automatic Detection */}
+        {priceTrends.length > 0 && (
+          <div className="space-y-3">
+            {priceTrends.map((insight: any, idx: number) => {
+              const isReduction = insight.data.direction === 'down';
+              const changePercent = Math.abs(insight.data.change_percent);
+              
+              return (
+                <Card 
+                  key={idx} 
+                  className={isReduction ? "border-red-500/50 bg-red-500/5" : "border-green-500/50 bg-green-500/5"}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold">{insight.data.brand}</h3>
-                    <Badge variant="destructive" className="bg-red-600">
-                      <ArrowDown className="h-3 w-3 mr-1" />
-                      {Math.abs(insight.data.change_percent).toFixed(1)}%
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Actual:</span>
-                      <span className="font-medium">{formatPrice(insight.data.current_avg)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Anterior:</span>
-                      <span className="line-through text-muted-foreground">{formatPrice(insight.data.previous_avg)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Price Increases */}
-      {priceIncreases.length > 0 && (
-        <Card className="border-orange-500/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-              <TrendingUp className="h-5 w-5" />
-              Incrementos de Precio
-            </CardTitle>
-            <CardDescription>
-              Marcas con subidas en los últimos 30 días
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {priceIncreases.slice(0, 4).map((insight, idx) => (
-                <div key={idx} className="p-3 rounded-lg border bg-muted/50">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-sm">{insight.data.brand}</h3>
-                    <Badge variant="secondary" className="text-orange-600">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      +{insight.data.change_percent.toFixed(1)}%
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatPrice(insight.data.previous_avg)} → {formatPrice(insight.data.current_avg)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Historical Opportunities */}
-      {historicalOpportunities && Array.isArray(historicalOpportunities.data) && (
-        <Card className="border-green-500/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
-              <Target className="h-5 w-5" />
-              Cerca de Mínimos Históricos
-            </CardTitle>
-            <CardDescription>
-              Modelos con precios cercanos a sus registros más bajos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {historicalOpportunities.data.slice(0, 3).map((model: any, idx: number) => (
-                <div key={idx} className="p-4 rounded-lg border border-green-500/30 bg-gradient-to-br from-green-500/10 to-green-500/5">
-                  <div className="mb-3">
-                    <h3 className="font-semibold">{model.brand} {model.model}</h3>
-                    <p className="text-xs text-muted-foreground">{model.name}</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="text-center p-2 bg-card rounded">
-                      <p className="text-muted-foreground">Actual</p>
-                      <p className="font-bold text-sm">{formatPrice(model.current_price)}</p>
-                    </div>
-                    <div className="text-center p-2 bg-card rounded">
-                      <p className="text-muted-foreground">Mín</p>
-                      <p className="font-bold text-green-600 text-sm">{formatPrice(model.historical_low)}</p>
-                    </div>
-                    <div className="text-center p-2 bg-card rounded">
-                      <p className="text-muted-foreground">Máx</p>
-                      <p className="font-bold text-red-600 text-sm">{formatPrice(model.historical_high)}</p>
-                    </div>
-                  </div>
-                  <Badge className="mt-2 w-full justify-center bg-green-600">
-                    Rango histórico: {model.range_percent}%
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Best Value Models */}
-      {bestValues && Array.isArray(bestValues.data) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Mejores Oportunidades de Compra
-            </CardTitle>
-            <CardDescription>
-              Modelos con precios por debajo de la mediana del mercado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {bestValues.data.slice(0, 6).map((model: any, idx: number) => (
-                <div key={idx} className="p-3 rounded-lg border bg-primary/5">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-semibold text-sm">{model.brand} {model.model}</h3>
-                      <p className="text-xs text-muted-foreground">{model.name}</p>
-                    </div>
-                    <Badge className="bg-primary">
-                      -{model.savings_vs_median}%
-                    </Badge>
-                  </div>
-                  <div className="text-lg font-bold text-primary mt-2">
-                    {formatPrice(model.price)}
-                  </div>
-                  <Badge variant="outline" className="text-xs mt-1">
-                    {model.category}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Compact Charts Section */}
-      {marketStats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {/* Price by Brand */}
-          {marketStats.chart_data?.prices_by_brand && marketStats.chart_data.prices_by_brand.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Precio por Marca
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Bar
-                      key={`brand-chart-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.prices_by_brand.slice(0, 8).map((d: any) => d.brand),
-                        datasets: [{
-                          label: 'Precio Promedio',
-                          data: marketStats.chart_data.prices_by_brand.slice(0, 8).map((d: any) => d.avg_price),
-                          backgroundColor: hslVar('--chart-1', 0.8),
-                        }]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { ticks: { font: { size: 10 } } },
-                          y: { ticks: { font: { size: 10 } } }
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        {isReduction ? 
+                          <TrendingDown className="h-5 w-5 text-red-500" /> : 
+                          <TrendingUp className="h-5 w-5 text-green-500" />
                         }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                        <div>
+                          <CardTitle className="text-lg">
+                            {isReduction ? '🔥 ' : ''}{insight.data.brand}: {isReduction ? 'Reducción' : 'Incremento'} de Precios
+                          </CardTitle>
+                          <CardDescription>
+                            Los precios de {insight.data.brand} {isReduction ? 'bajaron' : 'subieron'} <span className={isReduction ? 'text-red-500 font-bold' : 'text-green-500 font-bold'}>{changePercent.toFixed(1)}%</span> en los últimos 30 días
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <Badge variant={isReduction ? "destructive" : "default"} className="text-lg font-bold">
+                        {isReduction ? '-' : '+'}{changePercent.toFixed(1)}%
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Precio Promedio Anterior (hace 30 días)</p>
+                        <p className="font-semibold text-lg">{formatPrice(insight.data.previous_avg)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Precio Promedio Actual</p>
+                        <p className={`font-semibold text-lg ${isReduction ? 'text-red-500' : 'text-green-500'}`}>
+                          {formatPrice(insight.data.current_avg)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-          {/* Price by Category */}
-          {marketStats.chart_data?.prices_by_category && marketStats.chart_data.prices_by_category.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  Precio por Categoría
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Bar
-                      key={`category-chart-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.prices_by_category.map((d: any) => d.category),
-                        datasets: [{
-                          label: 'Promedio',
-                          data: marketStats.chart_data.prices_by_category.map((d: any) => d.avg_price),
-                          backgroundColor: hslVar('--chart-2', 0.8),
-                        }]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { ticks: { font: { size: 10 } } },
-                          y: { ticks: { font: { size: 10 } } }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Models by Category */}
-          {marketStats.chart_data?.models_by_category && marketStats.chart_data.models_by_category.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Modelos por Categoría
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Doughnut
-                      key={`models-category-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.models_by_category.map((d: any) => d.category),
-                        datasets: [{
-                          data: marketStats.chart_data.models_by_category.map((d: any) => d.count),
-                          backgroundColor: [
-                            hslVar('--chart-1', 0.8),
-                            hslVar('--chart-2', 0.8),
-                            hslVar('--chart-3', 0.8),
-                            hslVar('--chart-4', 0.8),
-                            hslVar('--chart-5', 0.8),
-                          ],
-                        }]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'bottom',
-                            labels: { font: { size: 10 } }
-                          }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Top 5 Most Expensive */}
-          {marketStats.chart_data?.top_5_expensive && marketStats.chart_data.top_5_expensive.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Top 5 Más Caros
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Bar
-                      key={`top-expensive-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.top_5_expensive.map((d: any) => `${d.brand} ${d.model}`),
-                        datasets: [{
-                          label: 'Precio',
-                          data: marketStats.chart_data.top_5_expensive.map((d: any) => d.price),
-                          backgroundColor: hslVar('--chart-3', 0.8),
-                        }]
-                      }}
-                      options={{
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { ticks: { font: { size: 9 } } },
-                          y: { ticks: { font: { size: 9 } } }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Top 5 Cheapest */}
-          {marketStats.chart_data?.bottom_5_cheap && marketStats.chart_data.bottom_5_cheap.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingDown className="h-4 w-4" />
-                  Top 5 Más Baratos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Bar
-                      key={`bottom-cheap-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.bottom_5_cheap.map((d: any) => `${d.brand} ${d.model}`),
-                        datasets: [{
-                          label: 'Precio',
-                          data: marketStats.chart_data.bottom_5_cheap.map((d: any) => d.price),
-                          backgroundColor: hslVar('--chart-4', 0.8),
-                        }]
-                      }}
-                      options={{
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { ticks: { font: { size: 9 } } },
-                          y: { ticks: { font: { size: 9 } } }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Brand Variations */}
-          {marketStats.chart_data?.brand_variations && marketStats.chart_data.brand_variations.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  Variación por Marca
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  {mounted && (
-                    <Bar
-                      key={`variations-${chartKey}`}
-                      data={{
-                        labels: marketStats.chart_data.brand_variations.slice(0, 8).map((d: any) => d.brand),
-                        datasets: [{
-                          label: 'Variación %',
-                          data: marketStats.chart_data.brand_variations.slice(0, 8).map((d: any) => d.variation_percent),
-                          backgroundColor: marketStats.chart_data.brand_variations.slice(0, 8).map((d: any) => 
-                            d.variation_percent > 0 ? hslVar('--chart-5', 0.8) : hslVar('--destructive', 0.8)
-                          ),
-                        }]
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { ticks: { font: { size: 9 } } },
-                          y: { ticks: { font: { size: 10 } } }
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Category Comparison */}
-      {categoryComparison && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Comparación de Segmentos
-            </CardTitle>
-            <CardDescription>
-              Diferencias entre categorías de vehículos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="p-4 rounded-lg border border-red-500/30 bg-red-500/5">
-                <h4 className="font-semibold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
-                  🔴 Segmento Más Caro
-                </h4>
-                <p className="font-medium text-lg mb-2">
-                  {categoryComparison.data.most_expensive_category.category}
-                </p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Promedio:</span>
-                    <span className="font-medium">{formatPrice(categoryComparison.data.most_expensive_category.avg_price)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Modelos:</span>
-                    <span>{categoryComparison.data.most_expensive_category.model_count}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rango:</span>
-                    <span>{formatPrice(categoryComparison.data.most_expensive_category.price_range)}</span>
-                  </div>
+        {/* Historical Opportunities */}
+        {historicalOpp && historicalOpp.data && historicalOpp.data.length > 0 && (
+          <Card className="border-amber-500/50 bg-amber-500/5">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                <div>
+                  <CardTitle className="text-lg">{historicalOpp.title}</CardTitle>
+                  <CardDescription>{historicalOpp.description}</CardDescription>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {historicalOpp.data.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center p-4 bg-background rounded-lg border">
+                    <div>
+                      <p className="font-semibold text-lg">{item.brand} {item.model}</p>
+                      <p className="text-sm text-muted-foreground">{item.name}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-xl text-amber-500">{formatPrice(item.current_price)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Rango histórico: {formatPrice(item.historical_low)} - {formatPrice(item.historical_high)}
+                      </p>
+                      <Badge variant="secondary" className="mt-1">
+                        Variación histórica: {item.range_percent}%
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
-                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
-                  🟢 Segmento Más Accesible
-                </h4>
-                <p className="font-medium text-lg mb-2">
-                  {categoryComparison.data.most_affordable_category.category}
-                </p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Promedio:</span>
-                    <span className="font-medium">{formatPrice(categoryComparison.data.most_affordable_category.avg_price)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Modelos:</span>
-                    <span>{categoryComparison.data.most_affordable_category.model_count}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Rango:</span>
-                    <span>{formatPrice(categoryComparison.data.most_affordable_category.price_range)}</span>
-                  </div>
+        {/* Best Value Models */}
+        {bestValue && bestValue.data && bestValue.data.length > 0 && (
+          <Card className="border-blue-500/50 bg-blue-500/5">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-blue-500" />
+                <div>
+                  <CardTitle className="text-lg">{bestValue.title}</CardTitle>
+                  <CardDescription>{bestValue.description}</CardDescription>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Price Stability */}
-      {priceStability && Array.isArray(priceStability.data) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Modelos con Precios Estables
-            </CardTitle>
-            <CardDescription>
-              Vehículos con menor variación de precio
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {priceStability.data.map((item: any, idx: number) => (
-                <div key={idx} className="p-3 rounded-lg border bg-muted/50">
-                  <div className="flex items-start justify-between mb-2">
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-3">
+                {bestValue.data.slice(0, 6).map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-background rounded border">
                     <div>
-                      <h3 className="font-semibold text-sm">{item.brand} {item.model}</h3>
-                      <p className="text-xs text-muted-foreground">Prom: {formatPrice(item.avg_price)}</p>
+                      <p className="font-semibold">{item.brand} {item.model}</p>
+                      <p className="text-xs text-muted-foreground">{item.name} - {item.category}</p>
                     </div>
-                    <Badge variant={item.stability_score < 5 ? "default" : "secondary"}>
-                      {item.stability_score < 5 ? "Muy Estable" : "Estable"}
-                    </Badge>
+                    <div className="text-right">
+                      <p className="font-bold text-lg">{formatPrice(item.price)}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        {item.savings_vs_median}% bajo mediana
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Variación: {item.stability_score}%
-                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Price Stability */}
+        {priceStability && priceStability.data && priceStability.data.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">{priceStability.title}</CardTitle>
+                  <CardDescription>
+                    Modelos con menor variación de precio en su historial (coeficiente de variación más bajo)
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {priceStability.data.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-background rounded border">
+                    <div>
+                      <p className="font-semibold">{item.brand} {item.model}</p>
+                      <p className="text-xs text-muted-foreground">{item.name}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">{formatPrice(item.avg_price)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.data_points} registros | Estabilidad: {item.stability_score.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Brand Variations - Historical Trends */}
+        {brandVariations && brandVariations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">Variaciones Históricas por Marca</CardTitle>
+                  <CardDescription>
+                    Cambio porcentual acumulado desde el primer registro hasta el último
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-3">
+                {brandVariations
+                  .filter((b: any) => b.scraping_sessions > 1)
+                  .sort((a: any, b: any) => Math.abs(b.variation_percent) - Math.abs(a.variation_percent))
+                  .slice(0, 6)
+                  .map((brand: any, idx: number) => {
+                    const isIncrease = brand.variation_percent > 0;
+                    return (
+                      <div key={idx} className="p-3 bg-background rounded border">
+                        <div className="flex justify-between items-start mb-2">
+                          <p className="font-semibold">{brand.brand}</p>
+                          <Badge variant={isIncrease ? "default" : "destructive"}>
+                            {isIncrease ? '+' : ''}{brand.variation_percent.toFixed(1)}%
+                          </Badge>
+                        </div>
+                        <div className="text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Primer registro:</span>
+                            <span>{formatPrice(brand.first_avg_price)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Último registro:</span>
+                            <span className={isIncrease ? 'text-green-500' : 'text-red-500'}>
+                              {formatPrice(brand.last_avg_price)}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground">{brand.scraping_sessions} sesiones de datos</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Category Comparison */}
+        {categoryComp && categoryComp.data && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <div>
+                  <CardTitle className="text-lg">{categoryComp.title}</CardTitle>
+                  <CardDescription>{categoryComp.description}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 bg-background rounded-lg border border-primary/30">
+                  <p className="text-sm text-muted-foreground mb-2">Segmento Más Caro</p>
+                  <p className="font-bold text-2xl">{categoryComp.data.most_expensive_category.category}</p>
+                  <p className="text-sm font-semibold text-primary mt-2">
+                    Promedio: {formatPrice(categoryComp.data.most_expensive_category.avg_price)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {categoryComp.data.most_expensive_category.model_count} modelos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Rango de precios: {formatPrice(categoryComp.data.most_expensive_category.price_range)}
+                  </p>
+                </div>
+                <div className="p-4 bg-background rounded-lg border border-green-500/30">
+                  <p className="text-sm text-muted-foreground mb-2">Segmento Más Accesible</p>
+                  <p className="font-bold text-2xl">{categoryComp.data.most_affordable_category.category}</p>
+                  <p className="text-sm font-semibold text-green-500 mt-2">
+                    Promedio: {formatPrice(categoryComp.data.most_affordable_category.avg_price)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {categoryComp.data.most_affordable_category.model_count} modelos
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Rango de precios: {formatPrice(categoryComp.data.most_affordable_category.price_range)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Top Extremes */}
+        {(topExpensive.length > 0 || topCheapest.length > 0) && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {topExpensive.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Top 5 Modelos Más Caros</CardTitle>
+                  <CardDescription>Los vehículos con los precios más altos registrados actualmente</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {topExpensive.slice(0, 5).map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center p-2 bg-background rounded border">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{idx + 1}</Badge>
+                          <div>
+                            <p className="font-semibold text-sm">{item.brand} {item.model}</p>
+                          </div>
+                        </div>
+                        <p className="font-bold">{formatPrice(item.price)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {topCheapest.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Top 5 Modelos Más Accesibles</CardTitle>
+                  <CardDescription>Los vehículos con los precios más bajos registrados actualmente</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {topCheapest.slice(0, 5).map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center p-2 bg-background rounded border">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{idx + 1}</Badge>
+                          <div>
+                            <p className="font-semibold text-sm">{item.brand} {item.model}</p>
+                          </div>
+                        </div>
+                        <p className="font-bold">{formatPrice(item.price)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
