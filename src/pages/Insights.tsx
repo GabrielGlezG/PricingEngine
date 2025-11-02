@@ -28,15 +28,18 @@ import {
   TrendingDown,
   Calendar,
 } from "lucide-react";
-import { Bar } from 'react-chartjs-2'
+import { Bar, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
+  Filler,
 } from 'chart.js'
 import { useEffect, useState } from "react";
 
@@ -44,9 +47,12 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   ChartTooltip,
-  ChartLegend
+  ChartLegend,
+  Filler
 )
 
 // Set default chart colors - will be updated dynamically
@@ -575,8 +581,8 @@ export default function Insights() {
 
           <CardContent>
             <div className="h-[300px]">
-              {mounted && <Bar
-              key={`bar-price-segment-${chartKey}`} // ✅ Key única
+              {mounted && <Line
+              key={`area-price-segment-${chartKey}`}
                 data={{
                   labels: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => {
                     const range = item.range
@@ -600,9 +606,16 @@ export default function Insights() {
                     {
                       label: 'Modelos',
                       data: (priceDistributionLocal || marketStats.chart_data.price_distribution).map((item: any) => item.count),
-                      backgroundColor: hslVar('--chart-1'),
+                      backgroundColor: hslVar('--chart-1', 0.3),
                       borderColor: hslVar('--chart-1'),
-                      borderWidth: 1,
+                      borderWidth: 2,
+                      pointRadius: 4,
+                      pointHoverRadius: 6,
+                      pointBackgroundColor: hslVar('--chart-1'),
+                      pointBorderColor: hslVar('--card'),
+                      pointBorderWidth: 2,
+                      tension: 0.3,
+                      fill: true,
                     }
                   ]
                 }}

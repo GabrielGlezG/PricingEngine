@@ -37,15 +37,15 @@
     --sidebar-border: 30 15% 88%;
     --sidebar-ring: 30 49% 58%;
     
-    /* Chart colors - variaciones del color del logo #C99563 */
-    --chart-1: 30 49% 58%;   /* Base: #C99563 */
-    --chart-2: 30 49% 65%;   /* Más claro */
-    --chart-3: 30 49% 72%;   /* Aún más claro */
-    --chart-4: 35 45% 60%;   /* Variación dorada */
-    --chart-5: 25 52% 56%;   /* Variación cálida */
-    --chart-6: 30 49% 50%;   /* Más oscuro */
-    --chart-7: 32 47% 62%;   /* Variación intermedia */
-    --chart-8: 28 51% 54%;   /* Variación profunda */
+    /* Chart colors - paleta personalizada */
+    --chart-1: 27 79% 52%;   /* Naranja cálido #E57A24 */
+    --chart-2: 213 46% 31%;  /* Azul profundo #2B4C74 */
+    --chart-3: 102 11% 66%;  /* Gris verdoso claro #A5B1A0 */
+    --chart-4: 156 11% 82%;  /* Celeste grisáceo #CBD5D1 */
+    --chart-5: 30 83% 70%;   /* Durazno claro #F2B375 */
+    --chart-6: 48 42% 95%;   /* Crema pálido #F8F6EE */
+    --chart-7: 27 79% 45%;   /* Naranja más oscuro */
+    --chart-8: 213 46% 40%;  /* Azul más claro */
   }
 
   .dark {
@@ -79,15 +79,15 @@
     --sidebar-border: 0 0% 25%;
     --sidebar-ring: 30 49% 58%;
     
-    /* Chart colors - variaciones del color del logo */
-    --chart-1: 30 49% 58%;
-    --chart-2: 30 49% 65%;
-    --chart-3: 30 49% 72%;
-    --chart-4: 35 45% 60%;
-    --chart-5: 25 52% 56%;
-    --chart-6: 30 49% 50%;
-    --chart-7: 32 47% 62%;
-    --chart-8: 28 51% 54%;
+    /* Chart colors - paleta personalizada */
+    --chart-1: 27 79% 52%;   /* Naranja cálido #E57A24 */
+    --chart-2: 213 46% 31%;  /* Azul profundo #2B4C74 */
+    --chart-3: 102 11% 66%;  /* Gris verdoso claro #A5B1A0 */
+    --chart-4: 156 11% 82%;  /* Celeste grisáceo #CBD5D1 */
+    --chart-5: 30 83% 70%;   /* Durazno claro #F2B375 */
+    --chart-6: 48 42% 95%;   /* Crema pálido #F8F6EE */
+    --chart-7: 27 79% 45%;   /* Naranja más oscuro */
+    --chart-8: 213 46% 40%;  /* Azul más claro */
   }
 }
 
