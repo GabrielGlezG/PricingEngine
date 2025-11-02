@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package, AlertCircle, Zap } from 'lucide-react'
 import { Line, Bar } from 'react-chartjs-2'
 import { useCurrency } from '@/contexts/CurrencyContext'
 import { lineChartColors, barChartColors, getTooltipOptions, getScaleOptions } from '@/config/chartColors'
@@ -25,24 +26,74 @@ interface DestacadosData {
   recentChanges: Array<any>
 }
 
+interface AnalyticsData {
+  chart_data: {
+    top_5_expensive: Array<{ brand: string; model: string; price: number }>
+    bottom_5_cheap: Array<{ brand: string; model: string; price: number }>
+    brand_variations: Array<{
+      brand: string
+      first_avg_price: number
+      last_avg_price: number
+      variation_percent: number
+      scraping_sessions: number
+    }>
+    monthly_volatility: {
+      most_volatile: Array<{
+        brand: string
+        model: string
+        name: string
+        avg_monthly_variation: number
+        data_points: number
+      }>
+    }
+  }
+}
+
+interface InsightData {
+  insights: Array<{
+    insight_type: string
+    title: string
+    description: string
+    data?: any
+    priority: number
+  }>
+  generated_at: string
+  data_analyzed: {
+    total_records: number
+    products_tracked: number
+    date_range: { from: string; to: string } | null
+  }
+}
+
 export default function Destacados() {
   const [data, setData] = useState<DestacadosData | null>(null)
+  const [insights, setInsights] = useState<InsightData | null>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const { formatPrice } = useCurrency()
 
   useEffect(() => {
-    fetchDestacados()
+    fetchData()
   }, [])
 
-  const fetchDestacados = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true)
-      const { data: result, error } = await supabase.functions.invoke('get-destacados')
+      const [destacadosRes, insightsRes, analyticsRes] = await Promise.all([
+        supabase.functions.invoke('get-destacados'),
+        supabase.functions.invoke('get-insights'),
+        supabase.functions.invoke('get-analytics')
+      ])
       
-      if (error) throw error
-      setData(result)
+      if (destacadosRes.error) throw destacadosRes.error
+      if (insightsRes.error) throw insightsRes.error
+      if (analyticsRes.error) throw analyticsRes.error
+      
+      setData(destacadosRes.data)
+      setInsights(insightsRes.data)
+      setAnalytics(analyticsRes.data)
     } catch (error) {
-      console.error('Error fetching destacados:', error)
+      console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
@@ -61,7 +112,33 @@ export default function Destacados() {
     )
   }
 
-  if (!data) return null
+  if (!data || !insights || !analytics) return null
+
+  const getInsightIcon = (type: string) => {
+    switch(type) {
+      case 'price_trend': return TrendingUp
+      case 'best_value': return Tag
+      case 'price_stability': return Activity
+      case 'historical_opportunity': return Zap
+      default: return AlertCircle
+    }
+  }
+
+  const getInsightImpact = (insight: any): 'positive' | 'negative' | 'neutral' => {
+    if (insight.insight_type === 'price_trend' && insight.data?.direction === 'down') return 'positive'
+    if (insight.insight_type === 'price_trend' && insight.data?.direction === 'up') return 'negative'
+    if (insight.insight_type === 'best_value') return 'positive'
+    if (insight.insight_type === 'historical_opportunity') return 'positive'
+    return 'neutral'
+  }
+
+  const getInsightColor = (impact: 'positive' | 'negative' | 'neutral') => {
+    switch(impact) {
+      case 'positive': return 'text-[hsl(142,76%,36%)]' // verde
+      case 'negative': return 'text-[hsl(0,84%,60%)]' // rojo
+      default: return 'text-[hsl(25,65%,65%)]' // naranja
+    }
+  }
 
   const marketTrendChart = {
     labels: data.marketTrend.map(m => {
@@ -209,18 +286,104 @@ export default function Destacados() {
         </div>
       </div>
 
-      {/* Tendencia del Mercado */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Activity className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-          Tendencia del Mercado (6 meses)
-        </h2>
-        <div className="h-[250px]">
-          <Line data={marketTrendChart} options={marketTrendOptions} />
-        </div>
-      </Card>
+      {/* Insights Automáticos */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {insights.insights.slice(0, 6).map((insight, idx) => {
+          const Icon = getInsightIcon(insight.insight_type)
+          const impact = getInsightImpact(insight)
+          const colorClass = getInsightColor(impact)
+          
+          return (
+            <Card key={idx} className="p-5 border-border/50 shadow-md hover:shadow-lg transition-all">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${impact === 'positive' ? 'bg-[hsl(142,76%,36%)]/10' : impact === 'negative' ? 'bg-[hsl(0,84%,60%)]/10' : 'bg-[hsl(25,65%,65%)]/10'}`}>
+                  <Icon className={`h-5 w-5 ${colorClass}`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm mb-1">{insight.title}</h3>
+                  <p className={`text-xs ${colorClass} font-medium`}>{insight.description}</p>
+                  
+                  {/* Mostrar datos adicionales según el tipo */}
+                  {insight.insight_type === 'price_trend' && insight.data && (
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Cambio promedio:</span>
+                        <span className={`font-bold ${colorClass}`}>
+                          {insight.data.direction === 'up' ? '+' : ''}{insight.data.change_percent}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {insight.insight_type === 'best_value' && Array.isArray(insight.data) && insight.data.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
+                      {insight.data.slice(0, 2).map((item: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
+                          <Badge variant="outline" className="text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 text-[10px] px-1">
+                            -{item.savings_vs_median}%
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {insight.insight_type === 'price_stability' && Array.isArray(insight.data) && insight.data.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
+                      {insight.data.slice(0, 2).map((item: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
+                          <span className="text-[10px] text-muted-foreground">{item.stability_score}% var.</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {insight.insight_type === 'historical_opportunity' && Array.isArray(insight.data) && insight.data.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
+                      {insight.data.slice(0, 2).map((item: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
+                          <Badge variant="outline" className="text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 text-[10px] px-1">
+                            cerca mínimo
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Gráficos Compactos Lado a Lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tendencia del Mercado */}
+        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[hsl(25,65%,65%)]" />
+            Tendencia del Mercado (6 meses)
+          </h2>
+          <div className="h-[180px]">
+            <Line data={marketTrendChart} options={marketTrendOptions} />
+          </div>
+        </Card>
+
+        {/* Marcas Más Activas */}
+        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-[hsl(25,65%,65%)]" />
+            Marcas Más Activas
+          </h2>
+          <div className="h-[180px]">
+            <Bar data={topBrandsChart} options={topBrandsOptions} />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Mejores Ofertas */}
         <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -229,17 +392,17 @@ export default function Destacados() {
           </h2>
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {data.bestDeals.map((deal, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(140,35%,70%)]/10 to-transparent border border-[hsl(140,35%,70%)]/20 hover:border-[hsl(140,35%,70%)]/40 transition-colors">
+              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20 hover:border-[hsl(142,76%,36%)]/40 transition-colors">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{deal.products.model} {deal.products.submodel}</p>
+                  <p className="font-medium text-sm"> {deal.products.submodel}</p>
                   <p className="text-xs text-muted-foreground">{deal.products.category}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-[hsl(140,35%,60%)]">{formatPrice(deal.price)}</p>
-                  <p className="text-xs text-[hsl(140,50%,45%)] flex items-center gap-1 justify-end">
+                  <p className="font-bold text-foreground">{formatPrice(deal.price)}</p>
+                  <Badge variant="outline" className="text-xs text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 flex items-center gap-1 w-fit ml-auto mt-1">
                     <TrendingDown className="h-3 w-3" />
-                    {deal.discount}% descuento
-                  </p>
+                    -{deal.discount}%
+                  </Badge>
                 </div>
               </div>
             ))}
@@ -268,16 +431,6 @@ export default function Destacados() {
         </Card>
       </div>
 
-      {/* Marcas Más Activas */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Tag className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-          Marcas Más Activas
-        </h2>
-        <div className="h-[250px]">
-          <Bar data={topBrandsChart} options={topBrandsOptions} />
-        </div>
-      </Card>
 
       {/* Cambios Recientes Significativos */}
       <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
@@ -294,44 +447,54 @@ export default function Destacados() {
                   {formatPrice(change.previousPrice)} → {formatPrice(change.currentPrice)}
                 </p>
               </div>
-              <div className={`flex items-center gap-1 font-bold ${
-                change.change > 0 ? 'text-[hsl(15,60%,62%)]' : 'text-[hsl(140,35%,60%)]'
-              }`}>
+              <Badge 
+                variant="outline" 
+                className={`flex items-center gap-1 font-bold ${
+                  change.change > 0 
+                    ? 'text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%)]/30 bg-[hsl(0,84%,60%)]/10' 
+                    : 'text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10'
+                }`}
+              >
                 {change.change > 0 ? (
-                  <TrendingUp className="h-4 w-4" />
+                  <>
+                    <TrendingUp className="h-3 w-3" />
+                    +{Math.abs(change.change)}%
+                  </>
                 ) : (
-                  <TrendingDown className="h-4 w-4" />
+                  <>
+                    <TrendingDown className="h-3 w-3" />
+                    -{Math.abs(change.change)}%
+                  </>
                 )}
-                {Math.abs(change.change)}%
-              </div>
+              </Badge>
             </div>
           ))}
         </div>
       </Card>
 
-      {/* Análisis por Categoría */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-[hsl(140,35%,70%)]" />
+      {/* Análisis por Categoría - más compacto */}
+      <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-[hsl(140,35%,70%)]" />
           Análisis por Categoría
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Categoría</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Productos</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Precio Promedio</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Rango</th>
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">Categoría</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Productos</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Precio Promedio</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Rango</th>
               </tr>
             </thead>
             <tbody>
               {data.categoryAnalysis.map((cat, idx) => (
                 <tr key={idx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-medium">{cat.category}</td>
-                  <td className="text-right p-3">{cat.productCount}</td>
-                  <td className="text-right p-3 font-bold text-[hsl(25,65%,65%)]">{formatPrice(cat.avgPrice)}</td>
-                  <td className="text-right p-3 text-sm text-muted-foreground">
+                  <td className="p-2 font-medium text-sm">{cat.category}</td>
+                  <td className="text-right p-2 text-sm">{cat.productCount}</td>
+                  <td className="text-right p-2 font-bold text-sm text-[hsl(25,65%,65%)]">{formatPrice(cat.avgPrice)}</td>
+                  <td className="text-right p-2 text-xs text-muted-foreground">
                     {formatPrice(cat.minPrice)} - {formatPrice(cat.maxPrice)}
                   </td>
                 </tr>
@@ -340,6 +503,189 @@ export default function Destacados() {
           </table>
         </div>
       </Card>
+
+      {/* Información adicional de insights: Comparación de categorías */}
+      {insights.insights.find(i => i.insight_type === 'category_comparison') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const catInsight = insights.insights.find(i => i.insight_type === 'category_comparison');
+            return (
+              <>
+                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-[hsl(0,84%,60%)]" />
+                    Segmento Más Costoso
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_expensive_category.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
+                      <span className="text-lg font-bold text-[hsl(0,84%,60%)]">{formatPrice(catInsight.data.most_expensive_category.avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Modelos:</span>
+                      <span className="text-sm font-semibold">{catInsight.data.most_expensive_category.model_count}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
+                      <span className="text-sm font-semibold">
+                        {formatPrice(catInsight.data.most_expensive_category.min_price)} - {formatPrice(catInsight.data.most_expensive_category.max_price)}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-[hsl(142,76%,36%)]" />
+                    Segmento Más Accesible
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_affordable_category.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
+                      <span className="text-lg font-bold text-[hsl(142,76%,36%)]">{formatPrice(catInsight.data.most_affordable_category.avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Modelos:</span>
+                      <span className="text-sm font-semibold">{catInsight.data.most_affordable_category.model_count}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
+                      <span className="text-sm font-semibold">
+                        {formatPrice(catInsight.data.most_affordable_category.min_price)} - {formatPrice(catInsight.data.most_affordable_category.max_price)}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Top 5 Más Caros y Más Accesibles */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[hsl(0,84%,60%)]" />
+            Top 5 Modelos Más Caros
+          </h2>
+          <div className="space-y-3">
+            {analytics.chart_data.top_5_expensive.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(0,84%,60%)]/5 to-transparent border border-[hsl(0,84%,60%)]/20">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-[hsl(0,84%,60%)]/20 flex items-center justify-center">
+                    <span className="text-sm font-bold text-[hsl(0,84%,60%)]">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{item.brand}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
+                  </div>
+                </div>
+                <p className="font-bold text-[hsl(0,84%,60%)]">{formatPrice(item.price)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 text-[hsl(142,76%,36%)]" />
+            Top 5 Modelos Más Accesibles
+          </h2>
+          <div className="space-y-3">
+            {analytics.chart_data.bottom_5_cheap.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-[hsl(142,76%,36%)]/20 flex items-center justify-center">
+                    <span className="text-sm font-bold text-[hsl(142,76%,36%)]">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{item.brand}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
+                  </div>
+                </div>
+                <p className="font-bold text-[hsl(142,76%,36%)]">{formatPrice(item.price)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Variaciones Históricas por Marca */}
+      {analytics.chart_data.brand_variations.filter(b => b.scraping_sessions > 1).length > 0 && (
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-[hsl(25,65%,65%)]" />
+            Variaciones Históricas de Precios por Marca
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {analytics.chart_data.brand_variations
+              .filter(b => b.scraping_sessions > 1)
+              .sort((a, b) => Math.abs(b.variation_percent) - Math.abs(a.variation_percent))
+              .slice(0, 9)
+              .map((brand, idx) => (
+                <div key={idx} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-sm">{brand.brand}</p>
+                    <Badge 
+                      variant="outline" 
+                      className={`font-bold text-xs ${
+                        brand.variation_percent > 0 
+                          ? 'text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%)]/30 bg-[hsl(0,84%,60%)]/10' 
+                          : 'text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10'
+                      }`}
+                    >
+                      {brand.variation_percent > 0 ? '+' : ''}{brand.variation_percent.toFixed(1)}%
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Precio inicial:</span>
+                      <span className="font-medium">{formatPrice(brand.first_avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Precio actual:</span>
+                      <span className="font-medium">{formatPrice(brand.last_avg_price)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30">
+                      {brand.scraping_sessions} registros históricos
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Modelos con Mayor Volatilidad */}
+      {analytics.chart_data.monthly_volatility.most_volatile.length > 0 && (
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-[hsl(25,65%,65%)]" />
+            Modelos con Mayor Volatilidad de Precios
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Estos modelos han experimentado las mayores fluctuaciones de precio en su historial
+          </p>
+          <div className="space-y-3">
+            {analytics.chart_data.monthly_volatility.most_volatile.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(25,65%,65%)]/10 to-transparent border border-[hsl(25,65%,65%)]/20 hover:border-[hsl(25,65%,65%)]/40 transition-colors">
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{item.brand} {item.model}</p>
+                  <p className="text-xs text-muted-foreground">{item.data_points} registros históricos</p>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="text-[hsl(25,65%,65%)] border-[hsl(25,65%,65%)]/30 bg-[hsl(25,65%,65%)]/10">
+                    ±{item.avg_monthly_variation.toFixed(1)}% promedio
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
