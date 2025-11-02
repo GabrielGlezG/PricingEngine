@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Compare from "./pages/Compare";
 import Insights from "./pages/Insights";
+import Destacados from "./pages/Destacados";
 import PriceEvolution from "./pages/PriceEvolution";
 import Subscription from "./pages/Subscription";
 import Admin from "./pages/Admin";
@@ -59,6 +60,13 @@ const App = () => (
                 <ProtectedRoute requireSubscription={true}>
                   <NewLayout>
                     <Insights />
+                  </NewLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/destacados" element={
+                <ProtectedRoute requireSubscription={true}>
+                  <NewLayout>
+                    <Destacados />
                   </NewLayout>
                 </ProtectedRoute>
               } />
