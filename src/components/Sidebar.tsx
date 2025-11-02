@@ -19,7 +19,7 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
     { title: 'Cargar Datos', url: '/upload', icon: Upload, requireAdmin: true },
     { title: 'Comparar', url: '/compare', icon: Scale, requireAdmin: false },
     { title: 'Evolución de Precios', url: '/price-evolution', icon: TrendingUp, requireAdmin: false },
-    { title: 'Insights', url: '/insights', icon: Lightbulb, requireAdmin: false },
+    { title: 'Destacados', url: '/destacados', icon: Lightbulb, requireAdmin: false },
     { title: 'Admin', url: '/admin', icon: Users, requireAdmin: true },
   ]
 

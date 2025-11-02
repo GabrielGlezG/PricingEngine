@@ -2,92 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design System - Paleta de colores claros y profesionales */
+/* Design System - Paleta Clara con Cobrizo Elegante */
 
 @layer base {
   :root {
-    --background: 60 14% 98%;        /* #FAFAF8 */
-    --foreground: 0 0% 15%;          /* Texto oscuro para contraste */
-    --card: 0 0% 100%;               /* Blanco puro para cards */
-    --card-foreground: 0 0% 15%;     /* Texto oscuro en cards */
-    --popover: 0 0% 100%;            /* Blanco para popovers */
-    --popover-foreground: 0 0% 15%;  /* Texto oscuro en popovers */
-    --primary: 30 49% 58%;           /* #C99563 - Color del logo */
-    --primary-foreground: 0 0% 100%; /* Texto blanco sobre primary */
-    --secondary: 40 25% 94%;         /* #F5F1EB - Secundario claro */
-    --secondary-foreground: 0 0% 20%; /* Texto oscuro sobre secondary */
-    --muted: 40 20% 92%;             /* Gris cálido claro */
-    --muted-foreground: 0 0% 40%;    /* Texto medio */
-    --accent: 30 49% 58%;            /* #C99563 - Mismo que primary */
-    --accent-foreground: 0 0% 100%;  /* Texto blanco sobre accent */
-    --destructive: 0 84% 60%;        /* Rojo para destructive */
-    --destructive-foreground: 0 0% 100%; /* Texto blanco sobre destructive */
-    --border: 30 15% 88%;            /* Bordes suaves */
-    --input: 30 15% 88%;             /* Bordes de inputs */
-    --ring: 30 49% 58%;              /* Ring color = primary */
+    --background: 30 25% 97%;         /* #F9F7F5 - Beige muy claro */
+    --foreground: 25 20% 25%;         /* #453A32 - Marrón oscuro suave */
+    --card: 0 0% 100%;                /* Blanco puro */
+    --card-foreground: 25 20% 25%;    /* Marrón oscuro suave */
+    --popover: 0 0% 100%;             /* Blanco puro */
+    --popover-foreground: 25 20% 25%; /* Marrón oscuro suave */
+    --primary: 25 65% 65%;            /* #D4957A - Cobrizo claro */
+    --primary-foreground: 0 0% 100%;  /* Blanco */
+    --secondary: 35 55% 75%;          /* #E5C39C - Arena dorada */
+    --secondary-foreground: 25 20% 25%; /* Marrón oscuro */
+    --muted: 30 20% 92%;              /* Beige claro */
+    --muted-foreground: 25 15% 45%;   /* Gris cálido */
+    --accent: 140 35% 70%;            /* #9BC4A5 - Verde salvia claro */
+    --accent-foreground: 25 20% 25%;  /* Marrón oscuro */
+    --destructive: 10 65% 70%;        /* Terracota suave */
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 20% 88%;             /* Bordes beige */
+    --input: 30 20% 88%;
+    --ring: 25 65% 65%;
     --radius: 1rem;
     
     /* Sidebar colors */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 15%;
-    --sidebar-primary: 30 49% 58%;
+    --sidebar-foreground: 25 20% 25%;
+    --sidebar-primary: 25 65% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 25% 94%;
-    --sidebar-accent-foreground: 0 0% 20%;
-    --sidebar-border: 30 15% 88%;
-    --sidebar-ring: 30 49% 58%;
+    --sidebar-accent: 30 20% 92%;
+    --sidebar-accent-foreground: 25 20% 25%;
+    --sidebar-border: 30 20% 88%;
+    --sidebar-ring: 25 65% 65%;
     
-    /* Chart colors - paleta personalizada */
-    --chart-1: 27 79% 52%;   /* Naranja cálido #E57A24 */
-    --chart-2: 213 46% 31%;  /* Azul profundo #2B4C74 */
-    --chart-3: 102 11% 66%;  /* Gris verdoso claro #A5B1A0 */
-    --chart-4: 156 11% 82%;  /* Celeste grisáceo #CBD5D1 */
-    --chart-5: 30 83% 70%;   /* Durazno claro #F2B375 */
-    --chart-6: 48 42% 95%;   /* Crema pálido #F8F6EE */
-    --chart-7: 27 79% 45%;   /* Naranja más oscuro */
-    --chart-8: 213 46% 40%;  /* Azul más claro */
+    /* Chart colors - Paleta Tierra Clara */
+    --chart-1: 25 65% 65%;    /* Cobrizo claro */
+    --chart-2: 140 35% 70%;   /* Verde salvia */
+    --chart-3: 35 55% 75%;    /* Arena dorada */
+    --chart-4: 200 40% 75%;   /* Azul grisáceo claro */
+    --chart-5: 15 60% 72%;    /* Terracota claro */
+    --chart-6: 160 30% 72%;   /* Verde eucalipto */
+    --chart-7: 45 70% 78%;    /* Crema dorada */
+    --chart-8: 190 35% 75%;   /* Aguamarina apagado */
   }
 
   .dark {
-    --background: 0 0% 10%;          /* Fondo oscuro */
-    --foreground: 0 0% 95%;          /* Texto claro */
-    --card: 0 0% 14%;                /* Cards oscuros */
-    --card-foreground: 0 0% 95%;     /* Texto claro en cards */
-    --popover: 0 0% 14%;             /* Popovers oscuros */
-    --popover-foreground: 0 0% 95%;  /* Texto claro en popovers */
-    --primary: 30 49% 58%;           /* Mantener color del logo */
-    --primary-foreground: 0 0% 100%; /* Texto blanco sobre primary */
-    --secondary: 0 0% 20%;           /* Secundario oscuro */
-    --secondary-foreground: 0 0% 95%; /* Texto claro sobre secondary */
-    --muted: 0 0% 20%;               /* Gris oscuro */
-    --muted-foreground: 0 0% 65%;    /* Texto medio claro */
-    --accent: 30 49% 58%;            /* Mantener color del logo */
-    --accent-foreground: 0 0% 100%;  /* Texto blanco sobre accent */
-    --destructive: 0 84% 60%;        /* Rojo para destructive */
-    --destructive-foreground: 0 0% 100%; /* Texto blanco sobre destructive */
-    --border: 0 0% 25%;              /* Bordes oscuros */
-    --input: 0 0% 25%;               /* Bordes de inputs oscuros */
-    --ring: 30 49% 58%;              /* Ring color = primary */
+    --background: 25 15% 12%;
+    --foreground: 30 10% 95%;
+    --card: 25 15% 15%;
+    --card-foreground: 30 10% 95%;
+    --popover: 25 15% 15%;
+    --popover-foreground: 30 10% 95%;
+    --primary: 25 65% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 55% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 25 15% 20%;
+    --muted-foreground: 30 10% 68%;
+    --accent: 140 35% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 10 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 25 15% 25%;
+    --input: 25 15% 25%;
+    --ring: 25 65% 60%;
     
     /* Sidebar colors */
-    --sidebar-background: 0 0% 14%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 30 49% 58%;
+    --sidebar-background: 25 15% 15%;
+    --sidebar-foreground: 30 10% 95%;
+    --sidebar-primary: 25 65% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 20%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 25%;
-    --sidebar-ring: 30 49% 58%;
+    --sidebar-accent: 25 15% 20%;
+    --sidebar-accent-foreground: 30 10% 95%;
+    --sidebar-border: 25 15% 25%;
+    --sidebar-ring: 25 65% 60%;
     
-    /* Chart colors - paleta personalizada */
-    --chart-1: 27 79% 52%;   /* Naranja cálido #E57A24 */
-    --chart-2: 213 46% 31%;  /* Azul profundo #2B4C74 */
-    --chart-3: 102 11% 66%;  /* Gris verdoso claro #A5B1A0 */
-    --chart-4: 156 11% 82%;  /* Celeste grisáceo #CBD5D1 */
-    --chart-5: 30 83% 70%;   /* Durazno claro #F2B375 */
-    --chart-6: 48 42% 95%;   /* Crema pálido #F8F6EE */
-    --chart-7: 27 79% 45%;   /* Naranja más oscuro */
-    --chart-8: 213 46% 40%;  /* Azul más claro */
+    /* Chart colors */
+    --chart-1: 25 65% 60%;
+    --chart-2: 140 35% 60%;
+    --chart-3: 35 55% 65%;
+    --chart-4: 200 40% 65%;
+    --chart-5: 15 60% 62%;
+    --chart-6: 160 30% 62%;
+    --chart-7: 45 70% 68%;
+    --chart-8: 190 35% 65%;
   }
 }
 
