@@ -202,12 +202,16 @@ Deno.serve(async (req) => {
             category: categoryAverages[0].category,
             avg_price: Math.round(categoryAverages[0].avg_price),
             model_count: categoryAverages[0].model_count,
+            min_price: Math.round(categoryAverages[0].min_price),
+            max_price: Math.round(categoryAverages[0].max_price),
             price_range: Math.round(categoryAverages[0].price_range)
           },
           most_affordable_category: {
             category: categoryAverages[categoryAverages.length - 1].category,
             avg_price: Math.round(categoryAverages[categoryAverages.length - 1].avg_price),
             model_count: categoryAverages[categoryAverages.length - 1].model_count,
+            min_price: Math.round(categoryAverages[categoryAverages.length - 1].min_price),
+            max_price: Math.round(categoryAverages[categoryAverages.length - 1].max_price),
             price_range: Math.round(categoryAverages[categoryAverages.length - 1].price_range)
           }
         },
