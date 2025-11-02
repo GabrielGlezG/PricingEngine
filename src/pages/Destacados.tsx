@@ -331,18 +331,32 @@ export default function Destacados() {
         })}
       </div>
 
-      {/* Tendencia del Mercado */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Activity className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-          Tendencia del Mercado (6 meses)
-        </h2>
-        <div className="h-[200px]">
-          <Line data={marketTrendChart} options={marketTrendOptions} />
-        </div>
-      </Card>
+      {/* Gráficos Compactos Lado a Lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tendencia del Mercado */}
+        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[hsl(25,65%,65%)]" />
+            Tendencia del Mercado (6 meses)
+          </h2>
+          <div className="h-[180px]">
+            <Line data={marketTrendChart} options={marketTrendOptions} />
+          </div>
+        </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Marcas Más Activas */}
+        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-[hsl(25,65%,65%)]" />
+            Marcas Más Activas
+          </h2>
+          <div className="h-[180px]">
+            <Bar data={topBrandsChart} options={topBrandsOptions} />
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Mejores Ofertas */}
         <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -390,16 +404,6 @@ export default function Destacados() {
         </Card>
       </div>
 
-      {/* Marcas Más Activas */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Tag className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-          Marcas Más Activas
-        </h2>
-        <div className="h-[200px]">
-          <Bar data={topBrandsChart} options={topBrandsOptions} />
-        </div>
-      </Card>
 
       {/* Cambios Recientes Significativos */}
       <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
@@ -441,29 +445,29 @@ export default function Destacados() {
         </div>
       </Card>
 
-      {/* Análisis por Categoría */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-[hsl(140,35%,70%)]" />
+      {/* Análisis por Categoría - más compacto */}
+      <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-[hsl(140,35%,70%)]" />
           Análisis por Categoría
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Categoría</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Productos</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Precio Promedio</th>
-                <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Rango</th>
+                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">Categoría</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Productos</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Precio Promedio</th>
+                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Rango</th>
               </tr>
             </thead>
             <tbody>
               {data.categoryAnalysis.map((cat, idx) => (
                 <tr key={idx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-medium">{cat.category}</td>
-                  <td className="text-right p-3">{cat.productCount}</td>
-                  <td className="text-right p-3 font-bold text-[hsl(25,65%,65%)]">{formatPrice(cat.avgPrice)}</td>
-                  <td className="text-right p-3 text-sm text-muted-foreground">
+                  <td className="p-2 font-medium text-sm">{cat.category}</td>
+                  <td className="text-right p-2 text-sm">{cat.productCount}</td>
+                  <td className="text-right p-2 font-bold text-sm text-[hsl(25,65%,65%)]">{formatPrice(cat.avgPrice)}</td>
+                  <td className="text-right p-2 text-xs text-muted-foreground">
                     {formatPrice(cat.minPrice)} - {formatPrice(cat.maxPrice)}
                   </td>
                 </tr>
@@ -472,6 +476,62 @@ export default function Destacados() {
           </table>
         </div>
       </Card>
+
+      {/* Información adicional de insights: Comparación de categorías */}
+      {insights.insights.find(i => i.insight_type === 'category_comparison') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(() => {
+            const catInsight = insights.insights.find(i => i.insight_type === 'category_comparison');
+            return (
+              <>
+                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-[hsl(0,84%,60%)]" />
+                    Segmento Más Costoso
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_expensive_category.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
+                      <span className="text-lg font-bold text-[hsl(0,84%,60%)]">{formatPrice(catInsight.data.most_expensive_category.avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Modelos:</span>
+                      <span className="text-sm font-semibold">{catInsight.data.most_expensive_category.model_count}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
+                      <span className="text-sm font-semibold">{formatPrice(catInsight.data.most_expensive_category.price_range)}</span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-[hsl(142,76%,36%)]" />
+                    Segmento Más Accesible
+                  </h3>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_affordable_category.category}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
+                      <span className="text-lg font-bold text-[hsl(142,76%,36%)]">{formatPrice(catInsight.data.most_affordable_category.avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Modelos:</span>
+                      <span className="text-sm font-semibold">{catInsight.data.most_affordable_category.model_count}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
+                      <span className="text-sm font-semibold">{formatPrice(catInsight.data.most_affordable_category.price_range)}</span>
+                    </div>
+                  </div>
+                </Card>
+              </>
+            );
+          })()}
+        </div>
+      )}
     </div>
   )
 }
