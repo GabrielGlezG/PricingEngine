@@ -394,7 +394,7 @@ export default function Destacados() {
             {data.bestDeals.map((deal, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20 hover:border-[hsl(142,76%,36%)]/40 transition-colors">
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{deal.products.model} {deal.products.submodel}</p>
+                  <p className="font-medium text-sm"> {deal.products.submodel}</p>
                   <p className="text-xs text-muted-foreground">{deal.products.category}</p>
                 </div>
                 <div className="text-right">
@@ -580,7 +580,7 @@ export default function Destacados() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
                   </div>
                 </div>
                 <p className="font-bold text-[hsl(0,84%,60%)]">{formatPrice(item.price)}</p>
@@ -603,7 +603,7 @@ export default function Destacados() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
                   </div>
                 </div>
                 <p className="font-bold text-[hsl(142,76%,36%)]">{formatPrice(item.price)}</p>
