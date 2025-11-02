@@ -26,6 +26,29 @@ interface DestacadosData {
   recentChanges: Array<any>
 }
 
+interface AnalyticsData {
+  chart_data: {
+    top_5_expensive: Array<{ brand: string; model: string; price: number }>
+    bottom_5_cheap: Array<{ brand: string; model: string; price: number }>
+    brand_variations: Array<{
+      brand: string
+      first_avg_price: number
+      last_avg_price: number
+      variation_percent: number
+      scraping_sessions: number
+    }>
+    monthly_volatility: {
+      most_volatile: Array<{
+        brand: string
+        model: string
+        name: string
+        avg_monthly_variation: number
+        data_points: number
+      }>
+    }
+  }
+}
+
 interface InsightData {
   insights: Array<{
     insight_type: string
@@ -45,6 +68,7 @@ interface InsightData {
 export default function Destacados() {
   const [data, setData] = useState<DestacadosData | null>(null)
   const [insights, setInsights] = useState<InsightData | null>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const { formatPrice } = useCurrency()
 
@@ -55,16 +79,19 @@ export default function Destacados() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [destacadosRes, insightsRes] = await Promise.all([
+      const [destacadosRes, insightsRes, analyticsRes] = await Promise.all([
         supabase.functions.invoke('get-destacados'),
-        supabase.functions.invoke('get-insights')
+        supabase.functions.invoke('get-insights'),
+        supabase.functions.invoke('get-analytics')
       ])
       
       if (destacadosRes.error) throw destacadosRes.error
       if (insightsRes.error) throw insightsRes.error
+      if (analyticsRes.error) throw analyticsRes.error
       
       setData(destacadosRes.data)
       setInsights(insightsRes.data)
+      setAnalytics(analyticsRes.data)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -85,7 +112,7 @@ export default function Destacados() {
     )
   }
 
-  if (!data || !insights) return null
+  if (!data || !insights || !analytics) return null
 
   const getInsightIcon = (type: string) => {
     switch(type) {
@@ -501,7 +528,9 @@ export default function Destacados() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Rango de Precios:</span>
-                      <span className="text-sm font-semibold">{formatPrice(catInsight.data.most_expensive_category.price_range)}</span>
+                      <span className="text-sm font-semibold">
+                        {formatPrice(catInsight.data.most_expensive_category.min_price)} - {formatPrice(catInsight.data.most_expensive_category.max_price)}
+                      </span>
                     </div>
                   </div>
                 </Card>
@@ -523,7 +552,9 @@ export default function Destacados() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Rango de Precios:</span>
-                      <span className="text-sm font-semibold">{formatPrice(catInsight.data.most_affordable_category.price_range)}</span>
+                      <span className="text-sm font-semibold">
+                        {formatPrice(catInsight.data.most_affordable_category.min_price)} - {formatPrice(catInsight.data.most_affordable_category.max_price)}
+                      </span>
                     </div>
                   </div>
                 </Card>
@@ -531,6 +562,129 @@ export default function Destacados() {
             );
           })()}
         </div>
+      )}
+
+      {/* Top 5 Más Caros y Más Accesibles */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-[hsl(0,84%,60%)]" />
+            Top 5 Modelos Más Caros
+          </h2>
+          <div className="space-y-3">
+            {analytics.chart_data.top_5_expensive.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(0,84%,60%)]/5 to-transparent border border-[hsl(0,84%,60%)]/20">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-[hsl(0,84%,60%)]/20 flex items-center justify-center">
+                    <span className="text-sm font-bold text-[hsl(0,84%,60%)]">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{item.brand}</p>
+                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                  </div>
+                </div>
+                <p className="font-bold text-[hsl(0,84%,60%)]">{formatPrice(item.price)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingDown className="h-5 w-5 text-[hsl(142,76%,36%)]" />
+            Top 5 Modelos Más Accesibles
+          </h2>
+          <div className="space-y-3">
+            {analytics.chart_data.bottom_5_cheap.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-[hsl(142,76%,36%)]/20 flex items-center justify-center">
+                    <span className="text-sm font-bold text-[hsl(142,76%,36%)]">{idx + 1}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{item.brand}</p>
+                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                  </div>
+                </div>
+                <p className="font-bold text-[hsl(142,76%,36%)]">{formatPrice(item.price)}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Variaciones Históricas por Marca */}
+      {analytics.chart_data.brand_variations.filter(b => b.scraping_sessions > 1).length > 0 && (
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Activity className="h-5 w-5 text-[hsl(25,65%,65%)]" />
+            Variaciones Históricas de Precios por Marca
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {analytics.chart_data.brand_variations
+              .filter(b => b.scraping_sessions > 1)
+              .sort((a, b) => Math.abs(b.variation_percent) - Math.abs(a.variation_percent))
+              .slice(0, 9)
+              .map((brand, idx) => (
+                <div key={idx} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-sm">{brand.brand}</p>
+                    <Badge 
+                      variant="outline" 
+                      className={`font-bold text-xs ${
+                        brand.variation_percent > 0 
+                          ? 'text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%)]/30 bg-[hsl(0,84%,60%)]/10' 
+                          : 'text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10'
+                      }`}
+                    >
+                      {brand.variation_percent > 0 ? '+' : ''}{brand.variation_percent.toFixed(1)}%
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Precio inicial:</span>
+                      <span className="font-medium">{formatPrice(brand.first_avg_price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Precio actual:</span>
+                      <span className="font-medium">{formatPrice(brand.last_avg_price)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30">
+                      {brand.scraping_sessions} registros históricos
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Modelos con Mayor Volatilidad */}
+      {analytics.chart_data.monthly_volatility.most_volatile.length > 0 && (
+        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-[hsl(25,65%,65%)]" />
+            Modelos con Mayor Volatilidad de Precios
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Estos modelos han experimentado las mayores fluctuaciones de precio en su historial
+          </p>
+          <div className="space-y-3">
+            {analytics.chart_data.monthly_volatility.most_volatile.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(25,65%,65%)]/10 to-transparent border border-[hsl(25,65%,65%)]/20 hover:border-[hsl(25,65%,65%)]/40 transition-colors">
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{item.brand} {item.model}</p>
+                  <p className="text-xs text-muted-foreground">{item.data_points} registros históricos</p>
+                </div>
+                <div className="text-right">
+                  <Badge variant="outline" className="text-[hsl(25,65%,65%)] border-[hsl(25,65%,65%)]/30 bg-[hsl(25,65%,65%)]/10">
+                    ±{item.avg_monthly_variation.toFixed(1)}% promedio
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   )
