@@ -1286,21 +1286,20 @@ export default function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Sección: Modelos con Mayor Volatilidad */}
-          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Modelos con Mayor Volatilidad
-              </CardTitle>
-              <CardDescription>
-                Detección de cambios intermensual de precios
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-2">
-              <div className="h-[320px]">
+            {/* Modelos con Mayor Volatilidad */}
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Modelos con Mayor Volatilidad
+                </CardTitle>
+                <CardDescription>
+                  Detección de cambios intermensual de precios
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="h-[280px]">
                 {mounted && (
                   <Bar
                     key={`bar-volatility-${chartKey}`}
@@ -1361,6 +1360,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="modelos" className="space-y-6">
