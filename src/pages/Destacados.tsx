@@ -580,7 +580,7 @@ export default function Destacados() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
                   </div>
                 </div>
                 <p className="font-bold text-[hsl(0,84%,60%)]">{formatPrice(item.price)}</p>
@@ -603,7 +603,7 @@ export default function Destacados() {
                   </div>
                   <div>
                     <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.model}</p>
+                    <p className="text-xs text-muted-foreground">{item.name}</p>
                   </div>
                 </div>
                 <p className="font-bold text-[hsl(142,76%,36%)]">{formatPrice(item.price)}</p>
