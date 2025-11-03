@@ -933,7 +933,7 @@ export default function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="h-[450px]">
+              <div className="h-[320px]">
                 {mounted && (
                   <Bubble
                     key={`bubble-principal-${chartKey}`}
