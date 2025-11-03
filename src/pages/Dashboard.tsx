@@ -921,54 +921,35 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Sección: Análisis de Precios */}
+          {/* Sección: Precio vs Modelo Principal (Bubble Chart Grande) */}
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Precios por Categoría
+                <Target className="h-5 w-5 text-primary" />
+                Precio vs Modelo Principal
               </CardTitle>
               <CardDescription>
-                Distribución de precios por tipo de vehículo (mínimo, promedio,
-                máximo)
+                Tamaño proporcional al volumen de variantes
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="h-[320px]">
+              <div className="h-[450px]">
                 {mounted && (
-                  <Bar
-                    key={`boxplot-price-category-${chartKey}`}
+                  <Bubble
+                    key={`bubble-principal-${chartKey}`}
                     data={{
-                      labels: (
-                        analytics.chart_data?.prices_by_category || []
-                      ).map((d) => d.category),
                       datasets: [
                         {
-                          label: "Mínimo",
+                          label: "Modelo Principal",
                           data: (
-                            analytics.chart_data?.prices_by_category || []
-                          ).map((d) => d.min_price),
-                          backgroundColor: hslVar("--chart-4", 0.7),
-                          borderColor: hslVar("--chart-4"),
-                          borderWidth: 1,
-                        },
-                        {
-                          label: "Promedio",
-                          data: (
-                            analytics.chart_data?.prices_by_category || []
-                          ).map((d) => d.avg_price),
-                          backgroundColor: hslVar("--chart-1", 0.7),
-                          borderColor: hslVar("--chart-1"),
-                          borderWidth: 1,
-                        },
-                        {
-                          label: "Máximo",
-                          data: (
-                            analytics.chart_data?.prices_by_category || []
-                          ).map((d) => d.max_price),
-                          backgroundColor: hslVar("--chart-5", 0.7),
-                          borderColor: hslVar("--chart-5"),
-                          borderWidth: 1,
+                            analytics.chart_data?.models_by_principal || []
+                          ).map((item, index) => ({
+                            x: index + 1,
+                            y: item.avg_price,
+                            r: Math.sqrt(item.count) * 3,
+                          })),
+                          backgroundColor: bubbleChartColors.primary(),
+                          borderColor: bubbleChartColors.primary(),
                         },
                       ],
                     }}
@@ -976,14 +957,7 @@ export default function Dashboard() {
                       responsive: true,
                       maintainAspectRatio: false,
                       plugins: {
-                        legend: {
-                          position: "top",
-                          labels: {
-                            color: hslVar("--foreground"),
-                            padding: 12,
-                            font: { size: 11 },
-                          },
-                        },
+                        legend: { display: false },
                         tooltip: {
                           backgroundColor: tooltipColors.backgroundColor(),
                           borderColor: tooltipColors.borderColor(),
@@ -993,22 +967,46 @@ export default function Dashboard() {
                           padding: tooltipColors.padding,
                           cornerRadius: tooltipColors.cornerRadius,
                           callbacks: {
-                            label: (context: any) => {
-                              return `${context.dataset.label}: ${formatPrice(
-                                context.parsed.y
-                              )}`;
+                            label: (context) => {
+                              const item = (analytics.chart_data
+                                ?.models_by_principal || [])[
+                                context.dataIndex
+                              ];
+                              return [
+                                `Modelo: ${item.model_principal}`,
+                                `Precio Promedio: ${formatPrice(
+                                  item.avg_price
+                                )}`,
+                                `Volumen: ${item.count} variantes`,
+                                `Rango: ${formatPrice(
+                                  item.min_price
+                                )} - ${formatPrice(item.max_price)}`,
+                              ];
                             },
                           },
                         },
                       },
                       scales: {
-                        x: getScaleOptions(),
+                        x: {
+                          ...getScaleOptions(),
+                          title: {
+                            display: true,
+                            text: "Modelo",
+                            color: axisColors.tickColor(),
+                          },
+                        },
                         y: {
                           ...getScaleOptions(),
                           ticks: {
-                            ...getScaleOptions().ticks,
+                            color: axisColors.tickColor(),
+                            font: { size: axisColors.tickFontSize },
                             callback: (value) =>
                               `$${((value as number) / 1000).toFixed(0)}k`,
+                          },
+                          title: {
+                            display: true,
+                            text: "Precio Promedio",
+                            color: axisColors.tickColor(),
                           },
                         },
                       },
@@ -1019,8 +1017,114 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Sección: Análisis por Marca */}
+          {/* Sección: Análisis de Precios y Análisis por Marca */}
           <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+            {/* Precios por Categoría - Boxplot Pequeño */}
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="space-y-1 pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Precios por Categoría
+                </CardTitle>
+                <CardDescription>
+                  Mediana y dispersión de precios por tipo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="h-[280px]">
+                  {mounted && (
+                    <Bar
+                      key={`boxplot-price-category-${chartKey}`}
+                      data={{
+                        labels: (
+                          analytics.chart_data?.prices_by_category || []
+                        ).map((d) => d.category),
+                        datasets: [
+                          {
+                            label: "Mínimo",
+                            data: (
+                              analytics.chart_data?.prices_by_category || []
+                            ).map((d) => d.min_price),
+                            backgroundColor: hslVar("--chart-4", 0.7),
+                            borderColor: hslVar("--chart-4"),
+                            borderWidth: 1,
+                          },
+                          {
+                            label: "Promedio",
+                            data: (
+                              analytics.chart_data?.prices_by_category || []
+                            ).map((d) => d.avg_price),
+                            backgroundColor: hslVar("--chart-1", 0.7),
+                            borderColor: hslVar("--chart-1"),
+                            borderWidth: 1,
+                          },
+                          {
+                            label: "Máximo",
+                            data: (
+                              analytics.chart_data?.prices_by_category || []
+                            ).map((d) => d.max_price),
+                            backgroundColor: hslVar("--chart-5", 0.7),
+                            borderColor: hslVar("--chart-5"),
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: "top",
+                            labels: {
+                              color: hslVar("--foreground"),
+                              padding: 8,
+                              font: { size: 10 },
+                            },
+                          },
+                          tooltip: {
+                            backgroundColor: tooltipColors.backgroundColor(),
+                            borderColor: tooltipColors.borderColor(),
+                            borderWidth: tooltipColors.borderWidth,
+                            titleColor: tooltipColors.titleColor(),
+                            bodyColor: tooltipColors.bodyColor(),
+                            padding: tooltipColors.padding,
+                            cornerRadius: tooltipColors.cornerRadius,
+                            callbacks: {
+                              label: (context: any) => {
+                                return `${context.dataset.label}: ${formatPrice(
+                                  context.parsed.y
+                                )}`;
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          x: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              maxRotation: 45,
+                              minRotation: 45,
+                              font: { size: 10 },
+                            },
+                          },
+                          y: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              callback: (value) =>
+                                `$${((value as number) / 1000).toFixed(0)}k`,
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+          {/* Precios Promedio por Marca */}
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -1184,176 +1288,79 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Sección: Análisis Avanzado */}
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Precio vs Modelo Principal
-                </CardTitle>
-                <CardDescription>
-                  Tamaño proporcional al volumen de variantes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-[320px]">
-                  {mounted && (
-                    <Bubble
-                      key={`bubble-principal-${chartKey}`}
-                      data={{
-                        datasets: [
-                          {
-                            label: "Modelo Principal",
-                            data: (
-                              analytics.chart_data?.models_by_principal || []
-                            ).map((item, index) => ({
-                              x: index + 1,
-                              y: item.avg_price,
-                              r: Math.sqrt(item.count) * 3,
-                            })),
-                            backgroundColor: bubbleChartColors.primary(),
-                            borderColor: bubbleChartColors.primary(),
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) => {
-                                const item = (analytics.chart_data
-                                  ?.models_by_principal || [])[
-                                  context.dataIndex
-                                ];
-                                return [
-                                  `Modelo: ${item.model_principal}`,
-                                  `Precio Promedio: ${formatPrice(
-                                    item.avg_price
-                                  )}`,
-                                  `Volumen: ${item.count} variantes`,
-                                  `Rango: ${formatPrice(
-                                    item.min_price
-                                  )} - ${formatPrice(item.max_price)}`,
-                                ];
-                              },
-                            },
+          {/* Sección: Modelos con Mayor Volatilidad */}
+          <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="space-y-1 pb-4">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Modelos con Mayor Volatilidad
+              </CardTitle>
+              <CardDescription>
+                Detección de cambios intermensual de precios
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="h-[320px]">
+                {mounted && (
+                  <Bar
+                    key={`bar-volatility-${chartKey}`}
+                    data={{
+                      labels: (
+                        analytics.chart_data?.monthly_volatility
+                          ?.most_volatile || []
+                      ).map((d) => d.model),
+                      datasets: [
+                        createMultiColorBarDataset(
+                          (
+                            analytics.chart_data?.monthly_volatility
+                              ?.most_volatile || []
+                          ).map((d) => d.avg_monthly_variation),
+                          "Volatilidad %"
+                        ),
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                          backgroundColor: tooltipColors.backgroundColor(),
+                          borderColor: tooltipColors.borderColor(),
+                          borderWidth: tooltipColors.borderWidth,
+                          titleColor: tooltipColors.titleColor(),
+                          bodyColor: tooltipColors.bodyColor(),
+                          padding: tooltipColors.padding,
+                          cornerRadius: tooltipColors.cornerRadius,
+                          callbacks: {
+                            label: (context) =>
+                              `${context.parsed.y.toFixed(2)}%`,
                           },
                         },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            title: {
-                              display: true,
-                              text: "Modelo",
-                              color: axisColors.tickColor(),
-                            },
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              color: axisColors.tickColor(),
-                              font: { size: axisColors.tickFontSize },
-                              callback: (value) =>
-                                `$${((value as number) / 1000).toFixed(0)}k`,
-                            },
-                            title: {
-                              display: true,
-                              text: "Precio Promedio",
-                              color: axisColors.tickColor(),
-                            },
+                      },
+                      scales: {
+                        x: {
+                          ...getScaleOptions(),
+                          ticks: {
+                            ...getScaleOptions().ticks,
+                            maxRotation: 45,
+                            minRotation: 45,
                           },
                         },
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Modelos con Mayor Volatilidad
-                </CardTitle>
-                <CardDescription>
-                  Detección de cambios intermensual de precios
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-[320px]">
-                  {mounted && (
-                    <Bar
-                      key={`bar-volatility-${chartKey}`}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.monthly_volatility
-                            ?.most_volatile || []
-                        ).map((d) => d.model),
-                        datasets: [
-                          createMultiColorBarDataset(
-                            (
-                              analytics.chart_data?.monthly_volatility
-                                ?.most_volatile || []
-                            ).map((d) => d.avg_monthly_variation),
-                            "Volatilidad %"
-                          ),
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) =>
-                                `${context.parsed.y.toFixed(2)}%`,
-                            },
+                        y: {
+                          ...getScaleOptions(),
+                          ticks: {
+                            ...getScaleOptions().ticks,
+                            callback: (value) => `${value}%`,
                           },
                         },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              maxRotation: 45,
-                              minRotation: 45,
-                            },
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              callback: (value) => `${value}%`,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      },
+                    }}
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="modelos" className="space-y-6">
