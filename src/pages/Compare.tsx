@@ -3,15 +3,15 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useCurrency } from "@/contexts/CurrencyContext"
 import { useTheme } from "next-themes"
-import { hslVar } from "@/lib/utils"
+import { hslVar, cn } from "@/lib/utils"
 import { Card } from "@/components/custom/Card"
 import { Badge } from "@/components/custom/Badge"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/custom/Input"
-import { Search } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Search, X, Plus, Scale, Filter, Check, ChevronDown } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
-import { X, Plus, Scale } from "lucide-react"
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -250,87 +250,266 @@ export default function Compare() {
             Usa los filtros para encontrar los modelos que te interesan
           </p>
 
-          {/* Search Input */}
-          <div className="mb-4">
-            <div className="relative">
+          <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4 mb-6">
+            {/* Search Bar */}
+            <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Buscar marca, modelo o submodelo..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10 bg-background/50"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-          </div>
 
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Select value={comparisonFilter.brand || "all"} onValueChange={(value) => {
-              setComparisonFilter(f => ({ ...f, brand: value === "all" ? "" : value, model: "", submodel: "" }))
-            }}>
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todas las marcas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las marcas</SelectItem>
-                {filteredBrands.map(brand => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Filter Pills */}
+            <div className="flex flex-wrap gap-2">
+              {/* Brand Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-9 border-dashed",
+                      comparisonFilter.brand && "border-solid border-primary bg-primary/10"
+                    )}
+                  >
+                    <Filter className="mr-2 h-3.5 w-3.5" />
+                    Marca
+                    {comparisonFilter.brand && (
+                      <>
+                        <span className="mx-1">:</span>
+                        <span className="font-semibold">{comparisonFilter.brand}</span>
+                      </>
+                    )}
+                    <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar marca..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontró marca.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => setComparisonFilter(f => ({ ...f, brand: "", model: "", submodel: "" }))}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !comparisonFilter.brand ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Todas las marcas
+                        </CommandItem>
+                        {filteredBrands.map((brand) => (
+                          <CommandItem
+                            key={brand}
+                            onSelect={() => setComparisonFilter(f => ({ ...f, brand, model: "", submodel: "" }))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                comparisonFilter.brand === brand ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {brand}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-            <Select value={comparisonFilter.model || "all"} onValueChange={(value) => {
-              setComparisonFilter(f => ({ ...f, model: value === "all" ? "" : value, submodel: "" }))
-            }}>
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todos los modelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los modelos</SelectItem>
-                {filteredModels.map(model => (
-                  <SelectItem key={model} value={model}>{model}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Model Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-9 border-dashed",
+                      comparisonFilter.model && "border-solid border-primary bg-primary/10"
+                    )}
+                  >
+                    <Filter className="mr-2 h-3.5 w-3.5" />
+                    Modelo
+                    {comparisonFilter.model && (
+                      <>
+                        <span className="mx-1">:</span>
+                        <span className="font-semibold truncate max-w-[100px]">{comparisonFilter.model}</span>
+                      </>
+                    )}
+                    <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar modelo..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontró modelo.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => setComparisonFilter(f => ({ ...f, model: "", submodel: "" }))}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !comparisonFilter.model ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Todos los modelos
+                        </CommandItem>
+                        {filteredModels.map((model) => (
+                          <CommandItem
+                            key={model}
+                            onSelect={() => setComparisonFilter(f => ({ ...f, model, submodel: "" }))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                comparisonFilter.model === model ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {model}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-            <Select value={comparisonFilter.submodel || "all"} onValueChange={(value) => {
-              setComparisonFilter(f => ({ ...f, submodel: value === "all" ? "" : value }))
-            }}>
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todos los submodelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los submodelos</SelectItem>
-                {filteredSubmodels.map(submodel => (
-                  <SelectItem key={submodel} value={submodel}>{submodel}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Submodel Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-9 border-dashed",
+                      comparisonFilter.submodel && "border-solid border-primary bg-primary/10"
+                    )}
+                  >
+                    <Filter className="mr-2 h-3.5 w-3.5" />
+                    Submodelo
+                    {comparisonFilter.submodel && (
+                      <>
+                        <span className="mx-1">:</span>
+                        <span className="font-semibold truncate max-w-[80px]">{comparisonFilter.submodel}</span>
+                      </>
+                    )}
+                    <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[250px] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar submodelo..." />
+                    <CommandList>
+                      <CommandEmpty>No se encontró submodelo.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => setComparisonFilter(f => ({ ...f, submodel: "" }))}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !comparisonFilter.submodel ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Todos los submodelos
+                        </CommandItem>
+                        {filteredSubmodels.map((submodel) => (
+                          <CommandItem
+                            key={submodel}
+                            onSelect={() => setComparisonFilter(f => ({ ...f, submodel }))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                comparisonFilter.submodel === submodel ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {submodel}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-            <Button 
-              onClick={() => {
-                setSelectedProducts([])
-                setComparisonFilter({
-                  brand: '',
-                  model: '',
-                  submodel: '',
-                  priceRange: [minPrice, maxPrice]
-                })
-              }}
-              variant="copper"
-              className="w-full"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Limpiar Todo
-            </Button>
+              {/* Clear Button */}
+              {(comparisonFilter.brand || comparisonFilter.model || comparisonFilter.submodel) && (
+                <Button
+                  variant="copper"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProducts([])
+                    setComparisonFilter({
+                      brand: '',
+                      model: '',
+                      submodel: '',
+                      priceRange: [minPrice, maxPrice]
+                    })
+                  }}
+                  className="h-9"
+                >
+                  <X className="mr-2 h-3.5 w-3.5" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+
+            {/* Active Filters Summary */}
+            {(comparisonFilter.brand || comparisonFilter.model || comparisonFilter.submodel) && (
+              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border">
+                {comparisonFilter.brand && (
+                  <Badge variant="default" className="bg-primary/10 text-primary hover:bg-primary/20">
+                    {comparisonFilter.brand}
+                    <button
+                      onClick={() => setComparisonFilter(f => ({ ...f, brand: "", model: "", submodel: "" }))}
+                      className="ml-1 hover:text-primary/70"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {comparisonFilter.model && (
+                  <Badge variant="default" className="bg-primary/10 text-primary hover:bg-primary/20">
+                    {comparisonFilter.model}
+                    <button
+                      onClick={() => setComparisonFilter(f => ({ ...f, model: "", submodel: "" }))}
+                      className="ml-1 hover:text-primary/70"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {comparisonFilter.submodel && (
+                  <Badge variant="default" className="bg-primary/10 text-primary hover:bg-primary/20">
+                    {comparisonFilter.submodel}
+                    <button
+                      onClick={() => setComparisonFilter(f => ({ ...f, submodel: "" }))}
+                      className="ml-1 hover:text-primary/70"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
           </div>
 
           {products && products.length > 0 && (

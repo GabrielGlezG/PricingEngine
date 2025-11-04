@@ -13,14 +13,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
   CalendarIcon,
   DollarSign,
@@ -35,6 +30,9 @@ import {
   Activity,
   TrendingDown,
   X,
+  Filter,
+  Check,
+  ChevronDown,
 } from "lucide-react";
 import { Bar, Line, Doughnut, Pie, Bubble } from "react-chartjs-2";
 import {
@@ -53,7 +51,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 // import { CurrencySelector } from "@/components/CurrencySelector";
-import { hslVar } from "@/lib/utils";
+import { hslVar, cn } from "@/lib/utils";
 import {
   getChartPalette,
   barChartColors,
@@ -369,108 +367,252 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="flex justify-center">{/* <CurrencySelector /> */}</div>
 
-      <Card className="border-border/50 shadow-md">
-        <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Filtros
-          </CardTitle>
-          <CardDescription>
-            Refina tu análisis con criterios específicos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-            <Select
-              value={filters.brand || "all"}
-              onValueChange={(value) =>
-                setFilters((f) => ({
-                  ...f,
-                  brand: value === "all" ? "" : value,
-                }))
-              }
-            >
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todas las marcas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las marcas</SelectItem>
-                {brands?.map((brand) => (
-                  <SelectItem key={brand} value={brand}>
-                    {brand}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4">
+        <div className="flex flex-wrap gap-2">
+          {/* Brand Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 border-dashed",
+                  filters.brand && "border-solid border-primary bg-primary/10"
+                )}
+              >
+                <Filter className="mr-2 h-3.5 w-3.5" />
+                Marca
+                {filters.brand && (
+                  <>
+                    <span className="mx-1">:</span>
+                    <span className="font-semibold">{filters.brand}</span>
+                  </>
+                )}
+                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar marca..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró marca.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => setFilters((f) => ({ ...f, brand: "" }))}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          !filters.brand ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      Todas las marcas
+                    </CommandItem>
+                    {brands?.map((brand) => (
+                      <CommandItem
+                        key={brand}
+                        onSelect={() => setFilters((f) => ({ ...f, brand }))}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.brand === brand ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {brand}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
-            <Select
-              value={filters.model || "all"}
-              onValueChange={(value) =>
-                setFilters((f) => ({
-                  ...f,
-                  model: value === "all" ? "" : value,
-                }))
-              }
-            >
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todos los modelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los modelos</SelectItem>
-                {models?.map((m, idx) => (
-                  <SelectItem key={`${m.model}-${idx}`} value={m.model}>
-                    {m.model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Model Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 border-dashed",
+                  filters.model && "border-solid border-primary bg-primary/10"
+                )}
+              >
+                <Filter className="mr-2 h-3.5 w-3.5" />
+                Modelo
+                {filters.model && (
+                  <>
+                    <span className="mx-1">:</span>
+                    <span className="font-semibold truncate max-w-[100px]">{filters.model}</span>
+                  </>
+                )}
+                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar modelo..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró modelo.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => setFilters((f) => ({ ...f, model: "" }))}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          !filters.model ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      Todos los modelos
+                    </CommandItem>
+                    {models?.map((m, idx) => (
+                      <CommandItem
+                        key={`${m.model}-${idx}`}
+                        onSelect={() => setFilters((f) => ({ ...f, model: m.model }))}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.model === m.model ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {m.model}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
-            <Select
-              value={filters.submodel || "all"}
-              onValueChange={(value) =>
-                setFilters((f) => ({
-                  ...f,
-                  submodel: value === "all" ? "" : value,
-                }))
-              }
-            >
-              <SelectTrigger className="bg-card border-border">
-                <SelectValue placeholder="Todos los submodelos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los submodelos</SelectItem>
-                {submodels?.map((sub) => (
-                  <SelectItem key={sub} value={sub}>
-                    {sub}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Submodel Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 border-dashed",
+                  filters.submodel && "border-solid border-primary bg-primary/10"
+                )}
+              >
+                <Filter className="mr-2 h-3.5 w-3.5" />
+                Submodelo
+                {filters.submodel && (
+                  <>
+                    <span className="mx-1">:</span>
+                    <span className="font-semibold truncate max-w-[80px]">{filters.submodel}</span>
+                  </>
+                )}
+                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar submodelo..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró submodelo.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={() => setFilters((f) => ({ ...f, submodel: "" }))}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          !filters.submodel ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      Todos los submodelos
+                    </CommandItem>
+                    {submodels?.map((sub) => (
+                      <CommandItem
+                        key={sub}
+                        onSelect={() => setFilters((f) => ({ ...f, submodel: sub }))}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            filters.submodel === sub ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {sub}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
 
+          {/* Clear & Refresh Buttons */}
+          {(filters.brand || filters.model || filters.submodel) && (
             <Button
-              variant="dark"
+              variant="ghost"
+              size="sm"
               onClick={() => setFilters({ brand: "", model: "", submodel: "" })}
-              className="w-full"
+              className="h-9"
             >
-              <X className="h-4 w-4 mr-2" />
-              Limpiar Filtros
+              <X className="mr-2 h-3.5 w-3.5" />
+              Limpiar
             </Button>
+          )}
 
-            <Button
-              onClick={() => refetch()}
-              disabled={isRefetching}
-              className="w-full"
-            >
-              {isRefetching ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Actualizar Datos
-            </Button>
+          <Button
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            size="sm"
+            className="h-9 ml-auto"
+          >
+            {isRefetching ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5 mr-2" />
+            )}
+            Actualizar
+          </Button>
+        </div>
+
+        {/* Active Filters Summary */}
+        {(filters.brand || filters.model || filters.submodel) && (
+          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border">
+            {filters.brand && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                {filters.brand}
+                <button
+                  onClick={() => setFilters((f) => ({ ...f, brand: "" }))}
+                  className="ml-1 hover:text-primary/70"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {filters.model && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                {filters.model}
+                <button
+                  onClick={() => setFilters((f) => ({ ...f, model: "" }))}
+                  className="ml-1 hover:text-primary/70"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {filters.submodel && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                {filters.submodel}
+                <button
+                  onClick={() => setFilters((f) => ({ ...f, submodel: "" }))}
+                  className="ml-1 hover:text-primary/70"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
   <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
