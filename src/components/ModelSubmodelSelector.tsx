@@ -130,32 +130,11 @@ export function ModelSubmodelSelector({
     submodel.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Auto-apply first result when searching
-  useEffect(() => {
-    if (searchQuery && searchQuery.length > 0) {
-      // Priority: brand -> model -> submodel
-      if (filteredBrands.length === 1 && !selectedBrand) {
-        onBrandChange(filteredBrands[0])
-      } else if (filteredBrands.length > 1 && filteredBrands[0] !== selectedBrand) {
-        // Apply first brand match if different
-        onBrandChange(filteredBrands[0])
-      }
-      
-      if (selectedBrand && filteredModels.length === 1 && !selectedModel) {
-        onModelChange(filteredModels[0])
-      } else if (selectedBrand && filteredModels.length > 1 && filteredModels[0] !== selectedModel) {
-        // Apply first model match if different
-        onModelChange(filteredModels[0])
-      }
-      
-      if (selectedModel && filteredSubmodels.length === 1 && !selectedSubmodel) {
-        onSubmodelChange(filteredSubmodels[0])
-      } else if (selectedModel && filteredSubmodels.length > 1 && filteredSubmodels[0] !== selectedSubmodel) {
-        // Apply first submodel match if different
-        onSubmodelChange(filteredSubmodels[0])
-      }
-    }
-  }, [searchQuery, filteredBrands, filteredModels, filteredSubmodels, selectedBrand, selectedModel, selectedSubmodel])
+  // State to control popover visibility
+  const [brandOpen, setBrandOpen] = useState(false)
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const [submodelOpen, setSubmodelOpen] = useState(false)
 
   return (
     <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4">
@@ -182,7 +161,7 @@ export function ModelSubmodelSelector({
       {/* Filter Pills */}
       <div className="flex flex-wrap gap-2">
         {/* Brand Filter */}
-        <Popover>
+        <Popover open={brandOpen} onOpenChange={setBrandOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -210,7 +189,10 @@ export function ModelSubmodelSelector({
                 <CommandEmpty>No se encontró marca.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => onBrandChange("")}
+                    onSelect={() => {
+                      onBrandChange("")
+                      setBrandOpen(false)
+                    }}
                   >
                     <Check
                       className={cn(
@@ -223,7 +205,10 @@ export function ModelSubmodelSelector({
                   {(searchQuery ? filteredBrands : brands || []).map((brand) => (
                     <CommandItem
                       key={brand}
-                      onSelect={() => onBrandChange(brand)}
+                      onSelect={() => {
+                        onBrandChange(brand)
+                        setBrandOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -242,7 +227,7 @@ export function ModelSubmodelSelector({
 
         {/* Category Filter */}
         {!hideCategory && (
-          <Popover>
+          <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -269,7 +254,10 @@ export function ModelSubmodelSelector({
                 <CommandList>
                   <CommandEmpty>No se encontró categoría.</CommandEmpty>
                   <CommandGroup>
-                    <CommandItem onSelect={() => onCategoryChange("")}>
+                    <CommandItem onSelect={() => {
+                      onCategoryChange("")
+                      setCategoryOpen(false)
+                    }}>
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
@@ -281,7 +269,10 @@ export function ModelSubmodelSelector({
                     {categories?.map((category) => (
                       <CommandItem
                         key={category}
-                        onSelect={() => onCategoryChange(category)}
+                        onSelect={() => {
+                          onCategoryChange(category)
+                          setCategoryOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
@@ -300,7 +291,7 @@ export function ModelSubmodelSelector({
         )}
 
         {/* Model Filter */}
-        <Popover>
+        <Popover open={modelOpen} onOpenChange={setModelOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -327,7 +318,10 @@ export function ModelSubmodelSelector({
               <CommandList>
                 <CommandEmpty>No se encontró modelo.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem onSelect={() => onModelChange("")}>
+                  <CommandItem onSelect={() => {
+                    onModelChange("")
+                    setModelOpen(false)
+                  }}>
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
@@ -339,7 +333,10 @@ export function ModelSubmodelSelector({
                   {(searchQuery ? filteredModels : models || []).map((model) => (
                     <CommandItem
                       key={model}
-                      onSelect={() => onModelChange(model)}
+                      onSelect={() => {
+                        onModelChange(model)
+                        setModelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -357,7 +354,7 @@ export function ModelSubmodelSelector({
         </Popover>
 
         {/* Submodel Filter */}
-        <Popover>
+        <Popover open={submodelOpen} onOpenChange={setSubmodelOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -384,7 +381,10 @@ export function ModelSubmodelSelector({
               <CommandList>
                 <CommandEmpty>No se encontró submodelo.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem onSelect={() => onSubmodelChange("")}>
+                  <CommandItem onSelect={() => {
+                    onSubmodelChange("")
+                    setSubmodelOpen(false)
+                  }}>
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
@@ -396,7 +396,10 @@ export function ModelSubmodelSelector({
                   {(searchQuery ? filteredSubmodels : submodels || []).map((submodel) => (
                     <CommandItem
                       key={submodel}
-                      onSelect={() => onSubmodelChange(submodel)}
+                      onSelect={() => {
+                        onSubmodelChange(submodel)
+                        setSubmodelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
