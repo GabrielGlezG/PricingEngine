@@ -117,19 +117,6 @@ export function ModelSubmodelSelector({
 
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
-  // Filter options based on search query
-  const filteredBrands = (brands || []).filter(brand => 
-    brand.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredModels = (models || []).filter(model => 
-    model.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredSubmodels = (submodels || []).filter(submodel => 
-    submodel.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   // State to control popover visibility
   const [brandOpen, setBrandOpen] = useState(false)
   const [categoryOpen, setCategoryOpen] = useState(false)
@@ -202,7 +189,7 @@ export function ModelSubmodelSelector({
                     />
                     Todas las marcas
                   </CommandItem>
-                  {(searchQuery ? filteredBrands : brands || []).map((brand) => (
+                  {(brands || []).map((brand) => (
                     <CommandItem
                       key={brand}
                       onSelect={() => {
@@ -330,7 +317,7 @@ export function ModelSubmodelSelector({
                     />
                     Todos los modelos
                   </CommandItem>
-                  {(searchQuery ? filteredModels : models || []).map((model) => (
+                  {(models || []).map((model) => (
                     <CommandItem
                       key={model}
                       onSelect={() => {
@@ -393,7 +380,7 @@ export function ModelSubmodelSelector({
                     />
                     Todos los submodelos
                   </CommandItem>
-                  {(searchQuery ? filteredSubmodels : submodels || []).map((submodel) => (
+                  {(submodels || []).map((submodel) => (
                     <CommandItem
                       key={submodel}
                       onSelect={() => {
