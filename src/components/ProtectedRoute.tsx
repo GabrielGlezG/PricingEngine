@@ -1,9 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent } from '@/components/ui/card'
 import { AlertTriangle, Crown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -21,23 +21,14 @@ export function ProtectedRoute({
   const { user, loading, isAdmin, hasActiveSubscription, profile } = useAuth()
   const location = useLocation()
 
-  // Mostrar skeleton mientras se carga
+  // Mostrar loading solo si hay usuario autenticado pero está cargando el perfil
   if (loading) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-8 w-24 mb-2" />
-                <Skeleton className="h-3 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
+    // Si no hay usuario, no mostrar nada (va a redirigir a login)
+    if (!user) {
+      return null
+    }
+    // Si hay usuario pero está cargando el perfil, mostrar spinner
+    return <LoadingSpinner fullScreen size="lg" text="Cargando perfil..." />
   }
 
   if (!user) {
