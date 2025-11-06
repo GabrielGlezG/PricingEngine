@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Filter, X, Search, Check, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Card } from "@/components/ui/card"
 
 interface ModelSubmodelSelectorProps {
   selectedBrand: string
@@ -21,6 +22,7 @@ interface ModelSubmodelSelectorProps {
   onClearFilters: () => void
   hideCategory?: boolean
   copperClearButton?: boolean
+  showSearchResults?: boolean
 }
 
 export function ModelSubmodelSelector({
@@ -34,7 +36,8 @@ export function ModelSubmodelSelector({
   onSubmodelChange,
   onClearFilters,
   hideCategory = false,
-  copperClearButton = false
+  copperClearButton = false,
+  showSearchResults = false
 }: ModelSubmodelSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("")
   
@@ -115,47 +118,41 @@ export function ModelSubmodelSelector({
     }
   })
 
+  // Fetch all products for search results (only when showSearchResults is true)
+  const { data: allProducts } = useQuery({
+    queryKey: ['all-products-search'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('brand')
+      
+      if (error) throw error
+      return data || []
+    },
+    enabled: showSearchResults
+  })
+
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
 
-  // Filter options based on search query
-  const filteredBrands = (brands || []).filter(brand => 
-    brand.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Filter products based on search query
+  const searchFilteredProducts = showSearchResults && searchQuery 
+    ? (allProducts || []).filter(product => {
+        const query = searchQuery.toLowerCase()
+        const matchesBrand = product.brand.toLowerCase().includes(query)
+        const matchesModel = product.model.toLowerCase().includes(query)
+        const matchesSubmodel = product.submodel?.toLowerCase().includes(query)
+        const matchesName = product.name?.toLowerCase().includes(query)
+        
+        return matchesBrand || matchesModel || matchesSubmodel || matchesName
+      })
+    : []
 
-  const filteredModels = (models || []).filter(model => 
-    model.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredSubmodels = (submodels || []).filter(submodel => 
-    submodel.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  // Auto-apply first result when searching
-  useEffect(() => {
-    if (searchQuery && searchQuery.length > 0) {
-      // Priority: brand -> model -> submodel
-      if (filteredBrands.length === 1 && !selectedBrand) {
-        onBrandChange(filteredBrands[0])
-      } else if (filteredBrands.length > 1 && filteredBrands[0] !== selectedBrand) {
-        // Apply first brand match if different
-        onBrandChange(filteredBrands[0])
-      }
-      
-      if (selectedBrand && filteredModels.length === 1 && !selectedModel) {
-        onModelChange(filteredModels[0])
-      } else if (selectedBrand && filteredModels.length > 1 && filteredModels[0] !== selectedModel) {
-        // Apply first model match if different
-        onModelChange(filteredModels[0])
-      }
-      
-      if (selectedModel && filteredSubmodels.length === 1 && !selectedSubmodel) {
-        onSubmodelChange(filteredSubmodels[0])
-      } else if (selectedModel && filteredSubmodels.length > 1 && filteredSubmodels[0] !== selectedSubmodel) {
-        // Apply first submodel match if different
-        onSubmodelChange(filteredSubmodels[0])
-      }
-    }
-  }, [searchQuery, filteredBrands, filteredModels, filteredSubmodels, selectedBrand, selectedModel, selectedSubmodel])
+  // State to control popover visibility
+  const [brandOpen, setBrandOpen] = useState(false)
+  const [categoryOpen, setCategoryOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const [submodelOpen, setSubmodelOpen] = useState(false)
 
   return (
     <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4">
@@ -182,7 +179,7 @@ export function ModelSubmodelSelector({
       {/* Filter Pills */}
       <div className="flex flex-wrap gap-2">
         {/* Brand Filter */}
-        <Popover>
+        <Popover open={brandOpen} onOpenChange={setBrandOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -210,7 +207,10 @@ export function ModelSubmodelSelector({
                 <CommandEmpty>No se encontró marca.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => onBrandChange("")}
+                    onSelect={() => {
+                      onBrandChange("")
+                      setBrandOpen(false)
+                    }}
                   >
                     <Check
                       className={cn(
@@ -220,10 +220,13 @@ export function ModelSubmodelSelector({
                     />
                     Todas las marcas
                   </CommandItem>
-                  {(searchQuery ? filteredBrands : brands || []).map((brand) => (
+                  {(brands || []).map((brand) => (
                     <CommandItem
                       key={brand}
-                      onSelect={() => onBrandChange(brand)}
+                      onSelect={() => {
+                        onBrandChange(brand)
+                        setBrandOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -242,7 +245,7 @@ export function ModelSubmodelSelector({
 
         {/* Category Filter */}
         {!hideCategory && (
-          <Popover>
+          <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -269,7 +272,10 @@ export function ModelSubmodelSelector({
                 <CommandList>
                   <CommandEmpty>No se encontró categoría.</CommandEmpty>
                   <CommandGroup>
-                    <CommandItem onSelect={() => onCategoryChange("")}>
+                    <CommandItem onSelect={() => {
+                      onCategoryChange("")
+                      setCategoryOpen(false)
+                    }}>
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
@@ -281,7 +287,10 @@ export function ModelSubmodelSelector({
                     {categories?.map((category) => (
                       <CommandItem
                         key={category}
-                        onSelect={() => onCategoryChange(category)}
+                        onSelect={() => {
+                          onCategoryChange(category)
+                          setCategoryOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
@@ -300,7 +309,7 @@ export function ModelSubmodelSelector({
         )}
 
         {/* Model Filter */}
-        <Popover>
+        <Popover open={modelOpen} onOpenChange={setModelOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -327,7 +336,10 @@ export function ModelSubmodelSelector({
               <CommandList>
                 <CommandEmpty>No se encontró modelo.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem onSelect={() => onModelChange("")}>
+                  <CommandItem onSelect={() => {
+                    onModelChange("")
+                    setModelOpen(false)
+                  }}>
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
@@ -336,10 +348,13 @@ export function ModelSubmodelSelector({
                     />
                     Todos los modelos
                   </CommandItem>
-                  {(searchQuery ? filteredModels : models || []).map((model) => (
+                  {(models || []).map((model) => (
                     <CommandItem
                       key={model}
-                      onSelect={() => onModelChange(model)}
+                      onSelect={() => {
+                        onModelChange(model)
+                        setModelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -357,7 +372,7 @@ export function ModelSubmodelSelector({
         </Popover>
 
         {/* Submodel Filter */}
-        <Popover>
+        <Popover open={submodelOpen} onOpenChange={setSubmodelOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -384,7 +399,10 @@ export function ModelSubmodelSelector({
               <CommandList>
                 <CommandEmpty>No se encontró submodelo.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem onSelect={() => onSubmodelChange("")}>
+                  <CommandItem onSelect={() => {
+                    onSubmodelChange("")
+                    setSubmodelOpen(false)
+                  }}>
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
@@ -393,10 +411,13 @@ export function ModelSubmodelSelector({
                     />
                     Todos los submodelos
                   </CommandItem>
-                  {(searchQuery ? filteredSubmodels : submodels || []).map((submodel) => (
+                  {(submodels || []).map((submodel) => (
                     <CommandItem
                       key={submodel}
-                      onSelect={() => onSubmodelChange(submodel)}
+                      onSelect={() => {
+                        onSubmodelChange(submodel)
+                        setSubmodelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -474,6 +495,52 @@ export function ModelSubmodelSelector({
               </button>
             </Badge>
           )}
+        </div>
+      )}
+
+      {/* Search Results */}
+      {showSearchResults && searchQuery && searchFilteredProducts.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-3">
+            {searchFilteredProducts.length} resultado{searchFilteredProducts.length !== 1 ? 's' : ''} encontrado{searchFilteredProducts.length !== 1 ? 's' : ''}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+            {searchFilteredProducts.slice(0, 12).map((product) => (
+              <Card 
+                key={product.id}
+                className="p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => {
+                  onBrandChange(product.brand)
+                  onModelChange(product.model)
+                  if (product.submodel) {
+                    onSubmodelChange(product.submodel)
+                  }
+                  setSearchQuery("")
+                }}
+              >
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{product.brand}</p>
+                  <p className="font-medium text-sm">{product.model}</p>
+                  {product.submodel && (
+                    <p className="text-xs text-muted-foreground">{product.submodel}</p>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+          {searchFilteredProducts.length > 12 && (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Mostrando 12 de {searchFilteredProducts.length} resultados. Refina tu búsqueda para ver más.
+            </p>
+          )}
+        </div>
+      )}
+
+      {showSearchResults && searchQuery && searchFilteredProducts.length === 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No se encontraron resultados para "{searchQuery}"
+          </p>
         </div>
       )}
     </div>
