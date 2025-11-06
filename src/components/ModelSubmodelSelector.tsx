@@ -501,14 +501,14 @@ export function ModelSubmodelSelector({
       {/* Search Results */}
       {showSearchResults && searchQuery && searchFilteredProducts.length > 0 && (
         <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-sm text-muted-foreground mb-3">
+          <p className="text-xs text-muted-foreground mb-2">
             {searchFilteredProducts.length} resultado{searchFilteredProducts.length !== 1 ? 's' : ''} encontrado{searchFilteredProducts.length !== 1 ? 's' : ''}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
-            {searchFilteredProducts.slice(0, 12).map((product) => (
-              <Card 
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto pr-2">
+            {searchFilteredProducts.slice(0, 20).map((product) => (
+              <button
                 key={product.id}
-                className="p-3 cursor-pointer hover:border-primary transition-colors"
+                className="p-2.5 text-left border border-border rounded-md hover:border-primary hover:bg-primary/5 transition-all group"
                 onClick={() => {
                   onBrandChange(product.brand)
                   onModelChange(product.model)
@@ -518,19 +518,19 @@ export function ModelSubmodelSelector({
                   setSearchQuery("")
                 }}
               >
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">{product.brand}</p>
-                  <p className="font-medium text-sm">{product.model}</p>
+                <div className="space-y-0.5">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{product.brand}</p>
+                  <p className="font-medium text-xs leading-tight line-clamp-1 group-hover:text-primary transition-colors">{product.model}</p>
                   {product.submodel && (
-                    <p className="text-xs text-muted-foreground">{product.submodel}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-1">{product.submodel}</p>
                   )}
                 </div>
-              </Card>
+              </button>
             ))}
           </div>
-          {searchFilteredProducts.length > 12 && (
-            <p className="text-xs text-muted-foreground mt-2 text-center">
-              Mostrando 12 de {searchFilteredProducts.length} resultados. Refina tu búsqueda para ver más.
+          {searchFilteredProducts.length > 20 && (
+            <p className="text-[10px] text-muted-foreground mt-2 text-center">
+              Mostrando 20 de {searchFilteredProducts.length} resultados
             </p>
           )}
         </div>
@@ -538,7 +538,7 @@ export function ModelSubmodelSelector({
 
       {showSearchResults && searchQuery && searchFilteredProducts.length === 0 && (
         <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-sm text-muted-foreground text-center py-6">
             No se encontraron resultados para "{searchQuery}"
           </p>
         </div>
