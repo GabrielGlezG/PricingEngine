@@ -58,6 +58,7 @@ export default function PriceEvolution() {
         })}
         hideCategory
         copperClearButton
+        showSearchResults
       />
 
       {mounted && (
