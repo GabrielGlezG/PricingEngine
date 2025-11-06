@@ -70,6 +70,11 @@ export default function Compare() {
     priceRange: [0, 2000000] as [number, number]
   })
 
+  // State to control popover visibility
+  const [brandOpen, setBrandOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const [submodelOpen, setSubmodelOpen] = useState(false)
+
   // Update ChartJS defaults and force remount when theme changes
   useEffect(() => {
     ChartJS.defaults.color = hslVar('--foreground');
@@ -274,7 +279,7 @@ export default function Compare() {
             {/* Filter Pills */}
             <div className="flex flex-wrap gap-2">
               {/* Brand Filter */}
-              <Popover>
+              <Popover open={brandOpen} onOpenChange={setBrandOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -302,7 +307,10 @@ export default function Compare() {
                       <CommandEmpty>No se encontró marca.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
-                          onSelect={() => setComparisonFilter(f => ({ ...f, brand: "", model: "", submodel: "" }))}
+                          onSelect={() => {
+                            setComparisonFilter(f => ({ ...f, brand: "", model: "", submodel: "" }))
+                            setBrandOpen(false)
+                          }}
                         >
                           <Check
                             className={cn(
@@ -315,7 +323,10 @@ export default function Compare() {
                         {filteredBrands.map((brand) => (
                           <CommandItem
                             key={brand}
-                            onSelect={() => setComparisonFilter(f => ({ ...f, brand, model: "", submodel: "" }))}
+                            onSelect={() => {
+                              setComparisonFilter(f => ({ ...f, brand, model: "", submodel: "" }))
+                              setBrandOpen(false)
+                            }}
                           >
                             <Check
                               className={cn(
@@ -333,7 +344,7 @@ export default function Compare() {
               </Popover>
 
               {/* Model Filter */}
-              <Popover>
+              <Popover open={modelOpen} onOpenChange={setModelOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -361,7 +372,10 @@ export default function Compare() {
                       <CommandEmpty>No se encontró modelo.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
-                          onSelect={() => setComparisonFilter(f => ({ ...f, model: "", submodel: "" }))}
+                          onSelect={() => {
+                            setComparisonFilter(f => ({ ...f, model: "", submodel: "" }))
+                            setModelOpen(false)
+                          }}
                         >
                           <Check
                             className={cn(
@@ -374,7 +388,10 @@ export default function Compare() {
                         {filteredModels.map((model) => (
                           <CommandItem
                             key={model}
-                            onSelect={() => setComparisonFilter(f => ({ ...f, model, submodel: "" }))}
+                            onSelect={() => {
+                              setComparisonFilter(f => ({ ...f, model, submodel: "" }))
+                              setModelOpen(false)
+                            }}
                           >
                             <Check
                               className={cn(
@@ -392,7 +409,7 @@ export default function Compare() {
               </Popover>
 
               {/* Submodel Filter */}
-              <Popover>
+              <Popover open={submodelOpen} onOpenChange={setSubmodelOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -420,7 +437,10 @@ export default function Compare() {
                       <CommandEmpty>No se encontró submodelo.</CommandEmpty>
                       <CommandGroup>
                         <CommandItem
-                          onSelect={() => setComparisonFilter(f => ({ ...f, submodel: "" }))}
+                          onSelect={() => {
+                            setComparisonFilter(f => ({ ...f, submodel: "" }))
+                            setSubmodelOpen(false)
+                          }}
                         >
                           <Check
                             className={cn(
@@ -433,7 +453,10 @@ export default function Compare() {
                         {filteredSubmodels.map((submodel) => (
                           <CommandItem
                             key={submodel}
-                            onSelect={() => setComparisonFilter(f => ({ ...f, submodel }))}
+                            onSelect={() => {
+                              setComparisonFilter(f => ({ ...f, submodel }))
+                              setSubmodelOpen(false)
+                            }}
                           >
                             <Check
                               className={cn(

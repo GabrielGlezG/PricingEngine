@@ -184,6 +184,11 @@ export default function Dashboard() {
     submodel: "",
   });
 
+  // State to control popover visibility
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [submodelOpen, setSubmodelOpen] = useState(false);
+
   // ✅ Update ChartJS defaults and force remount when theme changes
   useEffect(() => {
     ChartJS.defaults.color = hslVar("--foreground");
@@ -370,7 +375,7 @@ export default function Dashboard() {
       <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4">
         <div className="flex flex-wrap gap-2">
           {/* Brand Filter */}
-          <Popover>
+          <Popover open={brandOpen} onOpenChange={setBrandOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -398,7 +403,10 @@ export default function Dashboard() {
                   <CommandEmpty>No se encontró marca.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
-                      onSelect={() => setFilters((f) => ({ ...f, brand: "" }))}
+                      onSelect={() => {
+                        setFilters((f) => ({ ...f, brand: "" }))
+                        setBrandOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -411,7 +419,10 @@ export default function Dashboard() {
                     {brands?.map((brand) => (
                       <CommandItem
                         key={brand}
-                        onSelect={() => setFilters((f) => ({ ...f, brand }))}
+                        onSelect={() => {
+                          setFilters((f) => ({ ...f, brand }))
+                          setBrandOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
@@ -429,7 +440,7 @@ export default function Dashboard() {
           </Popover>
 
           {/* Model Filter */}
-          <Popover>
+          <Popover open={modelOpen} onOpenChange={setModelOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -457,7 +468,10 @@ export default function Dashboard() {
                   <CommandEmpty>No se encontró modelo.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
-                      onSelect={() => setFilters((f) => ({ ...f, model: "" }))}
+                      onSelect={() => {
+                        setFilters((f) => ({ ...f, model: "" }))
+                        setModelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -470,7 +484,10 @@ export default function Dashboard() {
                     {models?.map((m, idx) => (
                       <CommandItem
                         key={`${m.model}-${idx}`}
-                        onSelect={() => setFilters((f) => ({ ...f, model: m.model }))}
+                        onSelect={() => {
+                          setFilters((f) => ({ ...f, model: m.model }))
+                          setModelOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
@@ -488,7 +505,7 @@ export default function Dashboard() {
           </Popover>
 
           {/* Submodel Filter */}
-          <Popover>
+          <Popover open={submodelOpen} onOpenChange={setSubmodelOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -516,7 +533,10 @@ export default function Dashboard() {
                   <CommandEmpty>No se encontró submodelo.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
-                      onSelect={() => setFilters((f) => ({ ...f, submodel: "" }))}
+                      onSelect={() => {
+                        setFilters((f) => ({ ...f, submodel: "" }))
+                        setSubmodelOpen(false)
+                      }}
                     >
                       <Check
                         className={cn(
@@ -529,7 +549,10 @@ export default function Dashboard() {
                     {submodels?.map((sub) => (
                       <CommandItem
                         key={sub}
-                        onSelect={() => setFilters((f) => ({ ...f, submodel: sub }))}
+                        onSelect={() => {
+                          setFilters((f) => ({ ...f, submodel: sub }))
+                          setSubmodelOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
