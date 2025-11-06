@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package, AlertCircle, Zap } from 'lucide-react'
 import { Line, Bar } from 'react-chartjs-2'
@@ -145,16 +146,7 @@ export default function Destacados() {
   }
 
   if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-      </div>
-    )
+    return <LoadingSpinner fullScreen size="lg" text="Cargando destacados..." />
   }
 
   if (!data || !insights || !analytics) return null
