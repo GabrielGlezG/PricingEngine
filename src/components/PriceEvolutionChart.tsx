@@ -486,38 +486,34 @@ export function PriceEvolutionChart({
               />}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-3">
               {evolutionData.statistics?.map((stat, index) => {
                 if (!stat) return null;
 
                 return (
-                  <div key={stat.model} className="p-3 sm:p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div key={stat.model} className="flex items-center gap-4 p-3 border rounded-lg hover:border-primary/50 transition-colors">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: getLineColor(index) }}
                       />
-                      <h4 className="font-medium text-sm">{stat.model}</h4>
+                      <h4 className="font-medium text-sm truncate">{stat.model}</h4>
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Promedio:</span>
-                        <span className="font-medium">
-                          {formatPrice(stat.avgPrice)}
-                        </span>
+                    <div className="flex items-center gap-6 flex-wrap">
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Promedio</p>
+                        <p className="text-sm font-semibold">{formatPrice(stat.avgPrice)}</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Rango:</span>
-                        <span className="font-medium">
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Mín - Máx</p>
+                        <p className="text-xs font-medium">
                           {formatPrice(stat.minPrice)} - {formatPrice(stat.maxPrice)}
-                        </span>
+                        </p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Cambio Total:
-                        </span>
-                        <span
-                          className={`font-medium ${
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Cambio</p>
+                        <p
+                          className={`text-sm font-semibold ${
                             stat.totalChange > 0
                               ? "text-red-500"
                               : stat.totalChange < 0
@@ -527,11 +523,11 @@ export function PriceEvolutionChart({
                         >
                           {stat.totalChange > 0 ? "+" : ""}
                           {stat.totalChange.toFixed(1)}%
-                        </span>
+                        </p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Puntos:</span>
-                        <span className="font-medium">{stat.dataPoints}</span>
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Puntos</p>
+                        <p className="text-sm font-medium">{stat.dataPoints}</p>
                       </div>
                     </div>
                   </div>
