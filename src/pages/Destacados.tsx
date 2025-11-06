@@ -1,13 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package, AlertCircle, Zap } from 'lucide-react'
 import { Line, Bar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+  Filler,
+} from 'chart.js'
 import { useCurrency } from '@/contexts/CurrencyContext'
-import { lineChartColors, barChartColors, getTooltipOptions, getScaleOptions } from '@/config/chartColors'
+import { lineChartColors, barChartColors, getTooltipOptions, getScaleOptions, getChartPalette } from '@/config/chartColors'
 import { hslVar } from '@/lib/utils'
+import { useTheme } from 'next-themes'
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  ChartTooltip,
+  ChartLegend,
+  Filler
+)
+
+// Set default chart colors based on theme
+ChartJS.defaults.color = "hsl(var(--foreground))"
 
 interface DestacadosData {
   generatedAt: string
@@ -71,6 +100,22 @@ export default function Destacados() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const { formatPrice } = useCurrency()
+  const { theme } = useTheme()
+  
+  // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
+  const [chartKey, setChartKey] = useState(0)
+  const [mounted, setMounted] = useState(false)
+  const COLORS = useMemo(() => getChartPalette(12), [theme])
+
+  // ✅ Update ChartJS defaults and force remount when theme changes
+  useEffect(() => {
+    ChartJS.defaults.color = hslVar("--foreground")
+    setMounted(false)
+    setChartKey((prev) => prev + 1)
+
+    const timer = setTimeout(() => setMounted(true), 50)
+    return () => clearTimeout(timer)
+  }, [theme])
 
   useEffect(() => {
     fetchData()
@@ -367,7 +412,9 @@ export default function Destacados() {
             Tendencia del Mercado (6 meses)
           </h2>
           <div className="h-[180px]">
-            <Line data={marketTrendChart} options={marketTrendOptions} />
+            {mounted && (
+              <Line key={`market-trend-${chartKey}`} data={marketTrendChart} options={marketTrendOptions} />
+            )}
           </div>
         </Card>
 
@@ -378,7 +425,9 @@ export default function Destacados() {
             Marcas Más Activas
           </h2>
           <div className="h-[180px]">
-            <Bar data={topBrandsChart} options={topBrandsOptions} />
+            {mounted && (
+              <Bar key={`top-brands-${chartKey}`} data={topBrandsChart} options={topBrandsOptions} />
+            )}
           </div>
         </Card>
       </div>
