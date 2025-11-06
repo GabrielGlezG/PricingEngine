@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Filter, X, Search, Check, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Card } from "@/components/ui/card"
 
 interface ModelSubmodelSelectorProps {
   selectedBrand: string
@@ -21,6 +22,7 @@ interface ModelSubmodelSelectorProps {
   onClearFilters: () => void
   hideCategory?: boolean
   copperClearButton?: boolean
+  showSearchResults?: boolean
 }
 
 export function ModelSubmodelSelector({
@@ -34,7 +36,8 @@ export function ModelSubmodelSelector({
   onSubmodelChange,
   onClearFilters,
   hideCategory = false,
-  copperClearButton = false
+  copperClearButton = false,
+  showSearchResults = false
 }: ModelSubmodelSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("")
   
@@ -115,7 +118,35 @@ export function ModelSubmodelSelector({
     }
   })
 
+  // Fetch all products for search results (only when showSearchResults is true)
+  const { data: allProducts } = useQuery({
+    queryKey: ['all-products-search'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('brand')
+      
+      if (error) throw error
+      return data || []
+    },
+    enabled: showSearchResults
+  })
+
   const hasActiveFilters = selectedBrand || selectedCategory || selectedModel || selectedSubmodel
+
+  // Filter products based on search query
+  const searchFilteredProducts = showSearchResults && searchQuery 
+    ? (allProducts || []).filter(product => {
+        const query = searchQuery.toLowerCase()
+        const matchesBrand = product.brand.toLowerCase().includes(query)
+        const matchesModel = product.model.toLowerCase().includes(query)
+        const matchesSubmodel = product.submodel?.toLowerCase().includes(query)
+        const matchesName = product.name?.toLowerCase().includes(query)
+        
+        return matchesBrand || matchesModel || matchesSubmodel || matchesName
+      })
+    : []
 
   // State to control popover visibility
   const [brandOpen, setBrandOpen] = useState(false)
@@ -464,6 +495,52 @@ export function ModelSubmodelSelector({
               </button>
             </Badge>
           )}
+        </div>
+      )}
+
+      {/* Search Results */}
+      {showSearchResults && searchQuery && searchFilteredProducts.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground mb-3">
+            {searchFilteredProducts.length} resultado{searchFilteredProducts.length !== 1 ? 's' : ''} encontrado{searchFilteredProducts.length !== 1 ? 's' : ''}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+            {searchFilteredProducts.slice(0, 12).map((product) => (
+              <Card 
+                key={product.id}
+                className="p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => {
+                  onBrandChange(product.brand)
+                  onModelChange(product.model)
+                  if (product.submodel) {
+                    onSubmodelChange(product.submodel)
+                  }
+                  setSearchQuery("")
+                }}
+              >
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">{product.brand}</p>
+                  <p className="font-medium text-sm">{product.model}</p>
+                  {product.submodel && (
+                    <p className="text-xs text-muted-foreground">{product.submodel}</p>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+          {searchFilteredProducts.length > 12 && (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Mostrando 12 de {searchFilteredProducts.length} resultados. Refina tu búsqueda para ver más.
+            </p>
+          )}
+        </div>
+      )}
+
+      {showSearchResults && searchQuery && searchFilteredProducts.length === 0 && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No se encontraron resultados para "{searchQuery}"
+          </p>
         </div>
       )}
     </div>
