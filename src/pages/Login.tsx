@@ -135,143 +135,183 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-fade-in">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <img src={logo} alt="PricingEngine" className="h-32 w-auto object-contain" />
-          </div>
-          {/* <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
-          <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p> */}
-        </div>
+    <div className="min-h-screen flex items-center justify-center p-4 animate-fade-in relative overflow-hidden">
+      {/* Background with blur effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background to-accent/20 backdrop-blur-sm"></div>
+      
+      <div className="w-full max-w-md relative z-10">
+        <Card className="bg-card/95 backdrop-blur-md border-border/50 shadow-2xl">
+          <CardContent className="pt-8 pb-6 px-8">
+            {/* Logo */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+                <img src={logo} alt="PricingEngine" className="h-16 w-16 object-contain" />
+              </div>
+            </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Acceso al Sistema</CardTitle>
-            <CardDescription className="text-center">
-              Inicia sesión o crea una cuenta para continuar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-center text-foreground mb-8">
+              {loginForm.email || signupForm.email ? 'Iniciar Sesión' : 'Bienvenido'}
+            </h1>
+
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="hidden">
                 <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
                 <TabsTrigger value="signup">Registrarse</TabsTrigger>
               </TabsList>
               
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+              <TabsContent value="login" className="mt-0">
+                <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="Correo electrónico"
                       value={loginForm.email}
                       onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                       required
+                      className="h-12 bg-background/50 border-border/50 focus:bg-background"
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="password">Contraseña</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
+                        placeholder="Contraseña"
                         value={loginForm.password}
                         onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                         required
-                        className="pr-10"
+                        className="h-12 pr-20 bg-background/50 border-border/50 focus:bg-background"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-primary hover:text-primary/80 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {showPassword ? "Ocultar" : "Mostrar"}
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">
-                    Iniciar Sesión
+
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 rounded border-border/50" />
+                      <span className="text-sm text-foreground">Recordarme</span>
+                    </label>
+                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                      ¿Olvidó su contraseña?
+                    </Link>
+                  </div>
+
+                  <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
+                    Iniciar sesión
+                  </Button>
+
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full h-12 text-base font-medium border-border/50 hover:bg-background/50"
+                    onClick={() => {
+                      const tabsList = document.querySelector('[role="tablist"]');
+                      const signupTrigger = tabsList?.querySelector('[value="signup"]') as HTMLElement;
+                      signupTrigger?.click();
+                    }}
+                  >
+                    Crear cuenta nueva
                   </Button>
                 </form>
               </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
+              <TabsContent value="signup" className="mt-0">
+                <form onSubmit={handleSignup} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nombre Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder="Nombre Completo"
                       value={signupForm.name}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
                       required
+                      className="h-12 bg-background/50 border-border/50 focus:bg-background"
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="Correo electrónico"
                       value={signupForm.email}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
                       required
+                      className="h-12 bg-background/50 border-border/50 focus:bg-background"
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupForm.password}
-                      onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Contraseña"
+                        value={signupForm.password}
+                        onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                        className="h-12 pr-20 bg-background/50 border-border/50 focus:bg-background"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-primary hover:text-primary/80 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? "Ocultar" : "Mostrar"}
+                      </Button>
+                    </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirmar Contraseña</Label>
                     <Input
                       id="confirm-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Confirmar Contraseña"
                       value={signupForm.confirmPassword}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       required
+                      className="h-12 bg-background/50 border-border/50 focus:bg-background"
                     />
                   </div>
-                  <Button type="submit" className="w-full">
+
+                  <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
                     Crear Cuenta
+                  </Button>
+
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full h-12 text-base font-medium border-border/50 hover:bg-background/50"
+                    onClick={() => {
+                      const tabsList = document.querySelector('[role="tablist"]');
+                      const loginTrigger = tabsList?.querySelector('[value="login"]') as HTMLElement;
+                      loginTrigger?.click();
+                    }}
+                  >
+                    Ya tengo cuenta
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                ¿Necesitas ayuda?{' '}
-                <Link to="/contact" className="text-primary hover:underline">
-                  Contacta soporte
-                </Link>
-              </p>
-            </div>
           </CardContent>
         </Card>
 
@@ -318,18 +358,6 @@ export default function Login() {
             </Card>
           </div>
         )}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-muted-foreground">
-            Al usar PricingEngine, aceptas nuestros{' '}
-            <Link to="/terms" className="text-muted-foreground hover:underline">
-              Términos de Servicio
-            </Link>{' '}
-            y{' '}
-            <Link to="/privacy" className="text-muted-foreground hover:underline">
-              Política de Privacidad
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   )
