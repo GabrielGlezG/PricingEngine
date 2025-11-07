@@ -144,14 +144,14 @@ export default function Login() {
           <CardContent className="pt-8 pb-6 px-8">
             {/* Logo */}
             <div className="flex items-center justify-center mb-6">
-              <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
-                <img src={logo} alt="PricingEngine" className="h-16 w-16 object-contain" />
+              <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center shadow-lg p-4">
+                <img src={logo} alt="PricingEngine" className="w-full h-full object-contain" />
               </div>
             </div>
 
             {/* Title */}
             <h1 className="text-2xl font-bold text-center text-foreground mb-8">
-              {loginForm.email || signupForm.email ? 'Iniciar Sesión' : 'Bienvenido'}
+              Bienvenido
             </h1>
 
             {error && (
@@ -161,7 +161,7 @@ export default function Login() {
             )}
 
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="hidden">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
                 <TabsTrigger value="signup">Registrarse</TabsTrigger>
               </TabsList>
@@ -203,31 +203,8 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 rounded border-border/50" />
-                      <span className="text-sm text-foreground">Recordarme</span>
-                    </label>
-                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                      ¿Olvidó su contraseña?
-                    </Link>
-                  </div>
-
                   <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
                     Iniciar sesión
-                  </Button>
-
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full h-12 text-base font-medium border-border/50 hover:bg-background/50"
-                    onClick={() => {
-                      const tabsList = document.querySelector('[role="tablist"]');
-                      const signupTrigger = tabsList?.querySelector('[value="signup"]') as HTMLElement;
-                      signupTrigger?.click();
-                    }}
-                  >
-                    Crear cuenta nueva
                   </Button>
                 </form>
               </TabsContent>
@@ -295,19 +272,6 @@ export default function Login() {
 
                   <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
                     Crear Cuenta
-                  </Button>
-
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="w-full h-12 text-base font-medium border-border/50 hover:bg-background/50"
-                    onClick={() => {
-                      const tabsList = document.querySelector('[role="tablist"]');
-                      const loginTrigger = tabsList?.querySelector('[value="login"]') as HTMLElement;
-                      loginTrigger?.click();
-                    }}
-                  >
-                    Ya tengo cuenta
                   </Button>
                 </form>
               </TabsContent>
