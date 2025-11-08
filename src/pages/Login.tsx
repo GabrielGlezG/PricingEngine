@@ -148,12 +148,9 @@ export default function Login() {
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl font-bold text-center text-foreground mb-2">
-              Acceso al Sistema
+            <h1 className="text-2xl font-bold text-center text-foreground mb-8">
+              Bienvenido
             </h1>
-            <p className="text-center text-primary text-sm mb-8">
-              Inicia sesión o crea una cuenta para continuar
-            </p>
 
             {error && (
               <Alert variant="destructive" className="mb-6">
@@ -170,11 +167,10 @@ export default function Login() {
               <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground font-medium">Email</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="Correo electrónico"
                       value={loginForm.email}
                       onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
                       required
@@ -183,7 +179,6 @@ export default function Login() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-foreground font-medium">Contraseña</Label>
                     <div className="relative">
                       <Input
                         id="password"
@@ -209,26 +204,16 @@ export default function Login() {
                   <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
                     Iniciar sesión
                   </Button>
-
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      ¿Necesitas ayuda?{' '}
-                      <Link to="/contact" className="text-primary hover:underline">
-                        Contacta soporte
-                      </Link>
-                    </p>
-                  </div>
                 </form>
               </TabsContent>
 
               <TabsContent value="signup" className="mt-0">
                 <form onSubmit={handleSignup} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-foreground font-medium">Nombre Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder="Nombre Completo"
                       value={signupForm.name}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
                       required
@@ -237,11 +222,10 @@ export default function Login() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-foreground font-medium">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="Correo electrónico"
                       value={signupForm.email}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
                       required
@@ -250,7 +234,6 @@ export default function Login() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-foreground font-medium">Contraseña</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
@@ -274,7 +257,6 @@ export default function Login() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password" className="text-foreground font-medium">Confirmar Contraseña</Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -289,15 +271,6 @@ export default function Login() {
                   <Button type="submit" className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90">
                     Crear Cuenta
                   </Button>
-
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      ¿Necesitas ayuda?{' '}
-                      <Link to="/contact" className="text-primary hover:underline">
-                        Contacta soporte
-                      </Link>
-                    </p>
-                  </div>
                 </form>
               </TabsContent>
             </Tabs>
@@ -343,22 +316,9 @@ export default function Login() {
                     Cancelar
                   </Button>
                 </div>
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Al usar PricingEngine, aceptas nuestros{' '}
-            <Link to="/terms" className="text-primary hover:underline">
-              Términos de Servicio
-            </Link>{' '}
-            y{' '}
-            <Link to="/privacy" className="text-primary hover:underline">
-              Política de Privacidad
-            </Link>
-          </p>
-        </div>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
