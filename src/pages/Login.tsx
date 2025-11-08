@@ -143,8 +143,10 @@ export default function Login() {
         <Card className="bg-card/95 backdrop-blur-md border-border/50 shadow-2xl">
           <CardContent className="pt-8 pb-6 px-8">
             {/* Logo */}
-            <div className="flex items-center justify-center mb-8">
-              <img src={logo} alt="PricingEngine" className="h-32 w-auto object-contain" />
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center shadow-lg p-4">
+                <img src={logo} alt="PricingEngine" className="w-full h-full object-contain" />
+              </div>
             </div>
 
             {/* Title */}
