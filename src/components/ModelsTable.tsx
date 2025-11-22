@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Badge } from "@/components/custom/Badge";
 import { Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -160,15 +161,8 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
   if (isLoading) {
     return (
       <Card className="border-border/50 shadow-md">
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
+        <CardContent className="py-12">
+          <LoadingSpinner size="lg" text="Cargando modelos..." />
         </CardContent>
       </Card>
     );
