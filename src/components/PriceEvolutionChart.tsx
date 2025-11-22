@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -415,8 +414,9 @@ export function PriceEvolutionChart({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="py-12">
-            <LoadingSpinner size="lg" text="Cargando evolución de precios..." />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-64 w-full" />
           </div>
         ) : evolutionData && evolutionData.labels.length > 0 ? (
           <div className="space-y-4">
