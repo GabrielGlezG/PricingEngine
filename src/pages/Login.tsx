@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Eye, EyeOff, Loader2, Crown } from 'lucide-react'
+import { Eye, EyeOff, Crown } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
 import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
@@ -70,6 +71,8 @@ export default function Login() {
 
     const { error } = await signIn(loginForm.email, loginForm.password)
     
+    setIsLoading(false)
+    
     if (error) {
       setError(error.message)
       toast({
@@ -88,8 +91,6 @@ export default function Login() {
         setShowAdminSetup(true)
       }, 2000)
     }
-    
-    setIsLoading(false)
   }
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -111,6 +112,8 @@ export default function Login() {
 
     const { error } = await signUp(signupForm.email, signupForm.password, signupForm.name)
     
+    setIsLoading(false)
+    
     if (error) {
       setError(error.message)
       toast({
@@ -125,12 +128,14 @@ export default function Login() {
         description: "Serás redirigido a la página de suscripción."
       })
     }
-    
-    setIsLoading(false)
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner fullScreen size="lg" text="Autenticando..." />
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-fade-in">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
@@ -200,8 +205,7 @@ export default function Login() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button type="submit" className="w-full">
                     Iniciar Sesión
                   </Button>
                 </form>
@@ -253,8 +257,7 @@ export default function Login() {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button type="submit" className="w-full">
                     Crear Cuenta
                   </Button>
                 </form>
@@ -298,14 +301,9 @@ export default function Login() {
                 <div className="flex gap-2">
                   <Button
                     onClick={handleMakeFirstAdmin}
-                    disabled={isLoading}
                     className="flex-1"
                   >
-                    {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Crown className="mr-2 h-4 w-4" />
-                    )}
+                    <Crown className="mr-2 h-4 w-4" />
                     Hacer Administrador
                   </Button>
                   <Button
