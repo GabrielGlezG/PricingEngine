@@ -13,7 +13,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
-  const { user, profile, signIn, signUp, makeFirstAdmin } = useAuth()
+  const { user, profile, loading, signIn, signUp, makeFirstAdmin } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
   
@@ -35,20 +35,25 @@ export default function Login() {
     name: ''
   })
 
+  // Esperar a que termine de cargar antes de redirigir
+  if (loading) {
+    return <LoadingSpinner fullScreen size="lg" text="Autenticando..." />
+  }
+
   if (user && profile) {
-  // Si acaba de registrarse, ir a subscription
-  if (justRegistered) {
+    // Si acaba de registrarse, ir a subscription
+    if (justRegistered) {
+      return <Navigate to="/subscription" replace />
+    }
+
+    // Si es admin o tiene suscripción activa → ir siempre al dashboard
+    if (profile.role === 'admin' || profile.subscription_status === 'active') {
+      return <Navigate to="/dashboard" replace />
+    }
+
+    // Si tiene perfil pero NO tiene suscripción activa → ir a subscription
     return <Navigate to="/subscription" replace />
   }
-
-  // Si es admin o tiene suscripción activa → ir siempre al dashboard
-  if (profile.role === 'admin' || profile.subscription_status === 'active') {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  // Si tiene perfil pero NO tiene suscripción activa → ir a subscription
-  return <Navigate to="/subscription" replace />
-}
 
 
   const handleMakeFirstAdmin = async () => {
@@ -85,11 +90,6 @@ export default function Login() {
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente."
       })
-      
-      // Verificar si necesita configurar el primer admin
-      setTimeout(() => {
-        setShowAdminSetup(true)
-      }, 2000)
     }
   }
 
