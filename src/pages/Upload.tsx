@@ -331,6 +331,7 @@ export default function UploadComponent() {
   "Categoría"
   "Modelo Principal"
   "Modelo"
+  "Tipo_Vehiculo"     // Nuevo: SUV, Camioneta, Camion, 4x4, etc.
   "ctx_precio"
   "precio_num"
   "precio_lista_num"

@@ -94,6 +94,7 @@ export type Database = {
           model: string
           name: string
           submodel: string | null
+          tipo_vehiculo: string | null
           updated_at: string | null
         }
         Insert: {
@@ -107,6 +108,7 @@ export type Database = {
           model: string
           name: string
           submodel?: string | null
+          tipo_vehiculo?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -120,6 +122,7 @@ export type Database = {
           model?: string
           name?: string
           submodel?: string | null
+          tipo_vehiculo?: string | null
           updated_at?: string | null
         }
         Relationships: []

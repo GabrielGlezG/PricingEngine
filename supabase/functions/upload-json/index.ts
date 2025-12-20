@@ -23,6 +23,8 @@ interface JsonData {
   Timestamp: string;
   Estado?: string;
   estado?: string;
+  Tipo_Vehiculo?: string;
+  tipo_vehiculo?: string;
 }
 
 // Helper to normalize 'estado' values from Excel/JSON
@@ -117,6 +119,16 @@ Deno.serve(async (req) => {
         const estado = normalizeEstado(rawEstado);
         console.log('Determined estado:', estado);
 
+        // Extract 'tipo_vehiculo' from the incoming data (case-insensitive)
+        let tipoVehiculo: string | null = null;
+        for (const key in item as any) {
+          if (key && (key.toLowerCase() === 'tipo_vehiculo' || key.toLowerCase() === 'tipovehiculo' || key.toLowerCase() === 'tipo vehiculo')) {
+            tipoVehiculo = (item as any)[key] || null;
+            break;
+          }
+        }
+        console.log('Determined tipo_vehiculo:', tipoVehiculo);
+
         const productData = {
           brand: categoria,
           category: categoria,
@@ -124,7 +136,8 @@ Deno.serve(async (req) => {
           name: modelo,
           id_base: item.ID_Base,
           submodel: modelo,
-          estado: estado
+          estado: estado,
+          tipo_vehiculo: tipoVehiculo
         };
         
         console.log('Product data:', JSON.stringify(productData, null, 2));
@@ -149,13 +162,13 @@ Deno.serve(async (req) => {
           }
           product = newProduct;
         } else {
-          // Update estado on existing product to reflect Excel/JSON
+          // Update estado and tipo_vehiculo on existing product to reflect Excel/JSON
           const { error: updateError } = await supabaseClient
             .from('products')
-            .update({ estado })
+            .update({ estado, tipo_vehiculo: tipoVehiculo })
             .eq('id', product.id);
           if (updateError) {
-            console.error('Error updating product estado:', updateError);
+            console.error('Error updating product:', updateError);
           }
         }
 

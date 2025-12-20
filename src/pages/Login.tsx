@@ -135,93 +135,125 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-fade-in">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <img src={logo} alt="PricingEngine" className="h-32 w-auto object-contain" />
-          </div>
-          {/* <h1 className="text-3xl font-bold text-foreground mb-2">PricingEngine</h1>
-          <p className="text-muted-foreground">Sistema de Análisis de Precios Automotrices</p> */}
+    <div className="min-h-screen w-full grid lg:grid-cols-2">
+      {/* LEFT PANEL: Branding & Value Prop (Enterprise Style) */}
+      <div className="hidden lg:flex flex-col justify-between bg-[#002B5E] text-white p-12 relative overflow-hidden">
+        {/* Abstract Background Pattern */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+           <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+             <path d="M0 100 C 20 0 50 0 100 100 Z" fill="white" />
+           </svg>
+        </div>
+        
+        <div className="relative z-10">
+          <img src={logo} alt="PricingEngine" className="h-16 w-auto object-contain brightness-0 invert opacity-90" />
         </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Acceso al Sistema</CardTitle>
-            <CardDescription className="text-center">
-              Inicia sesión o crea una cuenta para continuar
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="signup">Registrarse</TabsTrigger>
-              </TabsList>
-              
-              {error && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+        <div className="relative z-10 space-y-6 max-w-lg">
+          <h1 className="text-4xl font-bold tracking-tight leading-tight">
+            Inteligencia de Precios para el Mercado Automotriz
+          </h1>
+          <p className="text-blue-100 text-lg">
+            Toma decisiones basadas en datos reales. Monitorea competidores, optimiza márgenes y lidera el mercado con PricingEngine.
+          </p>
+        </div>
 
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={loginForm.email}
-                      onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
+        <div className="relative z-10 text-sm text-blue-200/60">
+          © 2025 PricingEngine Inc. Todos los derechos reservados.
+        </div>
+      </div>
+
+      {/* RIGHT PANEL: Authentication Form */}
+      <div className="flex items-center justify-center p-8 bg-slate-50 dark:bg-slate-950">
+        <div className="w-full max-w-[400px] space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+          
+          {/* Mobile Logo (only visible on small screens) */}
+          <div className="lg:hidden flex justify-center mb-8">
+             <img src={logo} alt="PricingEngine" className="h-12 w-auto" />
+          </div>
+
+          <div className="space-y-2 text-center lg:text-left">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              Bienvenido
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400">
+              Ingresa tus credenciales para acceder al dashboard.
+            </p>
+          </div>
+
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Ingresar</TabsTrigger>
+              <TabsTrigger value="signup">Registrarse</TabsTrigger>
+            </TabsList>
+
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Corporativo</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="nombre@empresa.com"
+                    value={loginForm.email}
+                    onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
                     <Label htmlFor="password">Contraseña</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={loginForm.password}
-                        onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                        required
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
+                    <a href="#" className="text-xs font-medium text-primary hover:underline">¿Olvidaste tu contraseña?</a>
                   </div>
-                  <Button type="submit" className="w-full">
-                    Iniciar Sesión
-                  </Button>
-                </form>
-              </TabsContent>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={loginForm.password}
+                      onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                      required
+                      className="h-11 pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-11 bg-[#002B5E] hover:bg-[#002B5E]/90 text-white shadow-md transition-all">
+                  Iniciar Sesión
+                </Button>
+              </form>
+            </TabsContent>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
+            <TabsContent value="signup">
+               <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Nombre Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="Tu nombre"
+                      placeholder="Juan Pérez"
                       value={signupForm.name}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
                       required
+                      className="h-11"
                     />
                   </div>
                   <div className="space-y-2">
@@ -229,10 +261,11 @@ export default function Login() {
                     <Input
                       id="signup-email"
                       type="email"
-                      placeholder="tu@email.com"
+                      placeholder="nombre@empresa.com"
                       value={signupForm.email}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
                       required
+                      className="h-11"
                     />
                   </div>
                   <div className="space-y-2">
@@ -240,10 +273,11 @@ export default function Login() {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Crear contraseña"
                       value={signupForm.password}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
                       required
+                      className="h-11"
                     />
                   </div>
                   <div className="space-y-2">
@@ -251,85 +285,58 @@ export default function Login() {
                     <Input
                       id="confirm-password"
                       type="password"
-                      placeholder="••••••••"
+                      placeholder="Repetir contraseña"
                       value={signupForm.confirmPassword}
                       onChange={(e) => setSignupForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       required
+                      className="h-11"
                     />
                   </div>
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full h-11 bg-[#002B5E] hover:bg-[#002B5E]/90 text-white shadow-md transition-all">
                     Crear Cuenta
                   </Button>
                 </form>
-              </TabsContent>
-            </Tabs>
+            </TabsContent>
+          </Tabs>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                ¿Necesitas ayuda?{' '}
-                <Link to="/contact" className="text-primary hover:underline">
-                  Contacta soporte
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <p className="px-8 text-center text-sm text-muted-foreground">
+            Al continuar, aceptas nuestros{" "}
+            <a href="/terms" className="underline underline-offset-4 hover:text-primary">
+              Términos de Servicio
+            </a>{" "}
+            y{" "}
+            <a href="/privacy" className="underline underline-offset-4 hover:text-primary">
+              Política de Privacidad
+            </a>.
+          </p>
+        </div>
 
-        {/* Modal para configurar primer admin */}
+        {/* Modal Admin Setup (Floating, kept minimal) */}
         {showAdminSetup && user && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-md">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+             <Card className="w-full max-w-md shadow-2xl">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Crown className="h-5 w-5 text-yellow-500" />
                   Configurar Administrador
                 </CardTitle>
                 <CardDescription>
-                  ¿Deseas convertir esta cuenta en administrador del sistema?
+                  Confirmar creación de rol administrador.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-sm text-blue-400">
-                    Email: {user.email}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Esta acción solo está disponible si no hay otros administradores en el sistema.
-                  </p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleMakeFirstAdmin}
-                    className="flex-1"
-                  >
-                    <Crown className="mr-2 h-4 w-4" />
-                    Hacer Administrador
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAdminSetup(false)}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
+                 <div className="p-3 bg-blue-50 text-blue-700 rounded-md border border-blue-100 text-sm">
+                    <strong>Email:</strong> {user.email}
+                 </div>
+                 <div className="flex gap-2 pt-2">
+                    <Button onClick={handleMakeFirstAdmin} className="flex-1">Confirmar</Button>
+                    <Button variant="outline" onClick={() => setShowAdminSetup(false)} className="flex-1">Cancelar</Button>
+                 </div>
               </CardContent>
-            </Card>
+             </Card>
           </div>
         )}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-muted-foreground">
-            Al usar PricingEngine, aceptas nuestros{' '}
-            <Link to="/terms" className="text-muted-foreground hover:underline">
-              Términos de Servicio
-            </Link>{' '}
-            y{' '}
-            <Link to="/privacy" className="text-muted-foreground hover:underline">
-              Política de Privacidad
-            </Link>
-          </p>
-        </div>
+
       </div>
     </div>
   )

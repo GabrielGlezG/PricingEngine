@@ -57,6 +57,10 @@ interface PriceEvolutionProps {
   selectedCategory?: string;
   selectedModel?: string;
   selectedSubmodel?: string;
+  brandFilters?: string[];
+  modelFilters?: string[];
+  submodelFilters?: string[];
+  tipoVehiculoFilters?: string[];
 }
 
 /* Colors are now computed via useMemo inside component for theme reactivity */
@@ -66,8 +70,12 @@ export function PriceEvolutionChart({
   selectedCategory,
   selectedModel,
   selectedSubmodel,
+  brandFilters = [],
+  modelFilters = [],
+  submodelFilters = [],
+  tipoVehiculoFilters = [],
 }: PriceEvolutionProps) {
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const chartColors = useMemo(() => 
@@ -76,13 +84,17 @@ export function PriceEvolutionChart({
   const [timeRange, setTimeRange] = useState("6months");
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("week");
 
+  // Determine if we have any filters active
+  const hasFilters = selectedBrand || selectedCategory || selectedModel || 
+    brandFilters.length > 0 || modelFilters.length > 0 || submodelFilters.length > 0 || tipoVehiculoFilters.length > 0;
+
   // Update ChartJS defaults and force remount when theme changes
   useEffect(() => {
     ChartJS.defaults.color = hslVar('--foreground');
     setMounted(false);
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
-  }, [theme]);
+  }, [theme, currency]);
 
   useEffect(() => {
     setMounted(true);
@@ -100,6 +112,10 @@ export function PriceEvolutionChart({
       selectedCategory,
       selectedModel,
       selectedSubmodel,
+      brandFilters,
+      modelFilters,
+      submodelFilters,
+      tipoVehiculoFilters,
       timeRange,
       groupBy,
     ],
@@ -117,7 +133,8 @@ export function PriceEvolutionChart({
             category,
             model,
             name,
-            submodel
+            submodel,
+            tipo_vehiculo
           )
         `
         )
@@ -171,17 +188,28 @@ export function PriceEvolutionChart({
 
       query = query.gte("date", startDate.toISOString());
 
-      if (selectedBrand) {
+      // Handle multi-select filters or single filters
+      if (brandFilters.length > 0) {
+        query = query.in("products.brand", brandFilters);
+      } else if (selectedBrand) {
         query = query.eq("products.brand", selectedBrand);
       }
       if (selectedCategory) {
         query = query.eq("products.category", selectedCategory);
       }
-      if (selectedModel) {
+      if (modelFilters.length > 0) {
+        query = query.in("products.model", modelFilters);
+      } else if (selectedModel) {
         query = query.eq("products.model", selectedModel);
       }
-      if (selectedSubmodel) {
+      if (submodelFilters.length > 0) {
+        query = query.in("products.submodel", submodelFilters);
+      } else if (selectedSubmodel) {
         query = query.eq("products.submodel", selectedSubmodel);
+      }
+      
+      if (tipoVehiculoFilters.length > 0) {
+        query = query.in("products.tipo_vehiculo", tipoVehiculoFilters);
       }
 
       const { data, error } = await query;
@@ -302,7 +330,7 @@ export function PriceEvolutionChart({
         totalDataPoints: data?.length || 0,
       };
     },
-    enabled: !!(selectedBrand || selectedCategory || selectedModel),
+    enabled: !!(selectedBrand || selectedCategory || selectedModel || brandFilters.length > 0 || modelFilters.length > 0 || tipoVehiculoFilters.length > 0),
   });
 
   const formatDateForDisplay = (dateKey: string, groupBy: string) => {
@@ -332,7 +360,7 @@ export function PriceEvolutionChart({
     return lineChartColors.getLineColor(index);
   };
 
-  if (!selectedBrand && !selectedCategory && !selectedModel) {
+  if (!hasFilters) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -354,7 +382,7 @@ export function PriceEvolutionChart({
       <CardHeader>
         <div className="flex flex-col gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="card-title flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
               Evolución de Precios
             </CardTitle>
@@ -474,7 +502,7 @@ export function PriceEvolutionChart({
                       ...getScaleOptions(),
                       ticks: { 
                         ...getScaleOptions().ticks,
-                        callback: (value) => `$${((value as number) / 1000).toFixed(0)}k`
+                        callback: (value) => formatPrice(value as number)
                       }
                     }
                   },
