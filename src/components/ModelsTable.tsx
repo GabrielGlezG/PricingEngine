@@ -19,9 +19,10 @@ import { useState } from "react";
 
 interface ModelsTableProps {
   filters: {
-    brand?: string;
-    model?: string;
-    submodel?: string;
+    tipoVehiculo?: string | string[];
+    brand?: string | string[];
+    model?: string | string[];
+    submodel?: string | string[];
   };
   statusFilter?: 'active' | 'inactive';
 }
@@ -32,8 +33,7 @@ interface ModelData {
   brand: string;
   name: string;
   estado: string | null;
-  units: number;
-  revenue: number;
+  count: number;
   precio_con_bono: number | null;
   precio_lista: number | null;
   bono: number | null;
@@ -63,7 +63,8 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
             brand,
             model,
             submodel,
-            estado
+            estado,
+            tipo_vehiculo
           )
         `)
         .order('date', { ascending: false });
@@ -77,9 +78,18 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
         const productId = item.product_id;
         const product = item.products;
         
-        // Apply filters
-        if (filters.brand && product.brand !== filters.brand) return;
-        if (filters.model && product.model !== filters.model) return;
+        // Apply filters (only if array has values)
+        const tipoArr = Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : filters.tipoVehiculo ? [filters.tipoVehiculo] : [];
+        if (tipoArr.length > 0 && !tipoArr.includes(product.tipo_vehiculo)) return;
+        
+        const brandArr = Array.isArray(filters.brand) ? filters.brand : filters.brand ? [filters.brand] : [];
+        if (brandArr.length > 0 && !brandArr.includes(product.brand)) return;
+        
+        const modelArr = Array.isArray(filters.model) ? filters.model : filters.model ? [filters.model] : [];
+        if (modelArr.length > 0 && !modelArr.includes(product.model)) return;
+        
+        const submodelArr = Array.isArray(filters.submodel) ? filters.submodel : filters.submodel ? [filters.submodel] : [];
+        if (submodelArr.length > 0 && !submodelArr.includes(product.submodel)) return;
         
         // Apply status filter
         const estado = product.estado?.toLowerCase() || 'vigente';
@@ -108,8 +118,7 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
             brand: product.brand,
             name: product.name,
             estado: product.estado,
-            units: 0,
-            revenue: 0,
+            count: 0,
             precio_con_bono: null,
             precio_lista: null,
             bono: null,
@@ -117,11 +126,10 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
         }
 
         const modelData = modelMap.get(modelKey)!;
-        modelData.units += 1;
-        modelData.revenue += item.price || 0;
+        modelData.count += 1;
         
         // Calculate average prices
-        const currentCount = modelData.units;
+        const currentCount = modelData.count;
         
         // precio_con_bono es el precio final (price o precio_texto parseado)
         const precioConBono = item.price || 0;
@@ -135,7 +143,7 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
         modelData.bono = ((modelData.bono || 0) * (currentCount - 1) + bono) / currentCount;
       });
 
-      return Array.from(modelMap.values()).sort((a, b) => b.revenue - a.revenue);
+      return Array.from(modelMap.values()).sort((a, b) => (b.precio_con_bono || 0) - (a.precio_con_bono || 0));
     },
     staleTime: 30000,
   });
@@ -151,12 +159,6 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = modelsData?.slice(startIndex, endIndex);
 
-  const formatRevenue = (revenue: number) => {
-    if (revenue >= 1000000) {
-      return `$${(revenue / 1000000).toFixed(1)}M`;
-    }
-    return formatPrice(revenue);
-  };
 
   if (isLoading) {
     return (
@@ -171,11 +173,11 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
   return (
     <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
       <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-lg flex items-center gap-2">
+        <CardTitle className="card-title flex items-center gap-2">
           <Package className="h-5 w-5 text-primary" />
           {statusFilter === 'active' ? 'Modelos Activos' : 'Modelos Inactivos'}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="subtitle">
           Desglose detallado de precios por modelo
         </CardDescription>
       </CardHeader>
@@ -186,8 +188,6 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
               <TableRow>
                 <TableHead className="min-w-[180px]">Modelo</TableHead>
                 <TableHead className="min-w-[120px]">Submodelo</TableHead>
-                <TableHead className="text-right">Unidades</TableHead>
-                <TableHead className="text-right">Revenue</TableHead>
                 <TableHead className="text-right">Precio c/Bono</TableHead>
                 <TableHead className="text-right">Precio Lista</TableHead>
                 <TableHead className="text-right">Bono</TableHead>
@@ -213,8 +213,6 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
                     <TableCell className="font-medium">
                       {model.submodel || '-'}
                     </TableCell>
-                    <TableCell className="text-right">{model.units.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium">{formatRevenue(model.revenue)}</TableCell>
                     <TableCell className="text-right">{formatPrice(model.precio_con_bono || 0)}</TableCell>
                     <TableCell className="text-right">{formatPrice(model.precio_lista || 0)}</TableCell>
                     <TableCell className="text-right">{formatPrice(model.bono || 0)}</TableCell>
@@ -228,7 +226,7 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
               })}
               {(!paginatedData || paginatedData.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No hay modelos {statusFilter === 'inactive' ? 'inactivos' : 'activos'} para mostrar
                   </TableCell>
                 </TableRow>
