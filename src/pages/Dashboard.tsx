@@ -15,6 +15,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
@@ -50,6 +57,7 @@ import {
   Filler,
 } from "chart.js";
 import { useState, useEffect, useMemo } from "react";
+import { DateRange } from "react-day-picker";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 // import { CurrencySelector } from "@/components/CurrencySelector";
 import { hslVar, cn } from "@/lib/utils";
@@ -65,6 +73,9 @@ import {
 } from "@/config/chartColors";
 import { ModelsTable } from "@/components/ModelsTable";
 import { useTheme } from "next-themes";
+import { BrandLogo } from "@/components/BrandLogo";
+import { BrandHeader } from "@/components/BrandHeader";
+import { DashboardFilters } from "@/components/DashboardFilters";
 
 // Register ChartJS components
 ChartJS.register(
@@ -117,6 +128,7 @@ interface AnalyticsData {
       max_price: number;
       count: number;
     }>;
+    prices_by_segment_breakdown?: Record<string, Array<{ brand: string; avg_price: number; count: number }>>;
     models_by_category: Array<{ category: string; count: number }>;
     models_by_principal: Array<{
       model_principal: string;
@@ -141,6 +153,8 @@ interface AnalyticsData {
       last_avg_price: number;
       variation_percent: number;
       scraping_sessions: number;
+      startDate?: string;
+      endDate?: string;
     }>;
     monthly_volatility: {
       most_volatile: Array<{
@@ -151,6 +165,11 @@ interface AnalyticsData {
         data_points: number;
       }>;
     };
+    volatility_timeseries: Array<{
+      entity: string;
+      score: number;
+      data: Array<{ date: string; variation: number; avg_price: number }>;
+    }>;
   };
   historical_data?: Array<{ date: string; price: number }>;
   applied_filters: {
@@ -163,29 +182,63 @@ interface AnalyticsData {
     ctx_precio?: string;
     priceRange?: string;
   };
+  available_dates?: string[];
   generated_at: string;
 }
 
 export default function Dashboard() {
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
   const { setLastUpdate } = useLastUpdate();
   const { theme } = useTheme();
 
   // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
+  // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
   const [chartKey, setChartKey] = useState(0);
   const [mounted, setMounted] = useState(false);
   const COLORS = useMemo(() => getChartPalette(12), [theme]);
+  const COLORS_BG = useMemo(() => getChartPalette(12, 0.8), [theme]);
+
+  // ✅ State for explicit chart text colors (Fix for Legend/Axis black issue)
+  const [axisColor, setAxisColor] = useState(hslVar('--muted-foreground'));
+  const [legendColor, setLegendColor] = useState(hslVar('--foreground'));
 
   // ✅ Estado para controlar el tab activo
   const [activeTab, setActiveTab] = useState("general");
+  // ✅ Estado para controlar el segmento seleccionado
+  const [selectedPriceSegment, setSelectedPriceSegment] = useState<string | "all">("all");
+  
+  // ✅ Estado para Volatilidad
+  const [volatilityPeriod, setVolatilityPeriod] = useState<'total' | 'month'>('total');
+  const [volatilityStartMonthId, setVolatilityStartMonthId] = useState<string>("");
+  const [volatilityEndMonthId, setVolatilityEndMonthId] = useState<string>("");
+  const [volatilityStartDate, setVolatilityStartDate] = useState<string>("all");
+  const [volatilityEndDate, setVolatilityEndDate] = useState<string>("all");
+  // const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all"); used in query? 
+  // Line 212 was: const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all");
+  // I should keep volatilityBrand if it's used elsewhere (Step 862 showed usage in UI but logic seemed confused).
+  // I'll keep it for now.
+  const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all");
+  
+  // ✅ Estado para Variación de Precios
+  const [variationPeriod, setVariationPeriod] = useState<'total' | 'month'>('total');
+  const [variationStartMonthId, setVariationStartMonthId] = useState<string>("");
+  const [variationEndMonthId, setVariationEndMonthId] = useState<string>("");
+  const [variationStartDate, setVariationStartDate] = useState<string>("all");
+  const [variationEndDate, setVariationEndDate] = useState<string>("all");
+
+
+
+
 
   const [filters, setFilters] = useState({
-    brand: "",
-    model: "",
-    submodel: "",
+    tipoVehiculo: [] as string[],
+    brand: [] as string[],
+    model: [] as string[],
+    submodel: [] as string[],
   });
 
   // State to control popover visibility
+  const [tipoVehiculoOpen, setTipoVehiculoOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [submodelOpen, setSubmodelOpen] = useState(false);
@@ -201,9 +254,14 @@ export default function Dashboard() {
     const isMobile = window.innerWidth < 768;
     const delay = isMobile ? 100 : 50;
 
-    const timer = setTimeout(() => setMounted(true), delay);
+    const timer = setTimeout(() => {
+      // Resolve colors AFTER the DOM has likely updated class names
+      setAxisColor(hslVar('--muted-foreground'));
+      setLegendColor(hslVar('--foreground'));
+      setMounted(true);
+    }, delay);
     return () => clearTimeout(timer);
-  }, [theme]);
+  }, [theme, currency]);
 
   useEffect(() => {
     setMounted(true);
@@ -218,12 +276,63 @@ export default function Dashboard() {
     isRefetching,
     error: queryError,
   } = useQuery({
-    queryKey: ["analytics", filters],
+    queryKey: ["analytics", filters, volatilityPeriod, volatilityBrand, variationStartDate, variationEndDate, volatilityStartDate, volatilityEndDate],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (Array.isArray(value) && value.length > 0) {
+          value.forEach(v => params.append(key, v));
+        }
       });
+
+
+
+      
+      // Derive granularity from period
+      // Derive granularity from period
+      const volGran = 'month'; 
+      params.append("granularity", volGran);
+
+      if (volatilityStartDate !== 'all') params.append("volatilityStartDate", volatilityStartDate);
+      if (volatilityEndDate !== 'all') params.append("volatilityEndDate", volatilityEndDate);
+      if (volatilityBrand !== "all") {
+        params.append("volatilityBrand", volatilityBrand);
+      }
+      if (variationStartDate !== "all") {
+        params.append("variationStartDate", variationStartDate);
+      }
+      if (variationEndDate !== "all") {
+        params.append("variationEndDate", variationEndDate);
+      }
+      
+      // Override filters.brand if volatility drill-down is active AND we are fetching?
+      // No, the global filters apply. The user wants to see models of a brand.
+      // If we use global filter for brand, it filters everything.
+      // If the user selects a brand in Volatility Chart, does it filter the whole dashboard?
+      // PROBABLY NOT. But backend uses `filters.brand`.
+      // The user wants a selector "para poder ver los modelos por marcas".
+      // We will handle this by filtering on frontend or separate query?
+      // The backend returns `volatility_timeseries` based on `filters.brand`.
+      // If `filters.brand` has 1 item -> returns models.
+      // So to drill down, we must add the selected volatility brand to the params sent to backend?
+      // OR we add a specific param for volatility scope?
+      // Current backend logic: `if (filters.brand.length === 1) volatilityScope = 'model'`.
+      // So if I select a brand in the chart selector, I should probably pass it as `brand` filter?
+      // BUT that would filter the whole dashboard.
+      // For now, let's assume global filter interactions.
+      // Actually, if I want to see models of "Toyota", I should probably filter by Toyota globally?
+      // Or maybe the selector is just for that chart?
+      // If just for that chart, I need to pass it in a way that affects only that chart data... 
+      // But `get-analytics` returns everything.
+      // Let's rely on global filter for now (simplest), or if user wants isolated drill-down I need to change backend.
+      // User said "selector... within the chart".
+      // Backend says: `if (filters.brand && filters.brand.length === 1)`.
+      // So if I pick 1 brand, I get models.
+      
+      // So I don't need `volatilityBrand` state if I use `filters.brand`.
+      // But maybe user wants to pick 1 brand from a list?
+      
+      // Let's proceed with just appending granularity.
 
       const { data, error } = await supabase.functions.invoke("get-analytics", {
         body: { params: params.toString() },
@@ -244,6 +353,165 @@ export default function Dashboard() {
     refetchOnMount: false,
     placeholderData: (previousData) => previousData,
   });
+
+  // Helper to format dates
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  const formatLabelDate = (dString: string) => {
+    const d = new Date(dString);
+    const day = d.getUTCDate().toString().padStart(2, '0');
+    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
+  };
+
+  const getISOWeekNumber = (d: Date) => {
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+      return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const getISOWeekDateRange = (year: number, week: number) => {
+      const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+      const dow = simple.getUTCDay();
+      const ISOweekStart = simple;
+      if (dow <= 4)
+          ISOweekStart.setUTCDate(simple.getUTCDate() - simple.getUTCDay() + 1);
+      else
+          ISOweekStart.setUTCDate(simple.getUTCDate() + 8 - simple.getUTCDay());
+      const ISOweekEnd = new Date(ISOweekStart);
+      ISOweekEnd.setUTCDate(ISOweekEnd.getUTCDate() + 6);
+      return { start: ISOweekStart, end: ISOweekEnd };
+  };
+
+  // 1. Group dates into Months and Weeks
+  const { months, weeks } = useMemo(() => {
+    if (!analytics?.available_dates) return { months: [], weeks: [] };
+    
+    const dates = analytics.available_dates.sort();
+    const monthGroups: Record<string, string[]> = {};
+    const weekGroups: Record<string, string[]> = {};
+
+    dates.forEach(d => {
+       const dateObj = new Date(d);
+       // Month Key: YYYY-MM
+       const monthKey = d.substring(0, 7);
+       if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
+       monthGroups[monthKey].push(d);
+
+       // Week Key: ISO Week? Or simple 7-day buckets? 
+       // Let's use ISO week for proper grouping or just "Week of Year"
+       const weekNum = getISOWeekNumber(dateObj);
+       const weekKey = `${dateObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+       
+       if (!weekGroups[weekKey]) weekGroups[weekKey] = [];
+       weekGroups[weekKey].push(d);
+    });
+
+    // Transform to Options, keeping only those with >= 2 dates
+    const validMonths = Object.entries(monthGroups)
+       .filter(([_, dates]) => dates.length >= 1)
+       .map(([key, dates]) => {
+          const dateObj = new Date(dates[0]);
+          const label = dateObj.toLocaleDateString('es-CL', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+          // Capitalize first letter
+          const finalLabel = label.charAt(0).toUpperCase() + label.slice(1);
+          return {
+             id: key,
+             label: finalLabel,
+             dates: dates
+          };
+       })
+       .sort((a, b) => b.id.localeCompare(a.id)); // Newest first
+
+    const validWeeks = Object.entries(weekGroups)
+       .filter(([_, dates]) => dates.length >= 1)
+       .map(([key, dates]) => {
+          const [yearStr, weekStr] = key.split('-W');
+          const range = getISOWeekDateRange(parseInt(yearStr), parseInt(weekStr));
+          const min = formatLabelDate(range.start.toISOString());
+          const max = formatLabelDate(range.end.toISOString());
+          return {
+             id: key,
+             label: `Semana ${key.split('-W')[1]} (${min} - ${max})`,
+             dates: dates
+          };
+       })
+       .sort((a, b) => b.id.localeCompare(a.id));
+
+    return { months: validMonths, weeks: validWeeks };
+  }, [analytics?.available_dates?.length]);
+
+  // Effect to set initial default option when period changes
+  useEffect(() => {
+     if (variationPeriod === 'month') {
+        if (months.length > 0) {
+            // Default to Latest Month as Range (Start = End)
+            if (!variationStartMonthId) setVariationStartMonthId(months[0].id);
+            if (!variationEndMonthId) setVariationEndMonthId(months[0].id);
+        }
+     }
+  }, [variationPeriod, months]);
+
+  // Effect to update VARIATION start/end dates based on selection
+  useEffect(() => {
+     if (!analytics?.available_dates) return;
+     
+     if (variationPeriod === 'total') {
+        setVariationStartDate("all");
+        setVariationEndDate("all");
+        setVariationStartMonthId("");
+        setVariationEndMonthId("");
+     } else if (variationPeriod === 'month') {
+         // Find Start and End groups
+         const startGroup = months.find(m => m.id === variationStartMonthId);
+         const endGroup = months.find(m => m.id === variationEndMonthId);
+         
+         if (startGroup) {
+             setVariationStartDate(`${startGroup.id}-01`);
+         }
+         if (endGroup) {
+             const [year, month] = endGroup.id.split('-');
+             const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+             setVariationEndDate(`${endGroup.id}-${lastDay}`);
+         }
+     }
+  }, [variationPeriod, variationStartMonthId, variationEndMonthId, months]);
+
+  // --- Volatility Effects ---
+  useEffect(() => {
+     if (volatilityPeriod === 'month') {
+        if (months.length > 0) {
+            // Default to Latest Month
+            if (!volatilityStartMonthId) setVolatilityStartMonthId(months[0].id);
+            if (!volatilityEndMonthId) setVolatilityEndMonthId(months[0].id);
+        }
+     }
+  }, [volatilityPeriod, months]);
+
+  useEffect(() => {
+     if (!analytics?.available_dates) return;
+     
+     if (volatilityPeriod === 'total') {
+        setVolatilityStartDate("all");
+        setVolatilityEndDate("all");
+        setVolatilityStartMonthId("");
+        setVolatilityEndMonthId("");
+     } else if (volatilityPeriod === 'month') {
+         const startGroup = months.find(m => m.id === volatilityStartMonthId);
+         const endGroup = months.find(m => m.id === volatilityEndMonthId);
+         
+         if (startGroup) {
+             setVolatilityStartDate(`${startGroup.id}-01`);
+         }
+         if (endGroup) {
+             const [year, month] = endGroup.id.split('-');
+             const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+             setVolatilityEndDate(`${endGroup.id}-${lastDay}`);
+         }
+     }
+  }, [volatilityPeriod, volatilityStartMonthId, volatilityEndMonthId, months]);
+
+
 
   if (queryError) {
     console.error("Query error:", queryError);
@@ -268,16 +536,36 @@ export default function Dashboard() {
 
   const { data: priceDistributionLocal } = usePriceDistribution(filters);
 
-  const { data: brands } = useQuery({
-    queryKey: ["brands"],
+  const { data: tiposVehiculo } = useQuery({
+    queryKey: ["tiposVehiculo"],
     queryFn: async () => {
       const { data, error } = await supabase
+        .from("products")
+        .select("tipo_vehiculo")
+        .not("tipo_vehiculo", "is", null)
+        .order("tipo_vehiculo");
+
+      if (error) throw error;
+      return [...new Set(data.map((p) => p.tipo_vehiculo).filter(Boolean))] as string[];
+    },
+  });
+
+  const { data: brands } = useQuery({
+    queryKey: ["brands", filters.tipoVehiculo],
+    queryFn: async () => {
+      let query = supabase
         .from("products")
         .select("brand")
         .order("brand");
 
+      if (filters.tipoVehiculo.length > 0) {
+        query = query.in("tipo_vehiculo", filters.tipoVehiculo);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return [...new Set(data.map((p) => p.brand))];
+      const uniqueBrands = [...new Set(data.map(item => item.brand))].sort();
+      return uniqueBrands;
     },
   });
 
@@ -289,8 +577,8 @@ export default function Dashboard() {
         .select("model, name, brand")
         .order("model");
 
-      if (filters.brand) {
-        query = query.eq("brand", filters.brand);
+      if (filters.brand.length > 0) {
+        query = query.in("brand", filters.brand);
       }
 
       const { data, error } = await query;
@@ -317,11 +605,11 @@ export default function Dashboard() {
         .not("submodel", "is", null)
         .order("submodel");
 
-      if (filters.brand) {
-        query = query.eq("brand", filters.brand);
+      if (filters.brand.length > 0) {
+        query = query.in("brand", filters.brand);
       }
-      if (filters.model) {
-        query = query.eq("model", filters.model);
+      if (filters.model.length > 0) {
+        query = query.in("model", filters.model);
       }
 
       const { data, error } = await query;
@@ -352,352 +640,114 @@ export default function Dashboard() {
     );
   }
 
+
+
   return (
     <div className="space-y-6">
       <div className="flex justify-center">{/* <CurrencySelector /> */}</div>
 
-      <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border border-border rounded-lg p-4">
-        <div className="flex flex-wrap gap-2">
-          {/* Brand Filter */}
-          <Popover open={brandOpen} onOpenChange={setBrandOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "h-9 border-dashed",
-                  filters.brand && "border-solid border-primary bg-primary/10"
-                )}
-              >
-                <Filter className="mr-2 h-3.5 w-3.5" />
-                Marca
-                {filters.brand && (
-                  <>
-                    <span className="mx-1">:</span>
-                    <span className="font-semibold">{filters.brand}</span>
-                  </>
-                )}
-                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar marca..." />
-                <CommandList>
-                  <CommandEmpty>No se encontró marca.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={() => {
-                        setFilters((f) => ({ ...f, brand: "" }))
-                        setBrandOpen(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          !filters.brand ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      Todas las marcas
-                    </CommandItem>
-                    {brands?.map((brand) => (
-                      <CommandItem
-                        key={brand}
-                        onSelect={() => {
-                          setFilters((f) => ({ ...f, brand }))
-                          setBrandOpen(false)
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.brand === brand ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {brand}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+      <DashboardFilters
+        filters={filters}
+        setFilters={setFilters}
+        tiposVehiculo={tiposVehiculo}
+        brands={brands}
+        models={models}
+        submodels={submodels}
+        refetchAnalytics={refetch}
+        isRefetchingAnalytics={isRefetching}
 
-          {/* Model Filter */}
-          <Popover open={modelOpen} onOpenChange={setModelOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "h-9 border-dashed",
-                  filters.model && "border-solid border-primary bg-primary/10"
-                )}
-              >
-                <Filter className="mr-2 h-3.5 w-3.5" />
-                Modelo
-                {filters.model && (
-                  <>
-                    <span className="mx-1">:</span>
-                    <span className="font-semibold truncate max-w-[100px]">{filters.model}</span>
-                  </>
-                )}
-                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar modelo..." />
-                <CommandList>
-                  <CommandEmpty>No se encontró modelo.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={() => {
-                        setFilters((f) => ({ ...f, model: "" }))
-                        setModelOpen(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          !filters.model ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      Todos los modelos
-                    </CommandItem>
-                    {models?.map((m, idx) => (
-                      <CommandItem
-                        key={`${m.model}-${idx}`}
-                        onSelect={() => {
-                          setFilters((f) => ({ ...f, model: m.model }))
-                          setModelOpen(false)
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.model === m.model ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {m.model}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+      />
 
-          {/* Submodel Filter */}
-          <Popover open={submodelOpen} onOpenChange={setSubmodelOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "h-9 border-dashed",
-                  filters.submodel && "border-solid border-primary bg-primary/10"
-                )}
-              >
-                <Filter className="mr-2 h-3.5 w-3.5" />
-                Submodelo
-                {filters.submodel && (
-                  <>
-                    <span className="mx-1">:</span>
-                    <span className="font-semibold truncate max-w-[80px]">{filters.submodel}</span>
-                  </>
-                )}
-                <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
-              <Command>
-                <CommandInput placeholder="Buscar submodelo..." />
-                <CommandList>
-                  <CommandEmpty>No se encontró submodelo.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={() => {
-                        setFilters((f) => ({ ...f, submodel: "" }))
-                        setSubmodelOpen(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          !filters.submodel ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      Todos los submodelos
-                    </CommandItem>
-                    {submodels?.map((sub) => (
-                      <CommandItem
-                        key={sub}
-                        onSelect={() => {
-                          setFilters((f) => ({ ...f, submodel: sub }))
-                          setSubmodelOpen(false)
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            filters.submodel === sub ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {sub}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+      {/* Brand Header - Shows when brands are selected */}
+      {filters.brand.length > 0 && (
+        <BrandHeader 
+          brands={filters.brand} 
+          tipoVehiculo={filters.tipoVehiculo}
+          models={filters.model}
+        />
+      )}
 
-          {/* Clear & Refresh Buttons */}
-          {(filters.brand || filters.model || filters.submodel) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setFilters({ brand: "", model: "", submodel: "" })}
-              className="h-9"
-            >
-              <X className="mr-2 h-3.5 w-3.5" />
-              Limpiar
-            </Button>
-          )}
-
-          <Button
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            size="sm"
-            className="h-9 ml-auto"
-          >
-            {isRefetching ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin mr-2" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5 mr-2" />
-            )}
-            Actualizar
-          </Button>
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
+        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-brand opacity-80" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <Package className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
+              Inventario
+            </span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total Modelos</p>
+            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
+              {analytics.metrics.total_models}
+            </h3>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <span className="font-medium text-primary mr-1">{analytics.metrics.total_brands}</span> marcas activas
+            </div>
+          </div>
         </div>
 
-        {/* Active Filters Summary */}
-        {(filters.brand || filters.model || filters.submodel) && (
-          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-border">
-            {filters.brand && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                {filters.brand}
-                <button
-                  onClick={() => setFilters((f) => ({ ...f, brand: "" }))}
-                  className="ml-1 hover:text-primary/70"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            {filters.model && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                {filters.model}
-                <button
-                  onClick={() => setFilters((f) => ({ ...f, model: "" }))}
-                  className="ml-1 hover:text-primary/70"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
-            {filters.submodel && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                {filters.submodel}
-                <button
-                  onClick={() => setFilters((f) => ({ ...f, submodel: "" }))}
-                  className="ml-1 hover:text-primary/70"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
+        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1 bg-success/60" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
+              <DollarSign className="h-6 w-6 text-success" />
+            </div>
+             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
+              Promedio
+            </span>
           </div>
-        )}
-      </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Promedio</p>
+            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
+              {formatPrice(analytics.metrics.avg_price)}
+            </h3>
+             <div className="flex items-center text-xs text-muted-foreground">
+              Var: <span className="font-medium ml-1 text-foreground">{analytics.metrics.variation_coefficient.toFixed(1)}%</span>
+            </div>
+          </div>
+        </div>
 
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
-  <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-    <div className="flex items-start justify-between mb-4">
-      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(25,65%,65%)] to-[hsl(25,65%,55%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-        <Package className="h-6 w-6 text-white" />
-      </div>
-      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-        Inventario
-      </span>
-    </div>
-    <div>
-      <p className="text-sm text-muted-foreground mb-1">Total Modelos</p>
-      <h3 className="text-3xl font-bold text-foreground mb-2">
-        {analytics.metrics.total_models}
-      </h3>
-      <p className="text-xs text-muted-foreground">
-        {analytics.metrics.total_brands} marcas activas
-      </p>
-    </div>
-  </div>
+        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1 bg-warning/60" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-warning/10 flex items-center justify-center group-hover:bg-warning/20 transition-colors">
+              <TrendingDown className="h-6 w-6 text-warning" />
+            </div>
+             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
+              Mínimo
+            </span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Mínimo</p>
+            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
+              {formatPrice(analytics.metrics.min_price)}
+            </h3>
+            <p className="text-xs text-muted-foreground">Valor más accesible</p>
+          </div>
+        </div>
 
-  <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-    <div className="flex items-start justify-between mb-4">
-      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(140,35%,70%)] to-[hsl(140,35%,60%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-        <DollarSign className="h-6 w-6 text-white" />
+        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1 bg-accent/60" />
+          <div className="flex items-start justify-between mb-4">
+            <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+              <TrendingUp className="h-6 w-6 text-accent" />
+            </div>
+             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
+              Máximo
+            </span>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Máximo</p>
+            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
+              {formatPrice(analytics.metrics.max_price)}
+            </h3>
+            <p className="text-xs text-muted-foreground">Valor premium</p>
+          </div>
+        </div>
       </div>
-      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-        Promedio
-      </span>
-    </div>
-    <div>
-      <p className="text-sm text-muted-foreground mb-1">Precio Promedio</p>
-      <h3 className="text-3xl font-bold text-foreground mb-2">
-        {formatPrice(analytics.metrics.avg_price)}
-      </h3>
-      <p className="text-xs text-muted-foreground">
-        Variación: {analytics.metrics.variation_coefficient.toFixed(1)}%
-      </p>
-    </div>
-  </div>
-
-  <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-    <div className="flex items-start justify-between mb-4">
-      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(35,55%,75%)] to-[hsl(35,55%,65%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-        <TrendingDown className="h-6 w-6 text-white" />
-      </div>
-      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-        Mínimo
-      </span>
-    </div>
-    <div>
-      <p className="text-sm text-muted-foreground mb-1">Precio Mínimo</p>
-      <h3 className="text-3xl font-bold text-foreground mb-2">
-        {formatPrice(analytics.metrics.min_price)}
-      </h3>
-      <p className="text-xs text-muted-foreground">Valor más accesible</p>
-    </div>
-  </div>
-
-  <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-    <div className="flex items-start justify-between mb-4">
-      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(15,60%,72%)] to-[hsl(15,60%,62%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-        <TrendingUp className="h-6 w-6 text-white" />
-      </div>
-      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-        Máximo
-      </span>
-    </div>
-    <div>
-      <p className="text-sm text-muted-foreground mb-1">Precio Máximo</p>
-      <h3 className="text-3xl font-bold text-foreground mb-2">
-        {formatPrice(analytics.metrics.max_price)}
-      </h3>
-      <p className="text-xs text-muted-foreground">Valor premium</p>
-    </div>
-  </div>
-</div>
 
       <Tabs
         value={activeTab}
@@ -726,19 +776,19 @@ export default function Dashboard() {
           <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="card-title flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  Modelos por Categoría
+                  Modelos por Tipo de Vehículo
                 </CardTitle>
-                <CardDescription>
-                  Distribución de vehículos según tipo
+                <CardDescription className="subtitle">
+                  Distribución según clasificación (SUV, Sedán, etc.)
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
-                    <Line
-                      key={`line-category-${chartKey}`}
+                    <Bar
+                      key={`bar-category-${chartKey}`}
                       data={{
                         labels: (
                           analytics.chart_data?.models_by_category || []
@@ -749,13 +799,11 @@ export default function Dashboard() {
                             data: (
                               analytics.chart_data?.models_by_category || []
                             ).map((d) => d.count),
-                            borderColor: hslVar("--chart-1"),
-                            backgroundColor: hslVar("--chart-1", 0.1),
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            tension: 0.3,
-                            fill: false,
+                            backgroundColor: getChartPalette((analytics.chart_data?.models_by_category || []).length, 0.8),
+                            hoverBackgroundColor: getChartPalette((analytics.chart_data?.models_by_category || []).length, 1),
+                            borderRadius: 4,
+                            barThickness: "flex",
+                            maxBarThickness: 40,
                           },
                         ],
                       }}
@@ -772,223 +820,27 @@ export default function Dashboard() {
                             bodyColor: tooltipColors.bodyColor(),
                             padding: tooltipColors.padding,
                             cornerRadius: tooltipColors.cornerRadius,
-                          },
-                        },
-                        scales: {
-                          x: getScaleOptions(),
-                          y: getScaleOptions(),
-                        },
-                      }}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  Distribución por Rango de Precio
-                </CardTitle>
-                <CardDescription>
-                  Modelos en cada segmento de mercado
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-  <div className="h-[220px] sm:h-[260px]">
-    {mounted && (
-      <Doughnut
-        key={`pie-distribution-${chartKey}`}
-        data={{
-          labels: (
-            priceDistributionLocal ||
-            analytics.chart_data?.price_distribution ||
-            []
-          ).map((d) => d.range),
-          datasets: [
-            {
-              data: (
-                priceDistributionLocal ||
-                analytics.chart_data?.price_distribution ||
-                []
-              ).map((d) => d.count),
-              backgroundColor: pieChartColors.palette(
-                (
-                  priceDistributionLocal ||
-                  analytics.chart_data?.price_distribution ||
-                  []
-                ).length
-              ),
-              borderWidth: pieChartColors.borderWidth,
-              borderColor: pieChartColors.borderColor(),
-            },
-          ],
-        }}
-        options={{
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: "65%",
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: {
-                color: hslVar("--foreground"),
-                padding: 14,
-                font: { size: 12 },
-                generateLabels: (chart: any) => {
-                  const data = chart.data;
-                  const dataset = data.datasets[0];
-                  const totals = (dataset.data as number[]).reduce(
-                    (sum, val) => sum + val,
-                    0
-                  );
-                  return (data.labels || []).map(
-                    (label: string, i: number) => {
-                      const value = (dataset.data as number[])[i] || 0;
-                      const percentage =
-                        totals > 0
-                          ? ((value / totals) * 100).toFixed(1)
-                          : "0.0";
-
-                      const priceMatch = label.match(/\$[\d.,]+[MK]?/gi);
-                      let formattedLabel = label;
-
-                      if (priceMatch && priceMatch.length >= 2) {
-                        const parsePrice = (priceStr: string): number => {
-                          const clean = priceStr
-                            .replace(/\$/g, "")
-                            .replace(/,/g, "");
-                          if (/M/i.test(clean))
-                            return (
-                              parseFloat(clean.replace(/M/gi, "")) * 1_000_000
-                            );
-                          if (/K/i.test(clean))
-                            return parseFloat(clean.replace(/K/gi, "")) * 1_000;
-                          return parseFloat(clean);
-                        };
-
-                        const min = parsePrice(priceMatch[0]);
-                        const max = parsePrice(priceMatch[1]);
-                        formattedLabel = `${formatPrice(min)} - ${formatPrice(
-                          max
-                        )}`;
-                      } else {
-                        const onlyNumbers = (
-                          label.match(/[\d,.MK]+/gi) || []
-                        ).join(" - ");
-                        if (onlyNumbers) formattedLabel = onlyNumbers;
-                      }
-
-                      return {
-                        text: `${formattedLabel} (${percentage}%)`,
-                        fillStyle: COLORS[i % COLORS.length],
-                        fontColor: hslVar("--foreground"),
-                        strokeStyle: "transparent",
-                        hidden: false,
-                        index: i,
-                      };
-                    }
-                  );
-                },
-              },
-            },
-            tooltip: {
-              backgroundColor: tooltipColors.backgroundColor(),
-              borderColor: tooltipColors.borderColor(),
-              borderWidth: tooltipColors.borderWidth,
-              titleColor: tooltipColors.titleColor(),
-              bodyColor: tooltipColors.bodyColor(),
-              padding: tooltipColors.padding,
-              cornerRadius: tooltipColors.cornerRadius,
-              callbacks: {
-                label: (context: any) => {
-                  const total = (context.dataset.data as number[]).reduce(
-                    (sum: number, val) => sum + (val as number),
-                    0
-                  );
-                  const percentage =
-                    total > 0
-                      ? ((context.parsed / total) * 100).toFixed(1)
-                      : "0.0";
-                  return `${percentage}% (${context.parsed} modelos)`;
-                },
-              },
-            },
-          },
-        }}
-      />
-    )}
-  </div>
-</CardContent>
-
-            </Card>
-          </div>
-
-          {/* Sección: Top Modelos */}
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Top 5 Modelos Más Caros
-                </CardTitle>
-                <CardDescription>
-                  Vehículos de mayor valor en el inventario
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="h-[220px] sm:h-[260px]">
-                  {mounted && (
-                    <Bar
-                      key={`bar-expensive-${chartKey}`}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.top_5_expensive || []
-                        ).map((d) => d.name),
-                        datasets: [
-                          createMultiColorBarDataset(
-                            (analytics.chart_data?.top_5_expensive || []).map(
-                              (d) => d.price
-                            ),
-                            "Precio"
-                          ),
-                        ],
-                      }}
-                      options={{
-                        indexAxis: "y",
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) => formatPrice(context.parsed.x),
-                            },
                           },
                         },
                         scales: {
                           x: {
                             ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              callback: (value) =>
-                                `$${((value as number) / 1000).toFixed(0)}k`,
-                            },
-                          },
-                          y: {
                             grid: { display: false },
                             ticks: {
-                              color: hslVar("--foreground"),
-                              font: { size: 11 },
+                              ...getScaleOptions().ticks,
+                              color: hslVar('--muted-foreground'),
+                            }
+                          },
+                          y: {
+                            ...getScaleOptions(),
+                            ticks: {
+                                ...getScaleOptions().ticks,
+                                color: hslVar('--muted-foreground'),
                             },
+                            grid: {
+                                ...getScaleOptions().grid,
+                                color: hslVar('--border'),
+                            }
                           },
                         },
                       }}
@@ -999,40 +851,79 @@ export default function Dashboard() {
             </Card>
 
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-primary" />
-                  Top 5 Modelos Más Económicos
-                </CardTitle>
-                <CardDescription>
-                  Vehículos de menor valor disponibles
-                </CardDescription>
+              <CardHeader className="space-y-1 pb-4 flex flex-row items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="card-title flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    Análisis de Precios
+                  </CardTitle>
+                  <CardDescription className="subtitle">
+                    {selectedPriceSegment === "all" 
+                      ? "Promedio por Tipo de Vehículo" 
+                      : `Promedio por Marca en ${selectedPriceSegment}`}
+                  </CardDescription>
+                </div>
+                <div className="w-[200px]">
+                  <Select 
+                    value={selectedPriceSegment} 
+                    onValueChange={setSelectedPriceSegment}
+                  >
+                    <SelectTrigger className="w-full h-8 text-xs bg-background/50 border-input/40 backdrop-blur-sm">
+                      <SelectValue placeholder="Seleccionar vista" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Ver General (Tipos)</SelectItem>
+                      {(analytics.chart_data?.prices_by_category || []).map((cat) => (
+                        <SelectItem key={cat.category} value={cat.category}>
+                          Ver marcas de {cat.category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
-                      key={`bar-cheap-${chartKey}`}
+                      key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
                       data={{
-                        labels: (
-                          analytics.chart_data?.bottom_5_cheap || []
-                        ).map((d) => d.name),
+                        labels: selectedPriceSegment === "all"
+                          ? (analytics.chart_data?.prices_by_category || []).map(d => d.category)
+                          : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.brand),
                         datasets: [
-                          createMultiColorBarDataset(
-                            (analytics.chart_data?.bottom_5_cheap || []).map(
-                              (d) => d.price
+                          {
+                            label: "Precio Promedio",
+                            data: selectedPriceSegment === "all"
+                              ? (analytics.chart_data?.prices_by_category || []).map(d => d.avg_price)
+                              : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.avg_price),
+                            backgroundColor: getChartPalette(
+                              selectedPriceSegment === "all"
+                                ? (analytics.chart_data?.prices_by_category || []).length
+                                : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).length, 
+                              0.8
                             ),
-                            "Precio"
-                          ),
+                            hoverBackgroundColor: getChartPalette(
+                              selectedPriceSegment === "all"
+                                ? (analytics.chart_data?.prices_by_category || []).length
+                                : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).length, 
+                              1
+                            ),
+                            borderRadius: 4,
+                            barThickness: "flex",
+                            maxBarThickness: 40,
+                          },
                         ],
                       }}
                       options={{
-                        indexAxis: "y",
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                           legend: { display: false },
                           tooltip: {
+                            callbacks: {
+                              label: (context) => formatPrice(context.parsed.y)
+                            },
                             backgroundColor: tooltipColors.backgroundColor(),
                             borderColor: tooltipColors.borderColor(),
                             borderWidth: tooltipColors.borderWidth,
@@ -1040,26 +931,28 @@ export default function Dashboard() {
                             bodyColor: tooltipColors.bodyColor(),
                             padding: tooltipColors.padding,
                             cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) => formatPrice(context.parsed.x),
-                            },
                           },
                         },
                         scales: {
                           x: {
                             ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              callback: (value) =>
-                                `$${((value as number) / 1000).toFixed(0)}k`,
-                            },
-                          },
-                          y: {
                             grid: { display: false },
                             ticks: {
-                              color: hslVar("--foreground"),
-                              font: { size: 11 },
-                            },
+                              ...getScaleOptions().ticks,
+                              color: axisColor,
+                            }
+                          },
+                          y: {
+                             ...getScaleOptions(),
+                             ticks: {
+                               ...getScaleOptions().ticks,
+                               color: axisColor,
+                               callback: (value) => formatPrice(value as number)
+                             },
+                             grid: {
+                               ...getScaleOptions().grid,
+                               color: hslVar('--border'),
+                             }
                           },
                         },
                       }}
@@ -1069,15 +962,17 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Sección: Top Modelos eliminada a petición del usuario */}
 
           {/* Sección: Precio vs Modelo Principal (Bubble Chart Grande) */}
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="card-title flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
                 Precio vs Modelo Principal
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="subtitle">
                 Tamaño proporcional al volumen de variantes
               </CardDescription>
             </CardHeader>
@@ -1135,30 +1030,33 @@ export default function Dashboard() {
                           },
                         },
                       },
-                      scales: {
-                        x: {
-                          ...getScaleOptions(),
-                          title: {
-                            display: true,
-                            text: "Modelo",
-                            color: axisColors.tickColor(),
+                        scales: {
+                          x: {
+                            ...getScaleOptions(),
+                            title: {
+                              display: true,
+                              text: "Modelo",
+                              color: axisColor,
+                            },
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              color: axisColor,
+                            }
+                          },
+                          y: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              color: axisColor,
+                              font: { size: axisColors.tickFontSize },
+                              callback: (value) => formatPrice(value as number),
+                            },
+                            title: {
+                              display: true,
+                              text: "Precio Promedio",
+                              color: axisColor,
+                            },
                           },
                         },
-                        y: {
-                          ...getScaleOptions(),
-                          ticks: {
-                            color: axisColors.tickColor(),
-                            font: { size: axisColors.tickFontSize },
-                            callback: (value) =>
-                              `$${((value as number) / 1000).toFixed(0)}k`,
-                          },
-                          title: {
-                            display: true,
-                            text: "Precio Promedio",
-                            color: axisColors.tickColor(),
-                          },
-                        },
-                      },
                     }}
                   />
                 )}
@@ -1171,11 +1069,11 @@ export default function Dashboard() {
             {/* Precios por Categoría - Boxplot Pequeño */}
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="card-title flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Precios por Categoría
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="subtitle">
                   Mediana y dispersión de precios por tipo
                 </CardDescription>
               </CardHeader>
@@ -1225,12 +1123,13 @@ export default function Dashboard() {
                           legend: {
                             position: "top",
                             labels: {
-                              color: hslVar("--foreground"),
+                              color: legendColor,
                               padding: 8,
                               font: { size: 10 },
                             },
                           },
                           tooltip: {
+                            // ... existing tooltip config ...
                             backgroundColor: tooltipColors.backgroundColor(),
                             borderColor: tooltipColors.borderColor(),
                             borderWidth: tooltipColors.borderWidth,
@@ -1252,6 +1151,7 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
+                              color: axisColor,
                               maxRotation: 45,
                               minRotation: 45,
                               font: { size: 10 },
@@ -1261,8 +1161,8 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
-                              callback: (value) =>
-                                `$${((value as number) / 1000).toFixed(0)}k`,
+                              color: axisColor,
+                              callback: (value) => formatPrice(value as number),
                             },
                           },
                         },
@@ -1276,11 +1176,11 @@ export default function Dashboard() {
           {/* Precios Promedio por Marca */}
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="card-title flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary" />
                   Precios Promedio por Marca
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="subtitle">
                   Comparación de precios entre fabricantes
                 </CardDescription>
               </CardHeader>
@@ -1335,6 +1235,7 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
+                              color: axisColor,
                               maxRotation: 45,
                               minRotation: 45,
                             },
@@ -1343,8 +1244,8 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
-                              callback: (value) =>
-                                `$${((value as number) / 1000).toFixed(0)}k`,
+                              color: axisColor,
+                              callback: (value) => formatPrice(value as number),
                             },
                           },
                         },
@@ -1357,12 +1258,86 @@ export default function Dashboard() {
 
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="card-title flex items-center gap-2">
                   <Activity className="h-5 w-5 text-primary" />
                   Variación de Precios por Marca
                 </CardTitle>
-                <CardDescription>
-                  Cambios entre periodos de scraping
+                <CardDescription className="subtitle">
+                   <div className="flex flex-col gap-3">
+                       {/* Period Buttons */}
+                       <div className="flex gap-2">
+                           {(['total', 'month'] as const).map((mode) => (
+                               <button
+                                 key={mode}
+                                 onClick={() => setVariationPeriod(mode)}
+                                 className={cn(
+                                   "px-3 py-1 text-[11px] rounded-md transition-all border font-medium",
+                                   variationPeriod === mode 
+                                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
+                                 )}
+                               >
+                                 {mode === 'total' ? 'Histórico' : 'Rango Mensual'}
+                               </button>
+                           ))}
+                       </div>
+
+                       {/* Conditional Select */}
+                       {(variationPeriod === 'month') && (
+                           <div className="flex items-center gap-2">
+                               <div className="flex items-center gap-1">
+                                   <span className="text-[10px] text-muted-foreground">Desde:</span>
+                                   <Select 
+                                      value={variationStartMonthId} 
+                                      onValueChange={setVariationStartMonthId} 
+                                      disabled={months.length === 0}
+                                   >
+                                      <SelectTrigger className="h-7 text-xs w-[140px] bg-background">
+                                        <SelectValue placeholder={months.length > 0 ? "Mes Inicio" : "Sin datos"} />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-[200px]">
+                                        {months.length > 0 ? months.map(m => (
+                                           <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                        )) : <SelectItem value="nodata" disabled>No hay meses</SelectItem>}
+                                      </SelectContent>
+                                   </Select>
+                               </div>
+                               <div className="flex items-center gap-1">
+                                   <span className="text-[10px] text-muted-foreground">Hasta:</span>
+                                   <Select 
+                                      value={variationEndMonthId} 
+                                      onValueChange={setVariationEndMonthId} 
+                                      disabled={months.length === 0}
+                                   >
+                                      <SelectTrigger className="h-7 text-xs w-[140px] bg-background">
+                                        <SelectValue placeholder={months.length > 0 ? "Mes Fin" : "Sin datos"} />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-[200px]">
+                                        {months.length > 0 ? months.map(m => (
+                                           <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                        )) : <SelectItem value="nodata" disabled>No hay meses</SelectItem>}
+                                      </SelectContent>
+                                   </Select>
+                               </div>
+                           </div>
+                       )}
+
+                        {/* Dynamic Description */}
+                        <p className="text-[11px] text-muted-foreground">
+                          {(() => {
+                             if (variationPeriod === 'total') {
+                                 if (!analytics.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
+                                 const min = formatLabelDate(analytics.available_dates[0]);
+                                 const max = formatLabelDate(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 return `Periodo: ${min} - ${max}`;
+                             }
+                             if (variationStartDate !== 'all' && variationEndDate !== 'all' && variationStartDate && variationEndDate) {
+                                return `Comparando: ${formatLabelDate(variationStartDate)} al ${formatLabelDate(variationEndDate)}`;
+                             }
+                             return "Seleccione rango";
+                          })()}
+                       </p>
+                   </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
@@ -1376,7 +1351,19 @@ export default function Dashboard() {
                         ).map((d) => d.brand),
                         datasets: [
                           {
-                            label: "Variación %",
+                            label: (() => {
+                               // Calculate explicit date range string for label
+                               const variations = analytics.chart_data?.brand_variations || [];
+                               if (variations.length > 0 && variations[0].startDate) {
+                                  const dates = variations.flatMap(v => [v.startDate, v.endDate]).filter(Boolean).sort();
+                                  if (dates.length > 0) {
+                                     const minDate = new Date(dates[0]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
+                                     const maxDate = new Date(dates[dates.length-1]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
+                                     return `Variación % (${minDate} - ${maxDate})`;
+                                  }
+                               }
+                               return "Variación %";
+                            })(),
                             data: (
                               analytics.chart_data?.brand_variations || []
                             ).map((d) => d.variation_percent),
@@ -1417,6 +1404,7 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
+                              color: axisColor,
                               maxRotation: 45,
                               minRotation: 45,
                             },
@@ -1425,6 +1413,7 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
+                              color: axisColor,
                               callback: (value) => `${value}%`,
                             },
                           },
@@ -1436,79 +1425,198 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Modelos con Mayor Volatilidad */}
-            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
+            {/* Volatilidad en el Tiempo */}
+            <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow col-span-1 md:col-span-2 lg:col-span-1">
               <CardHeader className="space-y-1 pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Modelos con Mayor Volatilidad
-                </CardTitle>
-                <CardDescription>
-                  Detección de cambios intermensual de precios
+                <div className="flex items-center justify-between">
+                    <CardTitle className="card-title flex items-center gap-2">
+                      <Activity className="h-5 w-5 text-primary" />
+                      Volatilidad: {volatilityBrand !== "all" ? 'Modelos' : 'Marcas'}
+                    </CardTitle>
+                    
+                     <div className="w-[120px]">
+                      <Select 
+                        value={volatilityBrand}
+                        onValueChange={setVolatilityBrand}
+                      >
+                        <SelectTrigger className="h-7 text-xs bg-background/50">
+                          <SelectValue placeholder="Marca" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas</SelectItem>
+                          {(brands || []).map(b => (
+                            <SelectItem key={b} value={b}>{b}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                </div>
+
+                <CardDescription className="subtitle">
+                    <div className="flex flex-col gap-3 pt-2">
+                       <p>Variación de precios en el tiempo</p>
+                       
+                       {/* Period Buttons */}
+                       <div className="flex gap-2">
+                           {(['total', 'month'] as const).map((mode) => (
+                               <button
+                                 key={mode}
+                                 onClick={() => setVolatilityPeriod(mode)}
+                                 className={cn(
+                                   "px-3 py-1 text-[11px] rounded-md transition-all border font-medium",
+                                   volatilityPeriod === mode 
+                                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                                      : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
+                                 )}
+                               >
+                                 {mode === 'total' ? 'Histórico' : 'Rango Mensual'}
+                               </button>
+                           ))}
+                       </div>
+
+                       {/* Conditional Select */}
+                       {(volatilityPeriod === 'month') && (
+                           <div className="flex items-center gap-2">
+                               <div className="flex items-center gap-1">
+                                   <span className="text-[10px] text-muted-foreground">Desde:</span>
+                                   <Select 
+                                      value={volatilityStartMonthId} 
+                                      onValueChange={setVolatilityStartMonthId} 
+                                      disabled={months.length === 0}
+                                   >
+                                      <SelectTrigger className="h-7 text-xs w-[140px] bg-background">
+                                        <SelectValue placeholder={months.length > 0 ? "Mes Inicio" : "Sin datos"} />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-[200px]">
+                                        {months.length > 0 ? months.map(m => (
+                                           <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                        )) : <SelectItem value="nodata" disabled>No hay meses</SelectItem>}
+                                      </SelectContent>
+                                   </Select>
+                               </div>
+                               <div className="flex items-center gap-1">
+                                   <span className="text-[10px] text-muted-foreground">Hasta:</span>
+                                   <Select 
+                                      value={volatilityEndMonthId} 
+                                      onValueChange={setVolatilityEndMonthId} 
+                                      disabled={months.length === 0}
+                                   >
+                                      <SelectTrigger className="h-7 text-xs w-[140px] bg-background">
+                                        <SelectValue placeholder={months.length > 0 ? "Mes Fin" : "Sin datos"} />
+                                      </SelectTrigger>
+                                      <SelectContent className="max-h-[200px]">
+                                        {months.length > 0 ? months.map(m => (
+                                           <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                        )) : <SelectItem value="nodata" disabled>No hay meses</SelectItem>}
+                                      </SelectContent>
+                                   </Select>
+                               </div>
+                           </div>
+                       )}
+
+                        {/* Dynamic Description */}
+                        <p className="text-[11px] text-muted-foreground">
+                          {(() => {
+                             if (volatilityPeriod === 'total') {
+                                 if (!analytics?.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
+                                 const min = formatLabelDate(analytics.available_dates[0]);
+                                 const max = formatLabelDate(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 return `Periodo: ${min} - ${max}`;
+                             }
+                             if (volatilityStartDate !== 'all' && volatilityEndDate !== 'all' && volatilityStartDate && volatilityEndDate) {
+                                return `Analizando: ${formatLabelDate(volatilityStartDate)} al ${formatLabelDate(volatilityEndDate)}`;
+                             }
+                             return "Seleccione rango";
+                          })()}
+                        </p>
+                    </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[280px]">
-                {mounted && (
-                  <Bar
-                    key={`bar-volatility-${chartKey}`}
-                    data={{
-                      labels: (
-                        analytics.chart_data?.monthly_volatility
-                          ?.most_volatile || []
-                      ).map((d) => d.model),
-                      datasets: [
-                        createMultiColorBarDataset(
-                          (
-                            analytics.chart_data?.monthly_volatility
-                              ?.most_volatile || []
-                          ).map((d) => d.avg_monthly_variation),
-                          "Volatilidad %"
-                        ),
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          backgroundColor: tooltipColors.backgroundColor(),
-                          borderColor: tooltipColors.borderColor(),
-                          borderWidth: tooltipColors.borderWidth,
-                          titleColor: tooltipColors.titleColor(),
-                          bodyColor: tooltipColors.bodyColor(),
-                          padding: tooltipColors.padding,
-                          cornerRadius: tooltipColors.cornerRadius,
-                          callbacks: {
-                            label: (context) =>
-                              `${context.parsed.y.toFixed(2)}%`,
+                  {mounted && (
+                    <Bar
+                      key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrand}`}
+                      data={{
+                        // Collect all unique dates from all series to ensure x-axis alignment
+                        labels: Array.from(new Set(
+                          (analytics.chart_data?.volatility_timeseries || [])
+                            .flatMap(s => s.data.map(d => d.date))
+                        )).sort(),
+                        datasets: (analytics.chart_data?.volatility_timeseries || []).map((series, idx) => ({
+                          label: series.entity,
+                          backgroundColor: COLORS_BG[idx % COLORS_BG.length], // Valid HSL with alpha
+                          borderColor: COLORS[idx % COLORS.length],
+                          borderWidth: 1,
+                          borderRadius: 4,
+                          parsing: {
+                             xAxisKey: 'date',
+                             yAxisKey: 'variation'
+                          },
+                          // Pass the full object struct to data so parsing works
+                          data: series.data // [{date: '...', variation: ...}]
+                        }))
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                          mode: 'index',
+                          intersect: false,
+                        },
+                        plugins: {
+                          legend: { 
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: legendColor,
+                                boxWidth: 12,
+                                font: { size: 10 }
+                            }
+                          },
+                          tooltip: {
+                            // ... existing tooltip ...
+                             backgroundColor: tooltipColors.backgroundColor(),
+                            borderColor: tooltipColors.borderColor(),
+                            borderWidth: tooltipColors.borderWidth,
+                            titleColor: tooltipColors.titleColor(),
+                            bodyColor: tooltipColors.bodyColor(),
+                            callbacks: {
+                              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
+                            }
                           },
                         },
-                      },
-                      scales: {
-                        x: {
-                          ...getScaleOptions(),
-                          ticks: {
-                            ...getScaleOptions().ticks,
-                            maxRotation: 45,
-                            minRotation: 45,
+                        scales: {
+                          x: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              color: axisColor,
+                              maxRotation: 45,
+                              minRotation: 45,
+                            },
+                          },
+                          y: {
+                            ...getScaleOptions(),
+                            ticks: {
+                               ...getScaleOptions().ticks,
+                               color: axisColor,
+                               callback: (val) => `${Number(val).toFixed(1)}%`
+                            },
+                            title: {
+                                display: true,
+                                text: 'Variación %',
+                                color: axisColor,
+                                font: { size: 10 }
+                            }
                           },
                         },
-                        y: {
-                          ...getScaleOptions(),
-                          ticks: {
-                            ...getScaleOptions().ticks,
-                            callback: (value) => `${value}%`,
-                          },
-                        },
-                      },
-                    }}
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      }}
+                    />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -1517,11 +1625,11 @@ export default function Dashboard() {
 
           <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="space-y-1 pb-4">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="card-title flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
                 Modelos Inactivos
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="subtitle">
                 Vehículos descontinuados o fuera de stock
               </CardDescription>
             </CardHeader>

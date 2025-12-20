@@ -4,7 +4,12 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
-import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package, AlertCircle, Zap } from 'lucide-react'
+import { TrendingUp, TrendingDown, Tag, Activity, BarChart3, Package, AlertCircle, Zap, ArrowLeft, LayoutGrid } from 'lucide-react'
+import { BrandLogo } from '@/components/BrandLogo'
+import { BrandHeader } from '@/components/BrandHeader'
+import { PriceEvolutionChart } from '@/components/PriceEvolutionChart'
+import { ModelsTable } from '@/components/ModelsTable'
+import { Button } from '@/components/ui/button'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -53,6 +58,7 @@ interface DestacadosData {
   mostMonitored: Array<any>
   categoryAnalysis: Array<any>
   topBrands: Array<any>
+  allBrands: Array<{ brand: string; productCount: number }>
   recentChanges: Array<any>
 }
 
@@ -100,7 +106,7 @@ export default function Destacados() {
   const [insights, setInsights] = useState<InsightData | null>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const { formatPrice } = useCurrency()
+  const { formatPrice, currency } = useCurrency()
   const { theme } = useTheme()
   
   // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
@@ -116,7 +122,7 @@ export default function Destacados() {
 
     const timer = setTimeout(() => setMounted(true), 50)
     return () => clearTimeout(timer)
-  }, [theme])
+  }, [theme, currency])
 
   useEffect(() => {
     fetchData()
@@ -144,6 +150,8 @@ export default function Destacados() {
       setLoading(false)
     }
   }
+
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   if (loading) {
     return <LoadingSpinner fullScreen size="lg" text="Cargando destacados..." />
@@ -204,7 +212,13 @@ export default function Destacados() {
     },
     scales: {
       x: getScaleOptions(),
-      y: getScaleOptions()
+      y: {
+        ...getScaleOptions(),
+        ticks: {
+          ...getScaleOptions().ticks,
+          callback: (value: any) => formatPrice(value)
+        }
+      }
     }
   }
 
@@ -231,502 +245,244 @@ export default function Destacados() {
     }
   }
 
+
+  if (selectedBrand) {
+    return (
+      <div className="p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setSelectedBrand(null)}
+            className="gap-2 group hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            Volver a Destacados
+          </Button>
+        </div>
+
+        <BrandHeader brands={[selectedBrand]} />
+
+
+
+        {(() => {
+           // --- DATA PREPARATION ---
+           const brandVar = analytics.chart_data.brand_variations.find(b => b.brand === selectedBrand);
+           const brandVol = analytics.chart_data.monthly_volatility.most_volatile.filter(b => b.brand === selectedBrand);
+           const brandModels = data.allBrands?.find(b => b.brand === selectedBrand);
+           const brandDeals = data.bestDeals.filter(d => d.products.brand === selectedBrand);
+           const brandInsights = insights.insights.filter(i => i.title.includes(selectedBrand!) || (i.data && Array.isArray(i.data) && i.data.some((d: any) => d.brand === selectedBrand)));
+           
+           // Category Distribution
+           const brandCategories = data.categoryAnalysis.reduce((acc: any, cat: any) => {
+              // This is an estimation since we don't have per-brand-per-category counts directly exposed, 
+              // but we can infer from Best Deals or Monitored if available, or just skip if data is missing.
+              // A better proxy is filtering the full products list if we had it, but we have ModelsTable.
+              // For now, let's use 'Most Monitored' as a proxy for category distribution interest.
+              const inCat = data.mostMonitored.filter(m => m.products.brand === selectedBrand && m.products.category === cat.category).length;
+              if (inCat > 0) acc.push({ name: cat.category, value: inCat });
+              return acc;
+           }, []);
+
+           // Price Extremes for this brand
+           const mostExpensive = analytics.chart_data.top_5_expensive.filter(m => m.brand === selectedBrand);
+           const cheapest = analytics.chart_data.bottom_5_cheap.filter(m => m.brand === selectedBrand);
+
+           return (
+             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+                
+                {/* --- ROW 1: KEY STATS --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
+                     <div className="flex justify-between items-start mb-2">
+                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Precio Promedio</p>
+                       <Tag className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
+                     </div>
+                     <div className="flex items-baseline gap-2 mb-1">
+                       <span className="text-2xl font-bold">{brandVar ? formatPrice(brandVar.last_avg_price) : "N/A"}</span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground">
+                       {brandVar ? `Inicial: ${formatPrice(brandVar.first_avg_price)}` : ""}
+                     </p>
+                   </Card>
+
+                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
+                     <div className="flex justify-between items-start mb-2">
+                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Variación Total</p>
+                       <Activity className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
+                     </div>
+                     <div className="flex items-baseline gap-2 mb-1">
+                       <span className={`text-2xl font-bold ${brandVar && brandVar.variation_percent > 0 ? 'text-destructive' : 'text-emerald-600'}`}>
+                         {brandVar ? `${brandVar.variation_percent > 0 ? '+' : ''}${brandVar.variation_percent.toFixed(1)}%` : "0%"}
+                       </span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <span className="font-medium text-foreground/80">Periodo:</span>
+                        {brandVar && data.summary.dateRange ? (
+                          `${new Date(data.summary.dateRange.from).toLocaleDateString()} - ${new Date(data.summary.dateRange.to).toLocaleDateString()}`
+                        ) : "En todo el historial"}
+                     </p>
+                   </Card>
+
+                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
+                     <div className="flex justify-between items-start mb-2">
+                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Modelos</p>
+                       <Package className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
+                     </div>
+                     <div className="flex items-baseline gap-2 mb-1">
+                       <span className="text-2xl font-bold">{brandModels?.productCount || 0}</span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground">En catálogo actual</p>
+                   </Card>
+
+                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
+                     <div className="flex justify-between items-start mb-2">
+                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Volatilidad</p>
+                       <BarChart3 className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
+                     </div>
+                     <div className="flex items-baseline gap-2 mb-1">
+                        <span className="text-2xl font-bold">{brandVol.length > 0 ? "Alta" : "Baja"}</span>
+                     </div>
+                     <p className="text-[10px] text-muted-foreground">
+                        {brandVol.length} modelos inestables
+                     </p>
+                   </Card>
+                </div>
+
+                {/* --- ROW 2: CHART & SIDEBAR --- */}
+                {/* --- ROW 2: DETAILED INSIGHTS (REPLACED CHART) --- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* COL 1: PRICE DOMAIN */}
+                    <Card className="p-5 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm h-full flex flex-col">
+                        <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4" /> Rangos de Precio
+                        </h3>
+                        <div className="space-y-6 flex-1">
+                             {/* Expensive */}
+                             <div className="flex justify-between items-start gap-4">
+                                 <div className="overflow-hidden">
+                                    <Badge variant="outline" className="mb-2 text-[10px] border-red-200 text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30">Techo</Badge>
+                                    <p className="font-medium text-sm truncate" title={mostExpensive[0]?.model}>{mostExpensive[0]?.model || "N/A"}</p>
+                                 </div>
+                                 <span className="font-bold text-lg whitespace-nowrap">{mostExpensive[0] ? formatPrice(mostExpensive[0].price) : "-"}</span>
+                             </div>
+                             <div className="w-full h-px bg-border/40" />
+                             {/* Cheap */}
+                             <div className="flex justify-between items-start gap-4">
+                                 <div className="overflow-hidden">
+                                    <Badge variant="outline" className="mb-2 text-[10px] border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 dark:border-emerald-900/30">Piso</Badge>
+                                    <p className="font-medium text-sm truncate" title={cheapest[0]?.model}>{cheapest[0]?.model || "N/A"}</p>
+                                 </div>
+                                 <span className="font-bold text-lg whitespace-nowrap">{cheapest[0] ? formatPrice(cheapest[0].price) : "-"}</span>
+                             </div>
+                        </div>
+                    </Card>
+
+                    {/* COL 2: OPPORTUNITIES & RISKS */}
+                    <Card className="p-5 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm h-full flex flex-col">
+                        <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-amber-500" /> Oportunidades
+                        </h3>
+                        <div className="space-y-3 flex-1">
+                            {brandDeals.length > 0 ? brandDeals.slice(0, 3).map((d, i) => (
+                                <div key={i} className="flex justify-between items-center text-sm p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                    <span className="truncate font-medium text-emerald-900 dark:text-emerald-100 max-w-[120px] ml-1">{d.products.submodel}</span>
+                                    <span className="font-bold text-emerald-600 mr-1">-{d.discount}%</span>
+                                </div>
+                            )) : <p className="text-xs text-muted-foreground italic">Sin ofertas destacadas.</p>}
+                        </div>
+                        
+                        <h3 className="text-sm font-bold text-muted-foreground uppercase mt-6 mb-4 flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-orange-500" /> Volatilidad
+                        </h3>
+                        <div className="space-y-3">
+                             {brandVol.length > 0 ? brandVol.slice(0, 3).map((v, i) => (
+                                <div key={i} className="flex justify-between items-center text-sm p-2 rounded bg-orange-500/10 border border-orange-500/20">
+                                    <span className="truncate font-medium text-orange-900 dark:text-orange-100 max-w-[120px] ml-1">{v.model}</span>
+                                    <span className="font-bold text-orange-600 mr-1">±{v.avg_monthly_variation.toFixed(1)}%</span>
+                                </div>
+                            )) : <p className="text-xs text-muted-foreground italic">Precios estables.</p>}
+                        </div>
+                    </Card>
+
+                    {/* COL 3: MARKET ACTIVITY */}
+                    <Card className="p-5 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm h-full flex flex-col">
+                         <h3 className="text-sm font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+                            <Activity className="h-4 w-4" /> Actividad Reciente
+                        </h3>
+                        <div className="space-y-3 flex-1 overflow-y-auto max-h-[220px] pr-2 custom-scrollbar">
+                            {(() => {
+                               const changes = data.recentChanges.filter(c => c.product.brand === selectedBrand).slice(0, 6);
+                               if (changes.length === 0) return <p className="text-xs text-muted-foreground italic">Sin cambios recientes.</p>;
+                               
+                               return changes.map((change, i) => (
+                                 <div key={i} className="flex flex-col gap-1 p-2.5 rounded bg-muted/40 border border-border/40 text-sm hover:bg-muted/60 transition-colors">
+                                     <div className="flex justify-between items-start gap-2">
+                                        <span className="font-medium truncate text-xs">{change.product.submodel}</span>
+                                        <span className={`text-xs font-bold ${change.change > 0 ? 'text-destructive' : 'text-emerald-600'}`}>
+                                            {change.change > 0 ? '+' : ''}{change.change}%
+                                        </span>
+                                     </div>
+                                     <span className="text-[10px] text-muted-foreground">
+                                        {formatPrice(change.previousPrice)} → {formatPrice(change.currentPrice)}
+                                     </span>
+                                 </div>
+                               ));
+                            })()}
+                        </div>
+                    </Card>
+                </div>
+
+                {/* --- ROW 4: CATALOG --- */}
+                <div className="pt-6 border-t border-border/40">
+                   <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+                     <Package className="h-5 w-5 text-primary" />
+                     Catálogo Completo
+                   </h2>
+                   <ModelsTable filters={{ brand: selectedBrand }} />
+                </div>
+             </div>
+           );
+        })()}
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Destacados del Mercado</h1>
-        <p className="text-muted-foreground mt-1">
-          Resumen histórico completo de {data.summary.totalProducts} productos con {data.summary.totalDataPoints.toLocaleString()} puntos de datos
+        <h1 className="display-text mb-2">Nuestras Marcas</h1>
+        <p className="subtitle">
+          Explora toda la información histórica y actual de nuestras {data.allBrands?.length || 0} marcas disponibles.
         </p>
       </div>
 
-      {/* Resumen General - Estilo cards modernas con iconos circulares */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(25,65%,65%)] to-[hsl(25,65%,55%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Package className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              Total
-            </span>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Productos</p>
-            <h3 className="text-3xl font-bold text-foreground mb-2">
-              {data.summary.totalProducts}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              En el mercado
-            </p>
-          </div>
-        </div>
-
-        <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(140,35%,70%)] to-[hsl(140,35%,60%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Activity className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              Datos
-            </span>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Puntos de Datos</p>
-            <h3 className="text-3xl font-bold text-foreground mb-2">
-              {data.summary.totalDataPoints.toLocaleString()}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Registros históricos
-            </p>
-          </div>
-        </div>
-
-        <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(35,55%,75%)] to-[hsl(35,55%,65%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <BarChart3 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              Tipos
-            </span>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Categorías</p>
-            <h3 className="text-3xl font-bold text-foreground mb-2">
-              {data.summary.categoriesCount}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Tipos de vehículos
-            </p>
-          </div>
-        </div>
-
-        <div className="group relative bg-white dark:bg-card rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 border border-border/50">
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[hsl(15,60%,72%)] to-[hsl(15,60%,62%)] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Tag className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-              Fabricantes
-            </span>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Marcas</p>
-            <h3 className="text-3xl font-bold text-foreground mb-2">
-              {data.summary.brandsCount}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              En inventario
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Insights Automáticos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {insights.insights.slice(0, 6).map((insight, idx) => {
-          const Icon = getInsightIcon(insight.insight_type)
-          const impact = getInsightImpact(insight)
-          const colorClass = getInsightColor(impact)
-          
-          return (
-            <Card key={idx} className="p-5 border-border/50 shadow-md hover:shadow-lg transition-all">
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${impact === 'positive' ? 'bg-[hsl(142,76%,36%)]/10' : impact === 'negative' ? 'bg-[hsl(0,84%,60%)]/10' : 'bg-[hsl(25,65%,65%)]/10'}`}>
-                  <Icon className={`h-5 w-5 ${colorClass}`} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm mb-1">{insight.title}</h3>
-                  <p className={`text-xs ${colorClass} font-medium`}>{insight.description}</p>
-                  
-                  {/* Mostrar datos adicionales según el tipo */}
-                  {insight.insight_type === 'price_trend' && insight.data && (
-                    <div className="mt-2 pt-2 border-t border-border/30">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Cambio promedio:</span>
-                        <span className={`font-bold ${colorClass}`}>
-                          {insight.data.direction === 'up' ? '+' : ''}{insight.data.change_percent}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {insight.insight_type === 'best_value' && Array.isArray(insight.data) && insight.data.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
-                      {insight.data.slice(0, 2).map((item: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
-                          <Badge variant="outline" className="text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 text-[10px] px-1">
-                            -{item.savings_vs_median}%
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {insight.insight_type === 'price_stability' && Array.isArray(insight.data) && insight.data.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
-                      {insight.data.slice(0, 2).map((item: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
-                          <span className="text-[10px] text-muted-foreground">{item.stability_score}% var.</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {insight.insight_type === 'historical_opportunity' && Array.isArray(insight.data) && insight.data.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-border/30 space-y-1">
-                      {insight.data.slice(0, 2).map((item: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground truncate">{item.brand} {item.model}</span>
-                          <Badge variant="outline" className="text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 text-[10px] px-1">
-                            cerca mínimo
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Gráficos Compactos Lado a Lado */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Tendencia del Mercado */}
-        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[hsl(25,65%,65%)]" />
-            Tendencia del Mercado (6 meses)
-          </h2>
-          <div className="h-[180px]">
-            {mounted && (
-              <Line key={`market-trend-${chartKey}`} data={marketTrendChart} options={marketTrendOptions} />
-            )}
-          </div>
-        </Card>
-
-        {/* Marcas Más Activas */}
-        <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Tag className="h-4 w-4 text-[hsl(25,65%,65%)]" />
-            Marcas Más Activas
-          </h2>
-          <div className="h-[180px]">
-            {mounted && (
-              <Bar key={`top-brands-${chartKey}`} data={topBrandsChart} options={topBrandsOptions} />
-            )}
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Mejores Ofertas */}
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Tag className="h-5 w-5 text-[hsl(140,35%,70%)]" />
-            Mejores Ofertas Actuales
-          </h2>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {data.bestDeals.map((deal, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20 hover:border-[hsl(142,76%,36%)]/40 transition-colors">
-                <div className="flex-1">
-                  <p className="font-medium text-sm"> {deal.products.submodel}</p>
-                  <p className="text-xs text-muted-foreground">{deal.products.category}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-foreground">{formatPrice(deal.price)}</p>
-                  <Badge variant="outline" className="text-xs text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10 flex items-center gap-1 w-fit ml-auto mt-1">
-                    <TrendingDown className="h-3 w-3" />
-                    -{deal.discount}%
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Modelos Más Monitoreados */}
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[hsl(35,55%,75%)]" />
-            Modelos Más Monitoreados
-          </h2>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {data.mostMonitored.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(35,55%,75%)]/10 to-transparent border border-[hsl(35,55%,75%)]/20 hover:border-[hsl(35,55%,75%)]/40 transition-colors">
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{product.products.model} {product.products.submodel}</p>
-                  <p className="text-xs text-muted-foreground">{product.dataPoints} registros</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-foreground">{formatPrice(product.price)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-
-      {/* Cambios Recientes Significativos */}
-      <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-[hsl(15,60%,72%)]" />
-          Cambios Significativos (últimos 30 días)
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {data.recentChanges.map((change, idx) => (
-            <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-colors">
-              <div className="flex-1">
-                <p className="font-medium text-sm">{change.product.brand} {change.product.submodel}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatPrice(change.previousPrice)} → {formatPrice(change.currentPrice)}
-                </p>
-              </div>
-              <Badge 
-                variant="outline" 
-                className={`flex items-center gap-1 font-bold ${
-                  change.change > 0 
-                    ? 'text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%)]/30 bg-[hsl(0,84%,60%)]/10' 
-                    : 'text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10'
-                }`}
-              >
-                {change.change > 0 ? (
-                  <>
-                    <TrendingUp className="h-3 w-3" />
-                    +{Math.abs(change.change)}%
-                  </>
-                ) : (
-                  <>
-                    <TrendingDown className="h-3 w-3" />
-                    -{Math.abs(change.change)}%
-                  </>
-                )}
-              </Badge>
-            </div>
+       {/* Nuestras Marcas - Grid de Logos Clean */}
+       <div className="bg-card/30 rounded-3xl p-8 border border-border/40 backdrop-blur-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-8 gap-y-12">
+          {data.allBrands?.map((brand) => (
+            <button
+               key={brand.brand}
+               onClick={() => setSelectedBrand(brand.brand)}
+               className="group flex flex-col items-center gap-4 transition-all duration-300 outline-none"
+            >
+               <div className="w-full aspect-[3/2] flex items-center justify-center p-4 rounded-2xl bg-white dark:bg-white/5 border border-transparent group-hover:border-border/50 group-hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] group-hover:-translate-y-1 transition-all duration-300">
+                  <BrandLogo brand={brand.brand} size="xl" showName={false} className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-500 opacity-80 group-hover:opacity-100 scale-90 group-hover:scale-100" />
+               </div>
+               
+               <div className="text-center space-y-1">
+                 <h3 className="font-semibold text-foreground/80 group-hover:text-primary transition-colors">
+                   {brand.brand}
+                 </h3>
+                 <span className="text-xs text-muted-foreground block opacity-0 group-hover:opacity-100 transition-opacity -translate-y-1 group-hover:translate-y-0">
+                   {brand.productCount} modelos
+                 </span>
+               </div>
+            </button>
           ))}
         </div>
-      </Card>
-
-      {/* Análisis por Categoría - más compacto */}
-      <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-[hsl(140,35%,70%)]" />
-          Análisis por Categoría
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-2 text-xs font-semibold text-muted-foreground">Categoría</th>
-                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Productos</th>
-                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Precio Promedio</th>
-                <th className="text-right p-2 text-xs font-semibold text-muted-foreground">Rango</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.categoryAnalysis.map((cat, idx) => (
-                <tr key={idx} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="p-2 font-medium text-sm">{cat.category}</td>
-                  <td className="text-right p-2 text-sm">{cat.productCount}</td>
-                  <td className="text-right p-2 font-bold text-sm text-[hsl(25,65%,65%)]">{formatPrice(cat.avgPrice)}</td>
-                  <td className="text-right p-2 text-xs text-muted-foreground">
-                    {formatPrice(cat.minPrice)} - {formatPrice(cat.maxPrice)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Información adicional de insights: Comparación de categorías */}
-      {insights.insights.find(i => i.insight_type === 'category_comparison') && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {(() => {
-            const catInsight = insights.insights.find(i => i.insight_type === 'category_comparison');
-            return (
-              <>
-                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-[hsl(0,84%,60%)]" />
-                    Segmento Más Costoso
-                  </h3>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_expensive_category.category}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
-                      <span className="text-lg font-bold text-[hsl(0,84%,60%)]">{formatPrice(catInsight.data.most_expensive_category.avg_price)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Modelos:</span>
-                      <span className="text-sm font-semibold">{catInsight.data.most_expensive_category.model_count}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
-                      <span className="text-sm font-semibold">
-                        {formatPrice(catInsight.data.most_expensive_category.min_price)} - {formatPrice(catInsight.data.most_expensive_category.max_price)}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-5 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-[hsl(142,76%,36%)]" />
-                    Segmento Más Accesible
-                  </h3>
-                  <div className="space-y-2">
-                    <p className="text-2xl font-bold text-foreground">{catInsight.data.most_affordable_category.category}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Precio Promedio:</span>
-                      <span className="text-lg font-bold text-[hsl(142,76%,36%)]">{formatPrice(catInsight.data.most_affordable_category.avg_price)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Modelos:</span>
-                      <span className="text-sm font-semibold">{catInsight.data.most_affordable_category.model_count}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Rango de Precios:</span>
-                      <span className="text-sm font-semibold">
-                        {formatPrice(catInsight.data.most_affordable_category.min_price)} - {formatPrice(catInsight.data.most_affordable_category.max_price)}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              </>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* Top 5 Más Caros y Más Accesibles */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-[hsl(0,84%,60%)]" />
-            Top 5 Modelos Más Caros
-          </h2>
-          <div className="space-y-3">
-            {analytics.chart_data.top_5_expensive.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(0,84%,60%)]/5 to-transparent border border-[hsl(0,84%,60%)]/20">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-[hsl(0,84%,60%)]/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-[hsl(0,84%,60%)]">{idx + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.name}</p>
-                  </div>
-                </div>
-                <p className="font-bold text-[hsl(0,84%,60%)]">{formatPrice(item.price)}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingDown className="h-5 w-5 text-[hsl(142,76%,36%)]" />
-            Top 5 Modelos Más Accesibles
-          </h2>
-          <div className="space-y-3">
-            {analytics.chart_data.bottom_5_cheap.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[hsl(142,76%,36%)]/5 to-transparent border border-[hsl(142,76%,36%)]/20">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-[hsl(142,76%,36%)]/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-[hsl(142,76%,36%)]">{idx + 1}</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{item.brand}</p>
-                    <p className="text-xs text-muted-foreground">{item.name}</p>
-                  </div>
-                </div>
-                <p className="font-bold text-[hsl(142,76%,36%)]">{formatPrice(item.price)}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
-
-      {/* Variaciones Históricas por Marca */}
-      {analytics.chart_data.brand_variations.filter(b => b.scraping_sessions > 1).length > 0 && (
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-            Variaciones Históricas de Precios por Marca
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {analytics.chart_data.brand_variations
-              .filter(b => b.scraping_sessions > 1)
-              .sort((a, b) => Math.abs(b.variation_percent) - Math.abs(a.variation_percent))
-              .slice(0, 9)
-              .map((brand, idx) => (
-                <div key={idx} className="p-4 rounded-xl bg-muted/30 border border-border/50 hover:border-border transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-sm">{brand.brand}</p>
-                    <Badge 
-                      variant="outline" 
-                      className={`font-bold text-xs ${
-                        brand.variation_percent > 0 
-                          ? 'text-[hsl(0,84%,60%)] border-[hsl(0,84%,60%)]/30 bg-[hsl(0,84%,60%)]/10' 
-                          : 'text-[hsl(142,76%,36%)] border-[hsl(142,76%,36%)]/30 bg-[hsl(142,76%,36%)]/10'
-                      }`}
-                    >
-                      {brand.variation_percent > 0 ? '+' : ''}{brand.variation_percent.toFixed(1)}%
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Precio inicial:</span>
-                      <span className="font-medium">{formatPrice(brand.first_avg_price)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Precio actual:</span>
-                      <span className="font-medium">{formatPrice(brand.last_avg_price)}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30">
-                      {brand.scraping_sessions} registros históricos
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Modelos con Mayor Volatilidad */}
-      {analytics.chart_data.monthly_volatility.most_volatile.length > 0 && (
-        <Card className="p-6 border-border/50 shadow-md hover:shadow-lg transition-shadow">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-[hsl(25,65%,65%)]" />
-            Modelos con Mayor Volatilidad de Precios
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Estos modelos han experimentado las mayores fluctuaciones de precio en su historial
-          </p>
-          <div className="space-y-3">
-            {analytics.chart_data.monthly_volatility.most_volatile.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[hsl(25,65%,65%)]/10 to-transparent border border-[hsl(25,65%,65%)]/20 hover:border-[hsl(25,65%,65%)]/40 transition-colors">
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{item.brand} {item.model}</p>
-                  <p className="text-xs text-muted-foreground">{item.data_points} registros históricos</p>
-                </div>
-                <div className="text-right">
-                  <Badge variant="outline" className="text-[hsl(25,65%,65%)] border-[hsl(25,65%,65%)]/30 bg-[hsl(25,65%,65%)]/10">
-                    ±{item.avg_monthly_variation.toFixed(1)}% promedio
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
     </div>
   )
 }
