@@ -37,8 +37,8 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
       )}
 
       {/* Sidebar */}
-      <div className={`${isCollapsed ? 'w-20' : 'w-64'} h-full bg-card border-r border-border flex flex-col transition-all duration-300 relative
-        ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden'} md:flex`}>
+      <div className={`${isCollapsed ? 'w-20' : 'w-64'} h-full bg-gradient-to-b from-sidebar to-slate-950 border-r border-sidebar-border flex flex-col transition-all duration-300 relative
+        ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden'} md:flex shadow-2xl`}>
 
         {/* Close button for mobile */}
         <button
@@ -58,7 +58,9 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
-        <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-16 w-16 mx-auto' : 'h-24 sm:h-28 w-auto mx-4'} object-contain transition-all duration-300 mt-8 mb-6`} />
+        <div className="relative z-10">
+          <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-16 w-16 mx-auto' : 'h-24 sm:h-28 w-auto mx-4'} object-contain transition-all duration-300 mt-8 mb-6 drop-shadow-lg opacity-90 hover:opacity-100`} />
+        </div>
 
         <nav className="flex-1 p-4 space-y-2 mt-2 overflow-y-auto">
           {filteredItems.map((item) => (
@@ -66,10 +68,10 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
               key={item.url}
               to={item.url}
               onClick={() => setIsMobileOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative overflow-hidden ${
                 isActive(item.url)
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-gradient-to-r from-sidebar-primary to-blue-600 text-sidebar-primary-foreground shadow-lg shadow-blue-500/20 ring-1 ring-white/10'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1'
               }`}
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />

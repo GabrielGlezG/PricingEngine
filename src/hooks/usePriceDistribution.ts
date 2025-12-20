@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 
 export type PriceFilters = Partial<{
-  brand: string
+  tipoVehiculo: string | string[]
+  brand: string | string[]
   category: string
-  model: string
-  submodel: string
+  model: string | string[]
+  submodel: string | string[]
   ctx_precio: string
   date_from: string
   date_to: string
@@ -34,7 +35,7 @@ export function usePriceDistribution(filters?: PriceFilters) {
         .from('price_data')
         .select(`
           id, price, date, ctx_precio, precio_num, precio_lista_num, bono_num, precio_texto,
-          products!inner ( id, brand, category, model, name, submodel )
+          products!inner ( id, brand, category, model, name, submodel, tipo_vehiculo )
         `)
         .order('date', { ascending: false })
         .limit(2500)
@@ -55,10 +56,23 @@ export function usePriceDistribution(filters?: PriceFilters) {
 
       // Apply filters if provided
       if (filters) {
-        if (filters.brand) rows = rows.filter(r => r.products?.brand === filters.brand)
+        if (filters.tipoVehiculo) {
+          const tipos = Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo]
+          rows = rows.filter(r => tipos.includes(r.products?.tipo_vehiculo))
+        }
+        if (filters.brand) {
+          const brands = Array.isArray(filters.brand) ? filters.brand : [filters.brand]
+          rows = rows.filter(r => brands.includes(r.products?.brand))
+        }
         if (filters.category) rows = rows.filter(r => r.products?.category === filters.category)
-        if (filters.model) rows = rows.filter(r => r.products?.model === filters.model)
-        if (filters.submodel) rows = rows.filter(r => r.products?.submodel === filters.submodel)
+        if (filters.model) {
+          const models = Array.isArray(filters.model) ? filters.model : [filters.model]
+          rows = rows.filter(r => models.includes(r.products?.model))
+        }
+        if (filters.submodel) {
+          const submodels = Array.isArray(filters.submodel) ? filters.submodel : [filters.submodel]
+          rows = rows.filter(r => submodels.includes(r.products?.submodel))
+        }
         if (filters.ctx_precio) rows = rows.filter(r => r.ctx_precio === filters.ctx_precio)
         if (filters.priceRange) {
           const [min, max] = filters.priceRange.includes('+')

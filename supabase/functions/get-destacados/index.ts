@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
-    const recentData = historicalData.filter(item => 
+    const recentData = historicalData.filter(item =>
       item.products && new Date(item.date) >= sixMonthsAgo
     )
 
@@ -80,8 +80,8 @@ Deno.serve(async (req) => {
 
     const latestPrices = new Map()
     historicalData.forEach(item => {
-      if (item.products && (!latestPrices.has(item.product_id) || 
-          new Date(item.date) > new Date(latestPrices.get(item.product_id).date))) {
+      if (item.products && (!latestPrices.has(item.product_id) ||
+        new Date(item.date) > new Date(latestPrices.get(item.product_id).date))) {
         latestPrices.set(item.product_id, item)
       }
     })
@@ -133,17 +133,20 @@ Deno.serve(async (req) => {
       .slice(0, 6)
 
     // 4. ANÁLISIS POR CATEGORÍA
-    const categoryStats: { [key: string]: {
-      count: number
-      totalPrice: number
-      minPrice: number
-      maxPrice: number
-      products: Set<string>
-    }} = {}
+    const categoryStats: {
+      [key: string]: {
+        count: number
+        totalPrice: number
+        minPrice: number
+        maxPrice: number
+        products: Set<string>
+      }
+    } = {}
 
     recentData.forEach(item => {
       if (!item.products) return
-      const cat = item.products.category
+      const product = item.products as unknown as { category: string; brand: string }
+      const cat = product.category
       if (!categoryStats[cat]) {
         categoryStats[cat] = {
           count: 0,
@@ -172,15 +175,18 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.dataPoints - a.dataPoints)
 
     // 5. MARCAS MÁS ACTIVAS
-    const brandStats: { [key: string]: {
-      products: Set<string>
-      dataPoints: number
-      totalPrice: number
-    }} = {}
+    const brandStats: {
+      [key: string]: {
+        products: Set<string>
+        dataPoints: number
+        totalPrice: number
+      }
+    } = {}
 
     recentData.forEach(item => {
       if (!item.products) return
-      const brand = item.products.brand
+      const product = item.products as unknown as { brand: string }
+      const brand = product.brand
       if (!brandStats[brand]) {
         brandStats[brand] = {
           products: new Set(),
@@ -203,6 +209,13 @@ Deno.serve(async (req) => {
       .sort((a, b) => b.productCount - a.productCount)
       .slice(0, 10)
 
+    const allBrands = Object.entries(brandStats)
+      .map(([brand, stats]) => ({
+        brand,
+        productCount: stats.products.size
+      }))
+      .sort((a, b) => a.brand.localeCompare(b.brand))
+
     // 6. CAMBIOS SIGNIFICATIVOS RECIENTES (últimos 30 días)
     const recentChanges = Array.from(latestPrices.values())
       .filter(item => {
@@ -214,7 +227,7 @@ Deno.serve(async (req) => {
         const productHistory = historicalData
           .filter(h => h.product_id === latest.product_id && h.date < latest.date)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        
+
         if (productHistory.length === 0) return null
 
         const previousPrice = productHistory[0].price
@@ -249,6 +262,7 @@ Deno.serve(async (req) => {
       mostMonitored,
       categoryAnalysis,
       topBrands,
+      allBrands,
       recentChanges: recentChanges.filter(Boolean)
     }
 
@@ -256,24 +270,24 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify(response),
-      { 
-        headers: { 
+      {
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     )
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in get-destacados function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      {
         status: 500,
-        headers: { 
+        headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+          'Content-Type': 'application/json'
+        }
       }
     )
   }
