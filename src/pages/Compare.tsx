@@ -325,18 +325,12 @@ export default function Compare() {
       )}
 
        {!hasActiveFilters && (
-            <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border/50 rounded-2xl bg-muted/20">
-              <div className="p-4 bg-background rounded-full shadow-sm mb-4">
-                 <Scale className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-              <h3 className="text-lg font-medium mb-1">
-                Comienza tu comparación
-              </h3>
-              <p className="text-muted-foreground text-sm max-w-md">
-                Utiliza la barra de filtros superior para buscar por marca, modelo o categoría.
-              </p>
-            </div>
-      )}
+        <CleanEmptyState 
+          icon={Scale}
+          title="Comienza tu comparación"
+          description="Utiliza la barra de filtros superior para buscar por marca, modelo o categoría."
+        />
+       )}
 
       {/* Comparación Detallada */}
       {comparisonData.length > 0 && (
@@ -347,18 +341,18 @@ export default function Compare() {
               <h2 className="card-title mb-2">Comparación Detallada</h2>
               <p className="caption mb-6">Análisis lado a lado de los modelos seleccionados</p>
               
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="overflow-x-auto rounded-lg border border-border/40">
+                <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left p-3 label-text">Característica</th>
+                    <tr className="border-b border-border/60 bg-muted/30">
+                      <th className="text-left p-4 font-semibold text-muted-foreground uppercase text-xs tracking-wider">Característica</th>
                       {comparisonData.map((item, index) => (
-                        <th key={index} className="text-center p-3 min-w-[200px]">
+                        <th key={index} className="text-center p-4 min-w-[200px] border-l border-border/30 bg-background/50 backdrop-blur-sm">
                           <div className="flex flex-col items-center gap-2">
                             <BrandLogo brand={item.product.brand} size="lg" showName={false} />
                             <p className="font-medium text-foreground">{item.product.brand} {item.product.model}</p>
                             {item.product.submodel && (
-                              <p className="text-sm text-primary">{item.product.submodel}</p>
+                              <p className="text-xs text-primary font-medium bg-primary/10 px-2 py-0.5 rounded-full">{item.product.submodel}</p>
                             )}
                           </div>
                         </th>
@@ -484,15 +478,11 @@ export default function Compare() {
       )}
 
       {comparisonData.length === 0 && hasActiveFilters && (
-        <Card>
-          <div className="flex flex-col items-center justify-center py-12 px-6">
-            <Scale className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="card-title mb-2">No hay modelos que coincidan</h3>
-            <p className="subtitle text-center mb-4">
-              Intenta ajustar los filtros para encontrar vehículos.
-            </p>
-          </div>
-        </Card>
+        <CleanEmptyState 
+          icon={Scale}
+          title="No hay modelos que coincidan"
+          description="Intenta ajustar los filtros para encontrar vehículos."
+        />
       )}
     </div>
   )

@@ -9,6 +9,7 @@ interface CleanEmptyStateProps {
   action?: {
     label: string;
     onClick: () => void;
+    disabled?: boolean;
   };
   className?: string;
 }
@@ -42,6 +43,7 @@ export function CleanEmptyState({
       {action && (
         <Button 
           onClick={action.onClick}
+          disabled={action.disabled}
           variant="outline"
           className="border-primary text-primary hover:bg-primary hover:text-white transition-colors"
         >

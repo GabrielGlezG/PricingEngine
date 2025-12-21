@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { InstitutionalHeader } from "@/components/InstitutionalHeader";
+import { CleanEmptyState } from "@/components/CleanEmptyState";
 import {
   Lightbulb,
   TrendingUp,
@@ -456,16 +458,13 @@ export default function Insights() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Insights Automáticos
-          </h1>
-          <p className="text-muted-foreground">
-            Análisis inteligente basado en datos históricos del mercado
-          </p>
-        </div>
-        <Button onClick={() => refetch()} disabled={isRefetching}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <InstitutionalHeader 
+          title="Insights Automáticos" 
+          description="Análisis inteligente basado en datos históricos del mercado."
+          className="mb-0"
+        />
+        <Button onClick={() => refetch()} disabled={isRefetching} className="shadow-lg shadow-primary/20 shrink-0">
           {isRefetching ? (
             <RefreshCw className="h-4 w-4 animate-spin mr-2" />
           ) : (
@@ -729,31 +728,16 @@ export default function Insights() {
             ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Lightbulb className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">
-              No hay insights disponibles
-            </h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Los insights se generan automáticamente cuando hay suficientes
-              datos.
-            </p>
-            <Button onClick={() => refetch()} disabled={isRefetching}>
-              {isRefetching ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Generar Insights
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+        <CleanEmptyState 
+          icon={Lightbulb}
+          title="No hay insights disponibles"
+          description="Los insights se generan automáticamente cuando hay suficientes datos históricos."
+          action={{
+            label: isRefetching ? 'Generando...' : 'Generar Insights',
+            onClick: () => refetch(),
+            disabled: isRefetching
+          }}
+        />
       )}
     </div>
   );
