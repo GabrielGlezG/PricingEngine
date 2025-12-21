@@ -23,6 +23,8 @@ import {
 import { BrandLogo } from "@/components/BrandLogo"
 import { BrandHeader } from "@/components/BrandHeader"
 import { DashboardFilters } from "@/components/DashboardFilters"
+import { InstitutionalHeader } from "@/components/InstitutionalHeader"
+import { CleanEmptyState } from "@/components/CleanEmptyState"
 
 ChartJS.register(
   CategoryScale,
@@ -259,14 +261,10 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 pb-6 border-b border-border/40">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Comparador de Vehículos
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl">
-          Selecciona y compara las características y precios de diferentes modelos lado a lado.
-        </p>
-      </div>
+      <InstitutionalHeader 
+        title="Comparador de Vehículos" 
+        description="Selecciona y compara las características y precios de diferentes modelos lado a lado."
+      />
 
       {/* Brand Header when brands are selected */}
       {filters.brand.length > 0 && (
@@ -356,7 +354,8 @@ export default function Compare() {
                       <th className="text-left p-3 label-text">Característica</th>
                       {comparisonData.map((item, index) => (
                         <th key={index} className="text-center p-3 min-w-[200px]">
-                          <div>
+                          <div className="flex flex-col items-center gap-2">
+                            <BrandLogo brand={item.product.brand} size="lg" showName={false} />
                             <p className="font-medium text-foreground">{item.product.brand} {item.product.model}</p>
                             {item.product.submodel && (
                               <p className="text-sm text-primary">{item.product.submodel}</p>
