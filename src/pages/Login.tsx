@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useTheme } from "next-themes"
 import { useAuth } from '@/contexts/AuthContext'
 import { Navigate, useLocation, Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,9 +14,15 @@ import { LoadingSpinner } from '@/components/LoadingSpinner'
 import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
+  const { setTheme } = useTheme()
   const { user, profile, loading, signIn, signUp, makeFirstAdmin } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
+  
+  // Force Reset to Light Mode when accessing Login
+  useEffect(() => {
+    setTheme('light')
+  }, [setTheme])
   
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
