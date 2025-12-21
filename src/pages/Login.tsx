@@ -35,9 +35,10 @@ export default function Login() {
     name: ''
   })
 
-  // Esperar a que termine de cargar antes de redirigir
-  if (loading) {
-    return <LoadingSpinner fullScreen size="lg" text="Autenticando..." />
+  // Only show spinner if we have a user but are waiting for profile/data
+  // This prevents the "Authenticating" flash for unauthenticated users visiting the page
+  if (loading && user) {
+    return <LoadingSpinner fullScreen size="lg" text="Verificando perfil..." />
   }
 
   if (user && profile) {
