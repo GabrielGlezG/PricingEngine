@@ -12,6 +12,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { InstitutionalHeader } from "@/components/InstitutionalHeader";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -225,43 +234,51 @@ export default function UploadComponent() {
   const totalCount = jobsData?.totalCount || 0;
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <InstitutionalHeader
+        title="Gestión de Datos"
+        description="Centro de carga y procesamiento de archivos para el motor de precios."
+      />
+
+      <Card className="border-border/60 shadow-sm bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Cargar Datos de Productos
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Upload className="h-5 w-5 text-primary" />
+            Nueva Carga de Archivos
           </CardTitle>
           <CardDescription>
-            Sube archivos JSON/CSV/Excel con datos de precios de productos
-            automotrices para su análisis
+            Soporta formatos JSON, CSV y Excel. Los archivos grandes se procesarán en segundo plano.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Área de drag & drop */}
+          {/* Área de drag & drop Premium */}
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`group border-2 border-dashed rounded-xl p-10 text-center transition-all duration-500 ease-out ${
               dragActive
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                ? "border-primary bg-primary/5 scale-[1.01] shadow-lg"
+                : "border-border/60 hover:border-primary/40 hover:bg-muted/20"
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <FileJson className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <div className="mb-4 p-4 bg-muted/30 rounded-full w-fit mx-auto group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-500">
+              <FileJson className="h-10 w-10 text-muted-foreground group-hover:text-primary transition-colors" />
+            </div>
             <div className="space-y-2">
-              <p className="text-lg font-medium">
-                {selectedFile
-                  ? selectedFile.name
-                  : "Arrastra tu archivo JSON/CSV/Excel aquí"}
+              <p className="text-xl font-medium text-foreground">
+                {selectedFile ? selectedFile.name : "Arrastra y suelta tus archivos aquí"}
               </p>
-              <p className="text-sm text-muted-foreground">o</p>
-              <Label htmlFor="file-upload">
-                <Button variant="outline" asChild>
-                  <span>Seleccionar archivo</span>
-                </Button>
+              <p className="text-sm text-muted-foreground">
+                o selecciona desde tu ordenador
+              </p>
+              <Label htmlFor="file-upload" className="cursor-pointer">
+                <div className="mt-4">
+                  <Button variant="outline" className="border-primary/20 hover:bg-primary/5 hover:text-primary" asChild>
+                    <span>Explorar Archivos</span>
+                  </Button>
+                </div>
               </Label>
               <Input
                 ref={fileInputRef}
@@ -276,153 +293,119 @@ export default function UploadComponent() {
 
           {/* Información del archivo seleccionado */}
           {selectedFile && (
-            <Card className="bg-muted/30 border-muted">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileJson className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = "";
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover
-                    </Button>
-                    <Button
-                      onClick={handleUpload}
-                      disabled={uploadMutation.isPending}
-                    >
-                      {uploadMutation.isPending
-                        ? "Cargando..."
-                        : "Subir archivo"}
-                    </Button>
-                  </div>
+            <div className="bg-muted/30 border border-border/50 rounded-lg p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-background rounded-md shadow-sm border border-border/50">
+                   <FileJson className="h-6 w-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="font-medium text-sm">{selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={uploadMutation.isPending}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all"
+                >
+                  {uploadMutation.isPending ? "Procesando..." : "Iniciar Carga"}
+                </Button>
+              </div>
+            </div>
           )}
 
-          {/* Formato esperado */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Formato JSON/CSV Esperado
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="bg-muted/30 p-4 rounded-md text-sm overflow-x-auto text-foreground">
-                {`{
-  "UID"
-  "ID_Base"
-  "Categoría"
-  "Modelo Principal"
-  "Modelo"
-  "Tipo_Vehiculo"     // Nuevo: SUV, Camioneta, Camion, 4x4, etc.
-  "ctx_precio"
-  "precio_num"
-  "precio_lista_num"
-  "bono_num"
-  "Precio_Texto"
-  "fuente_texto_raw"
-  "Modelo_URL"
-  "Archivo_Origen"
-  "Fecha"
-  "Timestamp"
-  "estado"
+          {/* Formato esperado Collapsible/Acordeón style via Details/Summary could be better but sticking to strict design */}
+          <div className="mt-4 pt-4 border-t border-border/40">
+            <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Estructura Requerida (Referencia)</p>
+            <pre className="bg-muted/30 border border-border/40 p-4 rounded-lg text-xs font-mono text-muted-foreground overflow-x-auto">
+              {`{
+  "UID", "ID_Base", "Categoría", "Modelo Principal", "Modelo",
+  "Tipo_Vehiculo", "ctx_precio", "precio_num", "precio_lista_num",
+  "Fecha", "Timestamp", "estado" ...
 }`}
-              </pre>
-            </CardContent>
-          </Card>
+            </pre>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Historial de trabajos con paginación */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Historial de Cargas</CardTitle>
-              <CardDescription>
-                Estado de los trabajos de procesamiento de datos
-              </CardDescription>
-            </div>
-            {totalCount > 0 && (
-              <Badge variant="secondary">
-                {totalCount} trabajo{totalCount !== 1 ? "s" : ""} total
-                {totalCount !== 1 ? "es" : ""}
-              </Badge>
-            )}
+      {/* Historial de trabajos Rediseñado con Tabla */}
+      <Card className="border-border/60 shadow-sm bg-card/50">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-1">
+             <CardTitle className="text-lg flex items-center gap-2">
+               <Clock className="h-5 w-5 text-primary" />
+               Historial de Procesamiento
+             </CardTitle>
+             <CardDescription>Registro de cargas y estado de ingestión</CardDescription>
           </div>
+          {totalCount > 0 && (
+            <Badge variant="outline" className="bg-background">
+              {totalCount} Registros
+            </Badge>
+          )}
         </CardHeader>
         <CardContent>
           {jobs && jobs.length > 0 ? (
             <>
-              <div className="space-y-4">
-                {jobs.map((job) => (
-                  <div
-                    key={job.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      {getStatusIcon(job.status)}
-                      <div>
-                        <p className="font-medium">
-                          Trabajo {job.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(job.created_at).toLocaleDateString(
-                            "es-MX",
-                            {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-sm">
-                          {job.completed_products} / {job.total_products}{" "}
-                          productos
-                        </p>
-                        {job.status === "processing" && (
-                          <Progress
-                            value={
-                              (job.completed_products / job.total_products) *
-                              100
-                            }
-                            className="w-32 mt-1"
-                          />
-                        )}
-                      </div>
-                      {getStatusBadge(job.status)}
-                    </div>
-                  </div>
-                ))}
+              <div className="rounded-md border border-border/50 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <TableRow>
+                      <TableHead className="w-[120px]">ID Trabajo</TableHead>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Progreso</TableHead>
+                      <TableHead>Estado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {jobs.map((job) => (
+                      <TableRow key={job.id} className="hover:bg-muted/10">
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {job.id.slice(0, 8)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                           {new Date(job.created_at).toLocaleDateString("es-MX", {
+                              day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+                           })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 w-[140px]">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>{job.completed_products} / {job.total_products}</span>
+                              <span>{Math.round((job.completed_products / Math.max(job.total_products, 1)) * 100)}%</span>
+                            </div>
+                            {job.status === "processing" && (
+                              <Progress value={(job.completed_products / job.total_products) * 100} className="h-1.5" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(job.status)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Controles de paginación */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="flex items-center justify-between mt-4 pt-2">
                   <p className="text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </p>
@@ -432,27 +415,28 @@ export default function UploadComponent() {
                       size="sm"
                       onClick={() => setCurrentPage((prev) => prev - 1)}
                       disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
                     >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Anterior
+                      <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage((prev) => prev + 1)}
                       disabled={currentPage === totalPages}
+                      className="h-8 w-8 p-0"
                     >
-                      Siguiente
-                      <ChevronRight className="h-4 w-4 ml-1" />
+                      <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-8">
-              No hay trabajos de carga registrados
-            </p>
+            <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed border-border/50">
+               <Upload className="h-10 w-10 mx-auto mb-3 opacity-20" />
+               <p>No hay historial disponible</p>
+            </div>
           )}
         </CardContent>
       </Card>
