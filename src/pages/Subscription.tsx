@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Crown, CreditCard, Calendar, AlertTriangle, Loader2, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 
 // Mock subscription plans since the table doesn't exist yet
 const MOCK_PLANS = [
@@ -81,12 +82,10 @@ export default function Subscription() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Planes de Suscripción</h1>
-        <p className="text-muted-foreground mt-2">
-          Elige el plan que mejor se adapte a tus necesidades
-        </p>
-      </div>
+      <InstitutionalHeader 
+        title="Planes de Suscripción" 
+        description="Elige el plan que mejor se adapte a tus necesidades."
+      />
 
       {/* Current Subscription Status */}
       {profile && (

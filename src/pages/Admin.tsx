@@ -10,6 +10,8 @@ import { Users, CreditCard, Package } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
+import { InstitutionalHeader } from "@/components/InstitutionalHeader"
+import { DataCard } from "@/components/DataCard"
 
 export default function Admin() {
   const { toast } = useToast()
@@ -113,47 +115,31 @@ export default function Admin() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Panel de Administración
-        </h1>
-        <p className="text-muted-foreground">
-          Control centralizado de usuarios, planes de suscripción y métricas del sistema.
-        </p>
-      </div>
+      <InstitutionalHeader 
+        title="Panel de Administración" 
+        description="Control centralizado de usuarios, planes de suscripción y métricas del sistema."
+      />
 
       {/* Summary Stats Row */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-slate-900 dark:to-slate-950 border-blue-100 dark:border-blue-900/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Usuarios Totales</CardTitle>
-            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{users?.length || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Registrados en la plataforma</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-slate-900 dark:to-slate-950 border-emerald-100 dark:border-emerald-900/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Suscripciones Activas</CardTitle>
-            <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{users?.filter(u => u.subscription_status === 'active').length || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">Generando ingresos recurrentes</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-50 to-white dark:from-slate-900 dark:to-slate-950 border-purple-100 dark:border-purple-900/50 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Planes Disponibles</CardTitle>
-            <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{plans.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Niveles de servicio configurados</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-3">
+        <DataCard
+          title="Usuarios Totales"
+          value={users?.length || 0}
+          subValue="Registrados en la plataforma"
+          icon={Users}
+        />
+        <DataCard
+          title="Suscripciones Activas"
+          value={users?.filter(u => u.subscription_status === 'active').length || 0}
+          subValue="Generando ingresos recurrentes"
+          icon={CreditCard}
+        />
+        <DataCard
+          title="Planes Disponibles"
+          value={plans.length}
+          subValue="Niveles de servicio configurados"
+          icon={Package}
+        />
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">

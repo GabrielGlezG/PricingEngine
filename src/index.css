@@ -8,168 +8,155 @@
 
 @layer base {
   :root {
-    /* Typography */
+    /* Typography - Professional & Clear */
     --font-heading: 'Outfit', sans-serif;
+    /* Keep Outfit for modern headers */
     --font-body: 'DM Sans', sans-serif;
+    /* High readability */
 
-    /* Core Colors - Blue Strong Palette */
-    --background: 220 20% 98%;
-    /* #F8FAFC - Gris azulado muy claro */
-    --foreground: 222 47% 11%;
-    /* #0F172A - Slate 900 */
+    /* World Bank Inspired Institutional Palette */
+
+    /* Backgrounds: Clean, Clinical, Data-First */
+    --background: 0 0% 100%;
+    /* Pure White #FFFFFF */
+    --foreground: 210 29% 24%;
+    /* Charcoal #2C353E - Soft Black */
+
     --card: 0 0% 100%;
-    /* Blanco puro */
-    --card-foreground: 222 47% 11%;
-    /* Slate 900 */
+    /* White cards */
+    --card-foreground: 210 29% 24%;
+
     --popover: 0 0% 100%;
-    /* Blanco puro */
-    --popover-foreground: 222 47% 11%;
-    /* Slate 900 */
+    --popover-foreground: 210 29% 24%;
 
-    /* Primary - Azul Intenso */
-    --primary: 217 91% 50%;
-    /* #2563EB - Blue 600 */
+    /* Primary: Institutional Navy Blue */
+    --primary: 210 100% 13%;
+    /* #002244 - Official Navy */
     --primary-foreground: 0 0% 100%;
-    /* Blanco */
 
-    /* Secondary - Azul Suave */
-    --secondary: 214 32% 91%;
-    /* #E2E8F0 - Slate 200 */
-    --secondary-foreground: 222 47% 11%;
-    /* Slate 900 */
+    /* Secondary: Action Blue */
+    --secondary: 204 70% 53%;
+    /* #33A1F2 - Bright approachable blue */
+    --secondary-foreground: 0 0% 100%;
 
-    /* Muted - Gris Azulado */
-    --muted: 220 14% 96%;
-    /* #F1F5F9 - Slate 100 */
+    /* Muted: Subtle Grays for structure */
+    --muted: 210 40% 96.1%;
+    /* #F1F5F9 */
     --muted-foreground: 215 16% 47%;
-    /* #64748B - Slate 500 */
+    /* #64748B */
 
-    /* Accent - Índigo */
-    --accent: 243 75% 59%;
-    /* #6366F1 - Indigo 500 */
+    /* Accent: Data Highlight */
+    --accent: 199 89% 48%;
+    /* #0D99D5 - Cyan/Teal mix */
     --accent-foreground: 0 0% 100%;
-    /* Blanco */
 
-    /* Success */
-    --success: 142 71% 45%;
-    /* #22C55E - Green 500 */
-    --success-foreground: 0 0% 100%;
-
-    /* Warning */
-    --warning: 38 92% 50%;
-    /* #F59E0B - Amber 500 */
-    --warning-foreground: 0 0% 100%;
-
-    /* Destructive */
-    --destructive: 0 84% 60%;
-    /* #EF4444 - Red 500 */
+    /* Functional Colors */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Border & Input */
-    --border: 214 32% 91%;
-    /* Slate 200 */
-    --input: 214 32% 91%;
-    --ring: 217 91% 50%;
-    /* Blue 600 */
-    --radius: 0.75rem;
+    --success: 142 76% 36%;
+    /* #16A34A - Trusted Green */
+    --success-foreground: 0 0% 100%;
 
-    /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    /* Slate 900 - Dark sidebar */
-    --sidebar-foreground: 214 32% 91%;
-    /* Slate 200 */
-    --sidebar-primary: 217 91% 60%;
-    /* Blue 500 */
+    --warning: 38 92% 50%;
+    /* #F59E0B */
+    --warning-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 214.3 31.8% 91.4%;
+    /* Subtle borders */
+    --input: 214.3 31.8% 91.4%;
+    --ring: 210 100% 13%;
+    /* Focus ring is Navy */
+
+    --radius: 0.5rem;
+    /* Tighter, more professional radius */
+
+    /* Sidebar - Institutional Dark */
+    --sidebar-background: 210 100% 13%;
+    /* Navy #002244 */
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 204 70% 53%;
+    /* Bright Blue highlight */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    /* Slate 800 */
-    --sidebar-accent-foreground: 214 32% 91%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 210 50% 20%;
+    /* Slightly lighter navy */
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 210 50% 20%;
+    --sidebar-ring: 204 70% 53%;
 
-    /* Chart Colors - Paleta Azul Vibrante */
-    --chart-1: 217 91% 50%;
-    /* Azul primario */
-    --chart-2: 243 75% 59%;
-    /* Índigo */
+    /* Chart Colors - Distinct & Accessible */
+    --chart-1: 210 100% 13%;
+    /* Navy */
+    --chart-2: 204 70% 53%;
+    /* Bright Blue */
     --chart-3: 199 89% 48%;
     /* Cyan */
-    --chart-4: 142 71% 45%;
-    /* Verde */
-    --chart-5: 38 92% 50%;
-    /* Ámbar */
-    --chart-6: 262 83% 58%;
-    /* Violeta */
-    --chart-7: 0 84% 60%;
-    /* Rojo */
-    --chart-8: 173 80% 40%;
+    --chart-4: 35 90% 55%;
+    /* Gold/Orange */
+    --chart-5: 142 70% 45%;
+    /* Green */
+    --chart-6: 280 60% 50%;
+    /* Purple */
+    --chart-7: 340 70% 50%;
+    /* Pink/Red */
+    --chart-8: 160 60% 45%;
     /* Teal */
   }
 
+  /* Dark mode is less prioritized in "Institutional" styles, 
+     but keeping a professional dark slate theme for completeness */
   .dark {
-    --background: 222 47% 11%;
-    /* Slate 900 */
+    --background: 215 28% 17%;
+    /* Dark Slate #1F2937 */
     --foreground: 210 40% 98%;
-    /* Slate 50 */
-    --card: 217 33% 17%;
-    /* Slate 800 */
+
+    --card: 215 28% 22%;
+    /* Lighter Slate */
     --card-foreground: 210 40% 98%;
-    /* Slate 50 */
-    --popover: 217 33% 17%;
-    /* Slate 800 */
+
+    --popover: 215 28% 22%;
     --popover-foreground: 210 40% 98%;
-    /* Slate 50 */
 
-    --primary: 217 91% 60%;
-    /* Blue 500 */
-    --primary-foreground: 0 0% 100%;
+    --primary: 204 70% 53%;
+    /* Bright Blue acts as primary in dark */
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 217 33% 17%;
-    /* Slate 800 */
+    --secondary: 215 32% 17%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 17%;
-    /* Slate 800 */
+    --muted: 215 32% 25%;
     --muted-foreground: 215 20% 65%;
-    /* Slate 400 */
 
-    --accent: 243 75% 65%;
-    /* Indigo 400 */
-    --accent-foreground: 0 0% 100%;
+    --accent: 215 32% 25%;
+    --accent-foreground: 210 40% 98%;
 
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --border: 215 32% 25%;
+    --input: 215 32% 25%;
+    --ring: 204 70% 53%;
 
-    --destructive: 0 62% 55%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 217 33% 25%;
-    /* Slate 700 */
-    --input: 217 33% 25%;
-    --ring: 217 91% 60%;
-
-    /* Sidebar - Dark */
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 214 32% 91%;
-    --sidebar-primary: 217 91% 60%;
+    /* Sidebar matches dark mode bg */
+    --sidebar-background: 215 28% 13%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 204 70% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 214 32% 91%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 215 32% 25%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 32% 25%;
+    --sidebar-ring: 204 70% 53%;
 
-    /* Chart Colors - Dark Mode */
-    --chart-1: 217 91% 70%;
-    --chart-2: 243 75% 75%;
-    --chart-3: 199 89% 65%;
-    --chart-4: 142 71% 60%;
-    --chart-5: 38 92% 65%;
-    --chart-6: 262 83% 75%;
-    --chart-7: 0 84% 75%;
-    --chart-8: 173 80% 60%;
+    /* Chart Colors adjusted for dark background */
+    --chart-1: 204 70% 60%;
+    --chart-2: 199 89% 60%;
+    --chart-3: 35 90% 65%;
+    --chart-4: 142 70% 55%;
+    --chart-5: 280 60% 60%;
+    --chart-6: 340 70% 60%;
+    --chart-7: 160 60% 55%;
+    --chart-8: 210 40% 80%;
   }
 }
 
@@ -301,10 +288,7 @@
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
   }
 
-  /* Premium Glassmorphism */
-  .glass-panel {
-    @apply bg-background/70 backdrop-blur-xl border border-white/20 shadow-xl;
-  }
+
 
   /* Enterprise Shadows */
   .shadow-premium {

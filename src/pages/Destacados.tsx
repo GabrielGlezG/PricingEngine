@@ -10,6 +10,8 @@ import { BrandHeader } from '@/components/BrandHeader'
 import { PriceEvolutionChart } from '@/components/PriceEvolutionChart'
 import { ModelsTable } from '@/components/ModelsTable'
 import { Button } from '@/components/ui/button'
+import { InstitutionalHeader } from "@/components/InstitutionalHeader"
+import { DataCard } from "@/components/DataCard"
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -248,7 +250,7 @@ export default function Destacados() {
 
   if (selectedBrand) {
     return (
-      <div className="p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
@@ -293,60 +295,35 @@ export default function Destacados() {
                 
                 {/* --- ROW 1: KEY STATS --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
-                     <div className="flex justify-between items-start mb-2">
-                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Precio Promedio</p>
-                       <Tag className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
-                     </div>
-                     <div className="flex items-baseline gap-2 mb-1">
-                       <span className="text-2xl font-bold">{brandVar ? formatPrice(brandVar.last_avg_price) : "N/A"}</span>
-                     </div>
-                     <p className="text-[10px] text-muted-foreground">
-                       {brandVar ? `Inicial: ${formatPrice(brandVar.first_avg_price)}` : ""}
-                     </p>
-                   </Card>
+                   <DataCard
+                     title="Precio Promedio"
+                     value={brandVar ? formatPrice(brandVar.last_avg_price) : "N/A"}
+                     subValue={brandVar ? `Inicial: ${formatPrice(brandVar.first_avg_price)}` : undefined}
+                     icon={Tag}
+                   />
 
-                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
-                     <div className="flex justify-between items-start mb-2">
-                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Variación Total</p>
-                       <Activity className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
-                     </div>
-                     <div className="flex items-baseline gap-2 mb-1">
-                       <span className={`text-2xl font-bold ${brandVar && brandVar.variation_percent > 0 ? 'text-destructive' : 'text-emerald-600'}`}>
-                         {brandVar ? `${brandVar.variation_percent > 0 ? '+' : ''}${brandVar.variation_percent.toFixed(1)}%` : "0%"}
-                       </span>
-                     </div>
-                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <span className="font-medium text-foreground/80">Periodo:</span>
-                        {brandVar && data.summary.dateRange ? (
-                          `${new Date(data.summary.dateRange.from).toLocaleDateString()} - ${new Date(data.summary.dateRange.to).toLocaleDateString()}`
-                        ) : "En todo el historial"}
-                     </p>
-                   </Card>
+                   <DataCard
+                     title="Variación Total"
+                     value={brandVar ? `${brandVar.variation_percent > 0 ? '+' : ''}${brandVar.variation_percent.toFixed(1)}%` : "0%"}
+                     subValue={data.summary.dateRange ? `${new Date(data.summary.dateRange.from).toLocaleDateString()} - ${new Date(data.summary.dateRange.to).toLocaleDateString()}` : "Histórico completo"}
+                     icon={Activity}
+                     className={brandVar && brandVar.variation_percent > 0 ? "border-l-4 border-l-destructive/50" : "border-l-4 border-l-emerald-500/50"}
+                   />
 
-                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
-                     <div className="flex justify-between items-start mb-2">
-                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Modelos</p>
-                       <Package className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
-                     </div>
-                     <div className="flex items-baseline gap-2 mb-1">
-                       <span className="text-2xl font-bold">{brandModels?.productCount || 0}</span>
-                     </div>
-                     <p className="text-[10px] text-muted-foreground">En catálogo actual</p>
-                   </Card>
+                   <DataCard
+                     title="Modelos Activos"
+                     value={brandModels?.productCount || 0}
+                     subValue="En catálogo actual"
+                     icon={Package}
+                   />
 
-                   <Card className="p-4 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group hover:border-primary/50 transition-colors">
-                     <div className="flex justify-between items-start mb-2">
-                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Volatilidad</p>
-                       <BarChart3 className="h-5 w-5 text-primary/40 group-hover:text-primary transition-colors" />
-                     </div>
-                     <div className="flex items-baseline gap-2 mb-1">
-                        <span className="text-2xl font-bold">{brandVol.length > 0 ? "Alta" : "Baja"}</span>
-                     </div>
-                     <p className="text-[10px] text-muted-foreground">
-                        {brandVol.length} modelos inestables
-                     </p>
-                   </Card>
+                   <DataCard
+                     title="Nivel de Volatilidad"
+                     value={brandVol.length > 0 ? "Alta" : "Baja"}
+                     subValue={`${brandVol.length} modelos inestables`}
+                     icon={BarChart3}
+                     className={brandVol.length > 0 ? "border-destructive/20" : ""}
+                   />
                 </div>
 
                 {/* --- ROW 2: CHART & SIDEBAR --- */}
@@ -450,13 +427,11 @@ export default function Destacados() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="display-text mb-2">Nuestras Marcas</h1>
-        <p className="subtitle">
-          Explora toda la información histórica y actual de nuestras {data.allBrands?.length || 0} marcas disponibles.
-        </p>
-      </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <InstitutionalHeader
+        title="Nuestras Marcas"
+        description={`Explora el catálogo histórico y actual de las ${data.allBrands?.length || 0} marcas monitoreadas.`} 
+      />
 
        {/* Nuestras Marcas - Grid de Logos Clean */}
        <div className="bg-card/30 rounded-3xl p-8 border border-border/40 backdrop-blur-sm">

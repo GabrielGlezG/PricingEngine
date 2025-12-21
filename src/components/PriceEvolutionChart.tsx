@@ -35,6 +35,7 @@ import {
   Filler,
 } from "chart.js";
 import { TrendingUp, Calendar, RefreshCw } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, useMemo } from "react";
 
 // Register ChartJS components
@@ -450,11 +451,12 @@ export function PriceEvolutionChart({
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {evolutionData.models.map((model, index) => (
-                <Badge key={model} variant="outline" className="text-xs">
+                <Badge key={model} variant="outline" className="text-xs flex items-center gap-2 py-1 pr-3">
                   <div
-                    className="w-2 h-2 rounded-full mr-2"
+                    className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: getLineColor(index) }}
                   />
+                  <BrandLogo brand={model.split(' ')[0]} size="sm" showName={false} className="mr-1" />
                   {model}
                 </Badge>
               ))}

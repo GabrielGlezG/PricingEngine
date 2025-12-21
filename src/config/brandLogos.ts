@@ -102,6 +102,7 @@ const brandLogoMap: Record<string, string> = {
   "MARUTI SUZUKI": `${LOGO_CDN_ALT}/maruti-suzuki.png`,
   "PROTON": `${LOGO_CDN_ALT}/proton.png`,
   "PERODUA": `${LOGO_CDN_ALT}/perodua.png`,
+  "MAXUS": `${LOGO_CDN_ALT}/maxus.png`,
 };
 
 /**
@@ -111,7 +112,7 @@ const brandLogoMap: Record<string, string> = {
  */
 export function getBrandLogo(brand: string): string | null {
   if (!brand) return null;
-  
+
   const normalizedBrand = brand.toUpperCase().trim();
   return brandLogoMap[normalizedBrand] || null;
 }
@@ -123,7 +124,7 @@ export function getBrandLogo(brand: string): string | null {
  */
 export function getBrandInitials(brand: string): string {
   if (!brand) return "?";
-  
+
   const words = brand.trim().split(/\s+/);
   if (words.length === 1) {
     return words[0].substring(0, 2).toUpperCase();
@@ -138,13 +139,13 @@ export function getBrandInitials(brand: string): string {
  */
 export function getBrandColor(brand: string): string {
   if (!brand) return "hsl(217, 91%, 50%)";
-  
+
   // Generate a deterministic color based on brand name
   let hash = 0;
   for (let i = 0; i < brand.length; i++) {
     hash = brand.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   const hue = Math.abs(hash % 360);
   return `hsl(${hue}, 70%, 45%)`;
 }

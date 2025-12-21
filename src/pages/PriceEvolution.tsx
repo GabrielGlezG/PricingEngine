@@ -9,6 +9,8 @@ import { hslVar, cn } from "@/lib/utils"
 import { BrandLogo } from "@/components/BrandLogo"
 import { BrandHeader } from "@/components/BrandHeader"
 import { DashboardFilters } from "@/components/DashboardFilters"
+import { InstitutionalHeader } from "@/components/InstitutionalHeader"
+import { CleanEmptyState } from "@/components/CleanEmptyState"
 
 export default function PriceEvolution() {
   const { theme } = useTheme()
@@ -115,14 +117,10 @@ export default function PriceEvolution() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-2 pb-6 border-b border-border/40">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Evolución de Precios
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl">
-          Visualiza y analiza cómo han cambiado los precios históricos de cada modelo en el tiempo.
-        </p>
-      </div>
+      <InstitutionalHeader 
+        title="Evolución de Precios"
+        description="Análisis histórico de tendencias y comportamiento del mercado."
+      />
 
       {/* Brand Header when brands are selected */}
       {filters.brand.length > 0 && (
