@@ -25,10 +25,10 @@ export function getChartPalette(count: number = 12, alpha?: number): string[] {
 export const barChartColors = {
   // Color principal para barras simples
   primary: () => hslVar("--primary"),
-  
+
   // Paleta para barras múltiples (cada barra un color diferente)
   multiBar: (count: number = 12) => getChartPalette(count),
-  
+
   // Opacidad para hover
   hoverAlpha: 0.8,
 };
@@ -48,20 +48,20 @@ export const lineChartColors = {
     () => hslVar("--chart-7"),
     () => hslVar("--chart-8"),
   ],
-  
+
   // Obtiene un color de línea por índice
   getLineColor: (index: number) => {
     const colorVar = `--chart-${(index % 8) + 1}`;
     return hslVar(colorVar);
   },
-  
+
   // Grosor de línea
   borderWidth: 2,
-  
+
   // Radio de puntos
   pointRadius: 4,
   pointHoverRadius: 6,
-  
+
   // Tensión de la curva (0 = recta, 1 = muy curva)
   tension: 0.4,
 };
@@ -72,10 +72,10 @@ export const lineChartColors = {
 export const pieChartColors = {
   // Paleta de colores para secciones
   palette: (count: number = 12) => getChartPalette(count),
-  
+
   // Grosor del borde
   borderWidth: 2,
-  
+
   // Color del borde (usa el color de la tarjeta)
   borderColor: () => hslVar("--card"),
 };
@@ -86,7 +86,7 @@ export const pieChartColors = {
 export const bubbleChartColors = {
   // Color principal para burbujas
   primary: () => hslVar("--primary"),
-  
+
   // Colores múltiples para diferentes series
   multiple: (count: number = 12) => getChartPalette(count),
 };
@@ -122,7 +122,7 @@ export function createMultiColorBarDataset(
   label: string = "Cantidad"
 ): any {
   const colors = getChartPalette(data.length);
-  
+
   return {
     label,
     data,
@@ -156,7 +156,7 @@ export function createLineDataset(
   index: number
 ): any {
   const color = lineChartColors.getLineColor(index);
-  
+
   return {
     label,
     data,
@@ -195,8 +195,9 @@ export function getTooltipOptions(customCallbacks?: any): any {
 export function getScaleOptions(): any {
   return {
     grid: {
-      color: axisColors.gridColor(),
+      color: hslVar("--border", 0.4),
       lineWidth: axisColors.gridLineWidth,
+      borderDash: [4, 4],
     },
     ticks: {
       color: axisColors.tickColor(),

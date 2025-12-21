@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency, CURRENCY_SYMBOLS } from "@/contexts/CurrencyContext";
 import { useLastUpdate } from "@/contexts/LastUpdateContext";
 import {
   Card,
@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { InstitutionalHeader } from "@/components/InstitutionalHeader";
+import { DataCard } from "@/components/DataCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -41,6 +43,7 @@ import {
   Filter,
   Check,
   ChevronDown,
+  Download
 } from "lucide-react";
 import { Bar, Line, Doughnut, Pie, Bubble } from "react-chartjs-2";
 import {
@@ -56,7 +59,9 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { brandAxisLogoPlugin } from "@/lib/chartPlugins";
+import { getBrandLogo } from "@/config/brandLogos";
 import { DateRange } from "react-day-picker";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 // import { CurrencySelector } from "@/components/CurrencySelector";
@@ -76,6 +81,7 @@ import { useTheme } from "next-themes";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { exportDashboardToExcel } from "@/lib/exportUtils";
 
 // Register ChartJS components
 ChartJS.register(
@@ -187,7 +193,7 @@ interface AnalyticsData {
 }
 
 export default function Dashboard() {
-  const { formatPrice, currency } = useCurrency();
+  const { formatPrice, currency, convertPrice } = useCurrency();
   const { setLastUpdate } = useLastUpdate();
   const { theme } = useTheme();
 
@@ -236,6 +242,9 @@ export default function Dashboard() {
     model: [] as string[],
     submodel: [] as string[],
   });
+
+  // Refs for Charts to capture images
+  const chartRefs = useRef<Record<string, any>>({});
 
   // State to control popover visibility
   const [tipoVehiculoOpen, setTipoVehiculoOpen] = useState(false);
@@ -641,112 +650,104 @@ export default function Dashboard() {
   }
 
 
+  const handleExport = async () => {
+    if (analytics) {
+      const images: Record<string, string> = {};
+      
+      // Capture base64 from each chart
+      Object.keys(chartRefs.current).forEach((key) => {
+        const chart = chartRefs.current[key];
+        if (chart) {
+          try {
+            images[key] = chart.toBase64Image();
+          } catch (e) {
+            console.warn(`Could not export chart image for ${key}:`, e);
+          }
+        }
+      });
+      
+      await exportDashboardToExcel(analytics, images, CURRENCY_SYMBOLS[currency], convertPrice);
+    }
+  };
+  
+  // Helper to set refs
+  const setChartRef = (key: string) => (element: any) => {
+      if (element) {
+          chartRefs.current[key] = element;
+      }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-center">{/* <CurrencySelector /> */}</div>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <InstitutionalHeader
+          title="Dashboard Principal"
+          description="Resumen ejecutivo de métricas clave y estado del mercado."
+        />
+        <Button 
+          onClick={handleExport}
+          disabled={!analytics}
+          variant="outline" 
+          className="gap-2 border-primary/20 hover:bg-primary/5 text-primary hover:text-primary self-start md:self-center"
+        >
+          <Download className="h-4 w-4" />
+          Exportar Excel
+        </Button>
+      </div>
+
+      <div className="flex justify-center mb-6">{/* <CurrencySelector /> */}</div>
 
       <DashboardFilters
         filters={filters}
         setFilters={setFilters}
-        tiposVehiculo={tiposVehiculo}
-        brands={brands}
-        models={models}
-        submodels={submodels}
+        tiposVehiculo={tiposVehiculo || []}
+        brands={brands || []}
+        models={models || []}
+        submodels={submodels || []}
         refetchAnalytics={refetch}
         isRefetchingAnalytics={isRefetching}
-
       />
 
-      {/* Brand Header - Shows when brands are selected */}
+      {/* Brand Header when brands are selected */}
       {filters.brand.length > 0 && (
         <BrandHeader 
-          brands={filters.brand} 
+          brands={filters.brand}
           tipoVehiculo={filters.tipoVehiculo}
           models={filters.model}
         />
       )}
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
-        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-brand opacity-80" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Package className="h-6 w-6 text-primary" />
-            </div>
-            <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
-              Inventario
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Total Modelos</p>
-            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
-              {analytics.metrics.total_models}
-            </h3>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <span className="font-medium text-primary mr-1">{analytics.metrics.total_brands}</span> marcas activas
-            </div>
-          </div>
-        </div>
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <DataCard
+          title="Inventario Total"
+          value={analytics.metrics.total_models}
+          subValue={`${analytics.metrics.total_brands} marcas activas`}
+          icon={Package}
+        />
+        
+        <DataCard
+          title="Precio Promedio"
+          value={formatPrice(analytics.metrics.avg_price)}
+          subValue="Media del mercado actual"
+          icon={DollarSign}
+          trend={{ value: Number(analytics.metrics.variation_coefficient.toFixed(1)), label: "Var", positive: true }}
+        />
 
-        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1 bg-success/60" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center group-hover:bg-success/20 transition-colors">
-              <DollarSign className="h-6 w-6 text-success" />
-            </div>
-             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
-              Promedio
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Promedio</p>
-            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
-              {formatPrice(analytics.metrics.avg_price)}
-            </h3>
-             <div className="flex items-center text-xs text-muted-foreground">
-              Var: <span className="font-medium ml-1 text-foreground">{analytics.metrics.variation_coefficient.toFixed(1)}%</span>
-            </div>
-          </div>
-        </div>
+        <DataCard
+          title="Precio Mínimo"
+          value={formatPrice(analytics.metrics.min_price)}
+          subValue="Base de entrada"
+          icon={TrendingDown}
+          className="border-l-4 border-l-warning"
+        />
 
-        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1 bg-warning/60" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-warning/10 flex items-center justify-center group-hover:bg-warning/20 transition-colors">
-              <TrendingDown className="h-6 w-6 text-warning" />
-            </div>
-             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
-              Mínimo
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Mínimo</p>
-            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
-              {formatPrice(analytics.metrics.min_price)}
-            </h3>
-            <p className="text-xs text-muted-foreground">Valor más accesible</p>
-          </div>
-        </div>
-
-        <div className="group relative bg-card rounded-2xl p-6 shadow-premium hover:shadow-premium-hover transition-all duration-300 border border-border/40 hover:-translate-y-1 overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-1 bg-accent/60" />
-          <div className="flex items-start justify-between mb-4">
-            <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-              <TrendingUp className="h-6 w-6 text-accent" />
-            </div>
-             <span className="text-xs font-medium bg-muted/60 px-2.5 py-1 rounded-full text-muted-foreground border border-border/50">
-              Máximo
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Precio Máximo</p>
-            <h3 className="text-3xl font-heading font-bold text-foreground mb-1 tracking-tight">
-              {formatPrice(analytics.metrics.max_price)}
-            </h3>
-            <p className="text-xs text-muted-foreground">Valor premium</p>
-          </div>
-        </div>
+        <DataCard
+          title="Precio Máximo"
+          value={formatPrice(analytics.metrics.max_price)}
+          subValue="Tope de gama"
+          icon={TrendingUp}
+          className="border-l-4 border-l-secondary"
+        />
       </div>
 
       <Tabs
@@ -778,16 +779,17 @@ export default function Dashboard() {
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  Modelos por Tipo de Vehículo
+                  Composición del Inventario por Segmento
                 </CardTitle>
                 <CardDescription className="subtitle">
-                  Distribución según clasificación (SUV, Sedán, etc.)
+                  Desglose porcentual de la flota según clasificación vehicular
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
+                      ref={setChartRef('inventory')}
                       key={`bar-category-${chartKey}`}
                       data={{
                         labels: (
@@ -855,12 +857,12 @@ export default function Dashboard() {
                 <div className="space-y-1">
                   <CardTitle className="card-title flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-primary" />
-                    Análisis de Precios
+                    Estructura de Precios por Categoría
                   </CardTitle>
                   <CardDescription className="subtitle">
                     {selectedPriceSegment === "all" 
-                      ? "Promedio por Tipo de Vehículo" 
-                      : `Promedio por Marca en ${selectedPriceSegment}`}
+                      ? "Evaluación comparativa de medias por clasificación" 
+                      : `Análisis de precios por Marca en ${selectedPriceSegment}`}
                   </CardDescription>
                 </div>
                 <div className="w-[200px]">
@@ -886,6 +888,8 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
+                      ref={setChartRef('price_breakdown')}
+                      plugins={[brandAxisLogoPlugin]}
                       key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
                       data={{
                         labels: selectedPriceSegment === "all"
@@ -918,6 +922,9 @@ export default function Dashboard() {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                          padding: { bottom: 40 }
+                        },
                         plugins: {
                           legend: { display: false },
                           tooltip: {
@@ -939,7 +946,12 @@ export default function Dashboard() {
                             grid: { display: false },
                             ticks: {
                               ...getScaleOptions().ticks,
-                              color: axisColor,
+                              color: (c) => {
+                                const label = c.chart.data.labels?.[c.index] as string;
+                                return getBrandLogo(label) ? 'transparent' : axisColor;
+                              },
+                              maxRotation: 0,
+                              minRotation: 0,
                             }
                           },
                           y: {
@@ -970,16 +982,17 @@ export default function Dashboard() {
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="card-title flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                Precio vs Modelo Principal
+                Matriz de Posicionamiento Precio-Volumen
               </CardTitle>
               <CardDescription className="subtitle">
-                Tamaño proporcional al volumen de variantes
+                Correlación entre precio promedio y volumen de variantes
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="h-[320px]">
                 {mounted && (
                   <Bubble
+                    ref={setChartRef('positioning')}
                     key={`bubble-principal-${chartKey}`}
                     data={{
                       datasets: [
@@ -1071,10 +1084,10 @@ export default function Dashboard() {
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
-                  Precios por Categoría
+                  Dispersión de Precios por Segmento
                 </CardTitle>
                 <CardDescription className="subtitle">
-                  Mediana y dispersión de precios por tipo
+                  Análisis de cuartiles (min, avg, max) para evaluar variabilidad
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
@@ -1082,6 +1095,7 @@ export default function Dashboard() {
                   {mounted && (
                     <Bar
                       key={`boxplot-price-category-${chartKey}`}
+                      plugins={[brandAxisLogoPlugin]}
                       data={{
                         labels: (
                           analytics.chart_data?.prices_by_category || []
@@ -1119,6 +1133,9 @@ export default function Dashboard() {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                          padding: { bottom: 30 }
+                        },
                         plugins: {
                           legend: {
                             position: "top",
@@ -1149,13 +1166,7 @@ export default function Dashboard() {
                         scales: {
                           x: {
                             ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              maxRotation: 45,
-                              minRotation: 45,
-                              font: { size: 10 },
-                            },
+
                           },
                           y: {
                             ...getScaleOptions(),
@@ -1178,17 +1189,19 @@ export default function Dashboard() {
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-primary" />
-                  Precios Promedio por Marca
+                  Benchmarking de Precios por Fabricante
                 </CardTitle>
                 <CardDescription className="subtitle">
-                  Comparación de precios entre fabricantes
+                  Comparativa transversal de valores promedio por marca
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[280px]">
                   {mounted && (
                     <Line
+                      ref={setChartRef('benchmarking')}
                       key={`line-brand-${chartKey}`}
+                      plugins={[brandAxisLogoPlugin]}
                       data={{
                         labels: (
                           analytics.chart_data?.prices_by_brand || []
@@ -1215,6 +1228,27 @@ export default function Dashboard() {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                          padding: { bottom: 40 }
+                        },
+                        scales: {
+                          x: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              color: 'transparent',
+                              font: { size: 14 },
+                            },
+                          },
+                          y: {
+                            ...getScaleOptions(),
+                            ticks: {
+                              ...getScaleOptions().ticks,
+                              color: axisColor,
+                              callback: (value) => formatPrice(value as number),
+                            },
+                          },
+                        },
                         plugins: {
                           legend: { display: false },
                           tooltip: {
@@ -1230,25 +1264,6 @@ export default function Dashboard() {
                             },
                           },
                         },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              maxRotation: 45,
-                              minRotation: 45,
-                            },
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              callback: (value) => formatPrice(value as number),
-                            },
-                          },
-                        },
                       }}
                     />
                   )}
@@ -1260,10 +1275,11 @@ export default function Dashboard() {
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <Activity className="h-5 w-5 text-primary" />
-                  Variación de Precios por Marca
+                  Índice de Volatilidad Histórica
                 </CardTitle>
                 <CardDescription className="subtitle">
                    <div className="flex flex-col gap-3">
+                       <p>Variación porcentual histórica de precios por marca.</p>
                        {/* Period Buttons */}
                        <div className="flex gap-2">
                            {(['total', 'month'] as const).map((mode) => (
@@ -1344,7 +1360,9 @@ export default function Dashboard() {
                 <div className="h-[280px]">
                   {mounted && (
                     <Line
+                      ref={setChartRef('variation')}
                       key={`area-variation-${chartKey}`}
+                      plugins={[brandAxisLogoPlugin]}
                       data={{
                         labels: (
                           analytics.chart_data?.brand_variations || []
@@ -1383,6 +1401,9 @@ export default function Dashboard() {
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                          padding: { bottom: 40 },
+                        },
                         plugins: {
                           legend: { display: false },
                           tooltip: {
@@ -1404,9 +1425,10 @@ export default function Dashboard() {
                             ...getScaleOptions(),
                             ticks: {
                               ...getScaleOptions().ticks,
-                              color: axisColor,
+                              color: 'transparent',
                               maxRotation: 45,
                               minRotation: 45,
+                              font: { size: 14 },
                             },
                           },
                           y: {
@@ -1422,6 +1444,9 @@ export default function Dashboard() {
                     />
                   )}
                 </div>
+                
+
+
               </CardContent>
             </Card>
 
@@ -1454,7 +1479,7 @@ export default function Dashboard() {
 
                 <CardDescription className="subtitle">
                     <div className="flex flex-col gap-3 pt-2">
-                       <p>Variación de precios en el tiempo</p>
+                       <p>Fluctuaciones porcentuales de precios en el periodo seleccionado.</p>
                        
                        {/* Period Buttons */}
                        <div className="flex gap-2">
@@ -1536,6 +1561,7 @@ export default function Dashboard() {
                 <div className="h-[280px]">
                   {mounted && (
                     <Bar
+                      ref={setChartRef('volatility')}
                       key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrand}`}
                       data={{
                         // Collect all unique dates from all series to ensure x-axis alignment
@@ -1566,17 +1592,10 @@ export default function Dashboard() {
                         },
                         plugins: {
                           legend: { 
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                color: legendColor,
-                                boxWidth: 12,
-                                font: { size: 10 }
-                            }
+                            display: false,
                           },
                           tooltip: {
-                            // ... existing tooltip ...
-                             backgroundColor: tooltipColors.backgroundColor(),
+                            backgroundColor: tooltipColors.backgroundColor(),
                             borderColor: tooltipColors.borderColor(),
                             borderWidth: tooltipColors.borderWidth,
                             titleColor: tooltipColors.titleColor(),
@@ -1614,6 +1633,22 @@ export default function Dashboard() {
                       }}
                     />
                   )}
+                </div>
+
+                {/* Custom Legend with Logos */}
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 px-2">
+                  {(analytics.chart_data?.volatility_timeseries || []).map((series, idx) => (
+                    <div key={series.entity} className="flex items-center gap-2">
+                       <div 
+                         className="w-3 h-3 rounded-full shrink-0" 
+                         style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
+                       />
+                       <div className="flex items-center gap-1.5">
+                          <BrandLogo brand={series.entity} size="sm" showName={false} />
+                          <span className="text-xs text-muted-foreground font-medium">{series.entity}</span>
+                       </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
