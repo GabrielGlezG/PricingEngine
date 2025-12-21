@@ -678,11 +678,12 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-4 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <InstitutionalHeader
           title="Dashboard Principal"
           description="Resumen ejecutivo de métricas clave y estado del mercado."
+          className="mb-1 pb-4"
         />
         <Button 
           onClick={handleExport}
@@ -694,8 +695,6 @@ export default function Dashboard() {
           Exportar Excel
         </Button>
       </div>
-
-      <div className="flex justify-center mb-6">{/* <CurrencySelector /> */}</div>
 
       <DashboardFilters
         filters={filters}
@@ -738,7 +737,7 @@ export default function Dashboard() {
           value={formatPrice(analytics.metrics.min_price)}
           subValue="Base de entrada"
           icon={TrendingDown}
-          className="border-l-4 border-l-warning"
+          
         />
 
         <DataCard
@@ -746,7 +745,7 @@ export default function Dashboard() {
           value={formatPrice(analytics.metrics.max_price)}
           subValue="Tope de gama"
           icon={TrendingUp}
-          className="border-l-4 border-l-secondary"
+          
         />
       </div>
 
