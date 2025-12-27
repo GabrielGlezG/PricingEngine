@@ -23,8 +23,10 @@ import {
 import { BrandLogo } from "@/components/BrandLogo"
 import { BrandHeader } from "@/components/BrandHeader"
 import { DashboardFilters } from "@/components/DashboardFilters"
+import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters"
 import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 import { CleanEmptyState } from "@/components/CleanEmptyState"
+
 
 ChartJS.register(
   CategoryScale,
@@ -64,6 +66,7 @@ export default function Compare() {
   const [mounted, setMounted] = useState(false)
   const [chartKey, setChartKey] = useState(0)
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+
   
   const [filters, setFilters] = useState({
     tipoVehiculo: [] as string[],
@@ -72,9 +75,6 @@ export default function Compare() {
     submodel: [] as string[],
     priceRange: [0, 2000000] as [number, number]
   })
-
-  // State to control popover visibility
-
 
   useEffect(() => {
     ChartJS.defaults.color = hslVar('--foreground');
@@ -91,62 +91,16 @@ export default function Compare() {
     setMounted(true);
   }, []);
 
-  // Fetch filter options
-  const { data: tiposVehiculo } = useQuery({
-    queryKey: ['tiposVehiculo-compare'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('tipo_vehiculo')
-        .not('tipo_vehiculo', 'is', null)
-        .order('tipo_vehiculo')
 
-      if (error) throw error
-      return [...new Set(data.map((p) => p.tipo_vehiculo).filter(Boolean))] as string[]
-    }
-  })
 
-  const { data: brands } = useQuery({
-    queryKey: ['brands-compare', filters.tipoVehiculo],
-    queryFn: async () => {
-      let query = supabase.from('products').select('brand').order('brand')
-      if (filters.tipoVehiculo.length > 0) {
-        query = query.in('tipo_vehiculo', filters.tipoVehiculo)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.brand))]
-    }
-  })
 
-  const { data: models } = useQuery({
-    queryKey: ['models-compare', filters.brand],
-    queryFn: async () => {
-      let query = supabase.from('products').select('model').order('model')
-      if (filters.brand.length > 0) {
-        query = query.in('brand', filters.brand)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.model))]
-    }
-  })
-
-  const { data: submodels } = useQuery({
-    queryKey: ['submodels-compare', filters.brand, filters.model],
-    queryFn: async () => {
-      let query = supabase.from('products').select('submodel').not('submodel', 'is', null).order('submodel')
-      if (filters.brand.length > 0) {
-        query = query.in('brand', filters.brand)
-      }
-      if (filters.model.length > 0) {
-        query = query.in('model', filters.model)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.submodel).filter(Boolean))]
-    }
-  })
+  // Fetch filter options using interconnected hook
+  const { 
+    tiposVehiculo, 
+    brands, 
+    models, 
+    submodels 
+  } = useInterconnectedFilters(filters, setFilters, "compare");
 
   // Fetch products for comparison
   const { data: products } = useQuery({
@@ -408,6 +362,7 @@ export default function Compare() {
               
               <div className="h-[300px] sm:h-[400px]">
                 {mounted && <Line
+
                   key={`compare-price-evolution-${chartKey}`}
                   data={{
                     labels: comparisonData[0]?.priceData.map(d => d.date) || [],

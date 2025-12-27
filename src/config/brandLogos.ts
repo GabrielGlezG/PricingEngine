@@ -105,10 +105,41 @@ const brandLogoMap: Record<string, string> = {
   "MAXUS": `${LOGO_CDN_ALT}/maxus.png`,
 };
 
+
+const SVG_CDN_BASE = "https://www.vectorlogo.zone/logos";
+
+/**
+ * Get SVG logo URL for a car brand (Primary Source)
+ * @param brand - The brand name
+ * @returns The SVG URL
+ */
+export function getBrandSvgUrl(brand: string): string | null {
+  if (!brand) return null;
+
+  // Normalization for vectorlogo.zone slugs
+  let slug = brand.toLowerCase().trim()
+    .replace(/\s+/g, '-')     // Spaces to hyphens
+    .replace(/\.+/g, '')      // Remove dots (e.g. V.W -> vw)
+    .replace(/[^a-z0-9-]/g, ''); // Remove other special chars
+
+  // Handle known special cases for vectorlogo.zone
+  const specialCases: Record<string, string> = {
+    "mercedes": "mercedes-benz",
+    "vw": "volkswagen",
+    "chevy": "chevrolet"
+  };
+
+  if (specialCases[slug]) {
+    slug = specialCases[slug];
+  }
+
+  return `${SVG_CDN_BASE}/${slug}/${slug}-icon.svg`;
+}
+
 /**
  * Get logo URL for a car brand
  * @param brand - The brand name (case insensitive)
- * @returns The logo URL or null if not found
+ * @returns The logo URL (PNG) or null if not found
  */
 export function getBrandLogo(brand: string): string | null {
   if (!brand) return null;
