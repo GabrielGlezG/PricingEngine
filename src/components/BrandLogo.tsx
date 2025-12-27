@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { getBrandLogo, getBrandInitials, getBrandColor } from "@/config/brandLogos";
+import { useState, useEffect } from "react";
+import { getBrandLogo, getBrandInitials, getBrandColor, getBrandSvgUrl } from "@/config/brandLogos";
 import { cn } from "@/lib/utils";
 
 interface BrandLogoProps {
@@ -11,18 +11,18 @@ interface BrandLogoProps {
 
 const sizeClasses = {
   sm: "w-5 h-5",
-  md: "w-7 h-7",
-  lg: "w-10 h-10",
-  xl: "w-16 h-16",
-  "2xl": "w-24 h-24",
+  md: "w-8 h-8",
+  lg: "w-12 h-12",
+  xl: "w-20 h-20",
+  "2xl": "w-32 h-32",
 };
 
 const fallbackSizeClasses = {
   sm: "w-5 h-5 text-[10px]",
-  md: "w-7 h-7 text-xs",
-  lg: "w-10 h-10 text-sm",
-  xl: "w-16 h-16 text-xl",
-  "2xl": "w-24 h-24 text-3xl",
+  md: "w-8 h-8 text-xs",
+  lg: "w-12 h-12 text-base",
+  xl: "w-20 h-20 text-xl",
+  "2xl": "w-32 h-32 text-4xl",
 };
 
 const nameSizeClasses = {
@@ -34,25 +34,47 @@ const nameSizeClasses = {
 };
 
 export function BrandLogo({ brand, size = "md", className, showName = true }: BrandLogoProps) {
-  const [imageError, setImageError] = useState(false);
-  const logoUrl = getBrandLogo(brand);
+  const [renderMode, setRenderMode] = useState<'svg' | 'png' | 'initials'>('svg');
+  
+  const svgUrl = getBrandSvgUrl(brand);
+  const pngUrl = getBrandLogo(brand);
   const initials = getBrandInitials(brand);
   const brandColor = getBrandColor(brand);
 
+  useEffect(() => {
+    setRenderMode('svg');
+  }, [brand]);
+
+  const handleError = () => {
+    if (renderMode === 'svg') {
+      // SVG failed, try PNG if available, otherwise initials
+      if (pngUrl) setRenderMode('png');
+      else setRenderMode('initials');
+    } else {
+      // PNG failed (or wasn't available), use initials
+      setRenderMode('initials');
+    }
+  };
+
+  const showImage = renderMode !== 'initials';
+  const currentUrl = renderMode === 'svg' ? svgUrl : pngUrl;
+
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      {logoUrl && !imageError ? (
+      {showImage && currentUrl ? (
         <div className={cn(
-          "relative flex-shrink-0 rounded-xl overflow-hidden bg-white p-1 shadow-sm",
+          "relative flex-shrink-0 rounded-xl overflow-hidden bg-white shadow-sm flex items-center justify-center",
           sizeClasses[size],
-          size === "xl" && "p-2 shadow-md",
-          size === "2xl" && "p-3 shadow-lg"
+          size === "xl" && "shadow-md",
+          size === "2xl" && "shadow-lg",
+          renderMode === 'svg' ? "p-1.5" : "p-1" // Slightly more padding for SVGs to prevent edge clipping
         )}>
           <img
-            src={logoUrl}
+            key={`${brand}-${renderMode}`} // Force re-render on mode change
+            src={currentUrl}
             alt={`${brand} logo`}
             className="w-full h-full object-contain"
-            onError={() => setImageError(true)}
+            onError={handleError}
             loading="lazy"
           />
         </div>
@@ -70,10 +92,11 @@ export function BrandLogo({ brand, size = "md", className, showName = true }: Br
         </div>
       )}
       {showName && (
-        <span className={cn("truncate font-heading font-semibold", nameSizeClasses[size])}>
+        <span className={cn("truncate font-heading font-semibold text-foreground/80", nameSizeClasses[size])}>
           {brand}
         </span>
       )}
     </div>
   );
 }
+

@@ -36,43 +36,16 @@ function normalizeEstado(value: any): 'nuevo' | 'vigente' | 'inactivo' {
   return 'vigente';
 }
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+async function processBackground(jsonData: JsonData[], batchId: string, supabaseClient: any) {
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { data: jsonData, batchId } = await req.json();
-    console.log('Processing JSON upload with batchId:', batchId);
-    console.log('Data length:', jsonData.length);
-
-    // Create scraping job
-    const { data: job, error: jobError } = await supabaseClient
-      .from('scraping_jobs')
-      .insert({
-        id: batchId,
-        status: 'processing',
-        total_products: jsonData.length,
-        completed_products: 0
-      })
-      .select()
-      .single();
-
-    if (jobError) {
-      console.error('Error creating job:', jobError);
-      throw jobError;
-    }
-
     let processedCount = 0;
     const results = [];
 
-    for (const item of jsonData as JsonData[]) {
+    console.log(`[Background] Starting to process ${jsonData.length} items for job ${batchId}`);
+
+    for (const item of jsonData) {
+      processedCount++; // Increment count for every item attempted
+
       try {
         // Validate required fields first
         const categoria = item["Categoría"] || item.Categoría;
@@ -81,22 +54,18 @@ Deno.serve(async (req) => {
         const precioTexto = item.Precio_Texto;
 
         if (!categoria || categoria.trim() === '') {
-          console.error('Missing or empty Categoría field');
           results.push({ item, error: 'Campo obligatorio faltante: Categoría' });
           continue;
         }
         if (!modeloPrincipal || modeloPrincipal.trim() === '') {
-          console.error('Missing or empty Modelo Principal field');
           results.push({ item, error: 'Campo obligatorio faltante: Modelo Principal' });
           continue;
         }
         if (!modelo || modelo.trim() === '') {
-          console.error('Missing or empty Modelo field');
           results.push({ item, error: 'Campo obligatorio faltante: Modelo' });
           continue;
         }
         if (!precioTexto || precioTexto.trim() === '') {
-          console.error('Missing or empty Precio_Texto field');
           results.push({ item, error: 'Campo obligatorio faltante: Precio_Texto' });
           continue;
         }
@@ -106,9 +75,7 @@ Deno.serve(async (req) => {
         const fecha = item.Fecha || new Date().toISOString().split('T')[0];
         const timestamp = item.Timestamp || new Date().toISOString();
 
-        console.log('Processing item with UID:', uid);
-        
-        // Extract 'estado' from the incoming data (case-insensitive), default to 'vigente'
+        // Extract 'estado'
         let rawEstado: unknown = null;
         for (const key in item as any) {
           if (key && key.toLowerCase() === 'estado') {
@@ -117,9 +84,8 @@ Deno.serve(async (req) => {
           }
         }
         const estado = normalizeEstado(rawEstado);
-        console.log('Determined estado:', estado);
 
-        // Extract 'tipo_vehiculo' from the incoming data (case-insensitive)
+        // Extract 'tipo_vehiculo'
         let tipoVehiculo: string | null = null;
         for (const key in item as any) {
           if (key && (key.toLowerCase() === 'tipo_vehiculo' || key.toLowerCase() === 'tipovehiculo' || key.toLowerCase() === 'tipo vehiculo')) {
@@ -127,7 +93,6 @@ Deno.serve(async (req) => {
             break;
           }
         }
-        console.log('Determined tipo_vehiculo:', tipoVehiculo);
 
         const productData = {
           brand: categoria,
@@ -139,37 +104,17 @@ Deno.serve(async (req) => {
           estado: estado,
           tipo_vehiculo: tipoVehiculo
         };
-        
-        console.log('Product data:', JSON.stringify(productData, null, 2));
 
-        let { data: product, error: productError } = await supabaseClient
+        // Optimize with Upsert
+        const { data: product, error: upsertError } = await supabaseClient
           .from('products')
+          .upsert(productData, { onConflict: 'id_base' })
           .select('id')
-          .eq('id_base', item.ID_Base)
-          .maybeSingle();
+          .single();
 
-        if (!product) {
-          const { data: newProduct, error: insertError } = await supabaseClient
-            .from('products')
-            .insert(productData)
-            .select('id')
-            .single();
-
-          if (insertError) {
-            console.error('Error creating product:', insertError);
-            results.push({ item, error: insertError.message });
-            continue;
-          }
-          product = newProduct;
-        } else {
-          // Update estado and tipo_vehiculo on existing product to reflect Excel/JSON
-          const { error: updateError } = await supabaseClient
-            .from('products')
-            .update({ estado, tipo_vehiculo: tipoVehiculo })
-            .eq('id', product.id);
-          if (updateError) {
-            console.error('Error updating product:', updateError);
-          }
+        if (upsertError) {
+          results.push({ item, error: upsertError.message });
+          continue;
         }
 
         // Insert price data
@@ -189,27 +134,24 @@ Deno.serve(async (req) => {
           archivo_origen: item.Archivo_Origen || null,
           timestamp_data: new Date(timestamp).toISOString(),
         };
-        
-        console.log('Price data:', JSON.stringify(priceData, null, 2));
 
         const { error: priceError } = await supabaseClient
           .from('price_data')
           .insert(priceData);
 
         if (priceError) {
-          console.error('Error inserting price:', priceError);
           results.push({ item, error: priceError.message });
         } else {
           results.push({ item, success: true });
         }
 
-        processedCount++;
-
-        // Update job progress
-        await supabaseClient
-          .from('scraping_jobs')
-          .update({ completed_products: processedCount })
-          .eq('id', batchId);
+        // Periodic update every 20 items or last item to reduce DB spam
+        if (processedCount % 20 === 0 || processedCount === jsonData.length) {
+          await supabaseClient
+            .from('scraping_jobs')
+            .update({ completed_products: processedCount })
+            .eq('id', batchId);
+        }
 
       } catch (error) {
         console.error('Error processing item:', error);
@@ -227,15 +169,72 @@ Deno.serve(async (req) => {
       })
       .eq('id', batchId);
 
-    console.log('Job completed. Processed:', processedCount, 'Total:', jsonData.length);
+    console.log(`[Background] Job ${batchId} completed.`);
 
+  } catch (e) {
+    console.error(`[Background] Critical error in job ${batchId}:`, e);
+    await supabaseClient
+      .from('scraping_jobs')
+      .update({
+        status: 'failed',
+        error_message: e instanceof Error ? e.message : 'Critical processing error',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', batchId);
+  }
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: jsonData, batchId } = await req.json();
+    console.log('Received JSON upload request with batchId:', batchId);
+
+    // Create scraping job synchronously
+    const { error: jobError } = await supabaseClient
+      .from('scraping_jobs')
+      .insert({
+        id: batchId,
+        status: 'processing',
+        total_products: jsonData.length,
+        completed_products: 0
+      });
+
+    if (jobError) {
+      console.error('Error creating job:', jobError);
+      throw jobError;
+    }
+
+    // Start background processing
+    const backgroundPromise = processBackground(jsonData, batchId, supabaseClient);
+
+    // Use EdgeRuntime.waitUntil if available to prevent worker termination
+    // @ts-ignore
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(backgroundPromise);
+      console.log("Passed processing to EdgeRuntime.waitUntil");
+    } else {
+      // Fallback or dev environment
+      console.log("EdgeRuntime not found, promise floating (might be terminated early in some envs)");
+      backgroundPromise.catch(e => console.error("Unhandled background error", e));
+    }
+
+    // Return immediate success
     return new Response(
       JSON.stringify({
         success: true,
         jobId: batchId,
-        processed: processedCount,
-        total: jsonData.length,
-        results
+        message: "File accepted. Processing running in background."
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

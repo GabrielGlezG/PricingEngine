@@ -59,7 +59,7 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { brandAxisLogoPlugin } from "@/lib/chartPlugins";
 import { getBrandLogo } from "@/config/brandLogos";
 import { DateRange } from "react-day-picker";
@@ -81,7 +81,9 @@ import { useTheme } from "next-themes";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters";
 import { exportDashboardToExcel } from "@/lib/exportUtils";
+import { MultiSelectSearch } from "@/components/ui/multi-select-search";
 
 // Register ChartJS components
 ChartJS.register(
@@ -103,6 +105,7 @@ ChartJS.defaults.color = "hsl(var(--foreground))";
 interface AnalyticsData {
   metrics: {
     total_models: number;
+    total_model_families: number;
     total_brands: number;
     total_categories: number;
     avg_price: number;
@@ -213,17 +216,18 @@ export default function Dashboard() {
   // ✅ Estado para controlar el segmento seleccionado
   const [selectedPriceSegment, setSelectedPriceSegment] = useState<string | "all">("all");
   
+
+
+// ... existing imports ...
+
+// Inside component:
   // ✅ Estado para Volatilidad
   const [volatilityPeriod, setVolatilityPeriod] = useState<'total' | 'month'>('total');
   const [volatilityStartMonthId, setVolatilityStartMonthId] = useState<string>("");
   const [volatilityEndMonthId, setVolatilityEndMonthId] = useState<string>("");
   const [volatilityStartDate, setVolatilityStartDate] = useState<string>("all");
   const [volatilityEndDate, setVolatilityEndDate] = useState<string>("all");
-  // const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all"); used in query? 
-  // Line 212 was: const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all");
-  // I should keep volatilityBrand if it's used elsewhere (Step 862 showed usage in UI but logic seemed confused).
-  // I'll keep it for now.
-  const [volatilityBrand, setVolatilityBrand] = useState<string | "all">("all");
+  const [volatilityBrands, setVolatilityBrands] = useState<string[]>([]);
   
   // ✅ Estado para Variación de Precios
   const [variationPeriod, setVariationPeriod] = useState<'total' | 'month'>('total');
@@ -243,8 +247,7 @@ export default function Dashboard() {
     submodel: [] as string[],
   });
 
-  // Refs for Charts to capture images
-  const chartRefs = useRef<Record<string, any>>({});
+
 
   // State to control popover visibility
   const [tipoVehiculoOpen, setTipoVehiculoOpen] = useState(false);
@@ -285,7 +288,7 @@ export default function Dashboard() {
     isRefetching,
     error: queryError,
   } = useQuery({
-    queryKey: ["analytics", filters, volatilityPeriod, volatilityBrand, variationStartDate, variationEndDate, volatilityStartDate, volatilityEndDate],
+    queryKey: ["analytics", filters, volatilityPeriod, volatilityBrands, variationStartDate, variationEndDate, volatilityStartDate, volatilityEndDate, "v2"],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -304,9 +307,11 @@ export default function Dashboard() {
 
       if (volatilityStartDate !== 'all') params.append("volatilityStartDate", volatilityStartDate);
       if (volatilityEndDate !== 'all') params.append("volatilityEndDate", volatilityEndDate);
-      if (volatilityBrand !== "all") {
-        params.append("volatilityBrand", volatilityBrand);
-      }
+      
+      // Append multiple volatility brands
+      volatilityBrands.forEach(brand => {
+        params.append("volatilityBrand", brand);
+      });
       if (variationStartDate !== "all") {
         params.append("variationStartDate", variationStartDate);
       }
@@ -559,6 +564,11 @@ export default function Dashboard() {
     },
   });
 
+  /* 
+     Queries for Dependent Filters 
+     Ensures cascading logic: Category -> Brand -> Model -> Submodel 
+  */
+
   const { data: brands } = useQuery({
     queryKey: ["brands", filters.tipoVehiculo],
     queryFn: async () => {
@@ -579,7 +589,7 @@ export default function Dashboard() {
   });
 
   const { data: models } = useQuery({
-    queryKey: ["models", filters.brand],
+    queryKey: ["models", filters.brand, filters.tipoVehiculo], // ✅ Added Category dependency
     queryFn: async () => {
       let query = supabase
         .from("products")
@@ -588,6 +598,9 @@ export default function Dashboard() {
 
       if (filters.brand.length > 0) {
         query = query.in("brand", filters.brand);
+      }
+      if (filters.tipoVehiculo.length > 0) { // ✅ Added Category filter
+        query = query.in("tipo_vehiculo", filters.tipoVehiculo);
       }
 
       const { data, error } = await query;
@@ -606,7 +619,7 @@ export default function Dashboard() {
   });
 
   const { data: submodels } = useQuery({
-    queryKey: ["submodels", filters.brand, filters.model],
+    queryKey: ["submodels", filters.brand, filters.model, filters.tipoVehiculo], // ✅ Added Category dependency
     queryFn: async () => {
       let query = supabase
         .from("products")
@@ -620,12 +633,44 @@ export default function Dashboard() {
       if (filters.model.length > 0) {
         query = query.in("model", filters.model);
       }
+      if (filters.tipoVehiculo.length > 0) { // ✅ Added Category filter
+        query = query.in("tipo_vehiculo", filters.tipoVehiculo);
+      }
 
       const { data, error } = await query;
       if (error) throw error;
       return [...new Set(data.map((p) => p.submodel).filter(Boolean))];
     },
   });
+
+  // ✅ Auto-Cleanup Filters: Remove invalid selections when options change
+  useEffect(() => {
+    if (brands && filters.brand.length > 0) {
+       const validBrands = filters.brand.filter(b => brands.includes(b));
+       if (validBrands.length !== filters.brand.length) {
+           setFilters(prev => ({ ...prev, brand: validBrands }));
+       }
+    }
+ }, [brands, filters.brand]);
+
+ useEffect(() => {
+    if (models && filters.model.length > 0) {
+        const validModelNames = models.map(m => m.model);
+        const validFilters = filters.model.filter(m => validModelNames.includes(m));
+        if (validFilters.length !== filters.model.length) {
+            setFilters(prev => ({ ...prev, model: validFilters }));
+        }
+    }
+ }, [models, filters.model]);
+
+ useEffect(() => {
+    if (submodels && filters.submodel.length > 0) {
+       const validFilters = filters.submodel.filter(s => submodels.includes(s));
+        if (validFilters.length !== filters.submodel.length) {
+            setFilters(prev => ({ ...prev, submodel: validFilters }));
+        }
+    }
+ }, [submodels, filters.submodel]);
 
   if (isLoading) {
     return <LoadingSpinner fullScreen size="lg" text="Cargando datos del dashboard..." />
@@ -652,29 +697,17 @@ export default function Dashboard() {
 
   const handleExport = async () => {
     if (analytics) {
-      const images: Record<string, string> = {};
-      
-      // Capture base64 from each chart
-      Object.keys(chartRefs.current).forEach((key) => {
-        const chart = chartRefs.current[key];
-        if (chart) {
-          try {
-            images[key] = chart.toBase64Image();
-          } catch (e) {
-            console.warn(`Could not export chart image for ${key}:`, e);
-          }
-        }
-      });
-      
-      await exportDashboardToExcel(analytics, images, CURRENCY_SYMBOLS[currency], convertPrice);
+      await exportDashboardToExcel(
+          analytics, 
+          {
+              filters: filters,
+              volatilityBrands: volatilityBrands,
+              volatilityPeriod: volatilityPeriod
+          },
+          CURRENCY_SYMBOLS[currency], 
+          convertPrice
+      );
     }
-  };
-  
-  // Helper to set refs
-  const setChartRef = (key: string) => (element: any) => {
-      if (element) {
-          chartRefs.current[key] = element;
-      }
   };
 
   return (
@@ -718,9 +751,9 @@ export default function Dashboard() {
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <DataCard
-          title="Inventario Total"
-          value={analytics.metrics.total_models}
-          subValue={`${analytics.metrics.total_brands} marcas activas`}
+          title="Mercado Total"
+          value={analytics.metrics.total_brands}
+          subValue={`${analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos / ${analytics.metrics.total_models} submodelos`}
           icon={Package}
         />
         
@@ -788,7 +821,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
-                      ref={setChartRef('inventory')}
+                      ref={null}
                       key={`bar-category-${chartKey}`}
                       data={{
                         labels: (
@@ -887,7 +920,7 @@ export default function Dashboard() {
                 <div className="h-[220px] sm:h-[260px]">
                   {mounted && (
                     <Bar
-                      ref={setChartRef('price_breakdown')}
+                      ref={null}
                       plugins={[brandAxisLogoPlugin]}
                       key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
                       data={{
@@ -945,12 +978,13 @@ export default function Dashboard() {
                             grid: { display: false },
                             ticks: {
                               ...getScaleOptions().ticks,
-                              color: (c) => {
+                              color: (c: any) => {
                                 const label = c.chart.data.labels?.[c.index] as string;
                                 return getBrandLogo(label) ? 'transparent' : axisColor;
                               },
-                              maxRotation: 0,
+                              maxRotation: 45,
                               minRotation: 0,
+                              autoSkip: false,
                             }
                           },
                           y: {
@@ -991,7 +1025,7 @@ export default function Dashboard() {
               <div className="h-[320px]">
                 {mounted && (
                   <Bubble
-                    ref={setChartRef('positioning')}
+                    ref={null}
                     key={`bubble-principal-${chartKey}`}
                     data={{
                       datasets: [
@@ -1198,7 +1232,7 @@ export default function Dashboard() {
                 <div className="h-[280px]">
                   {mounted && (
                     <Line
-                      ref={setChartRef('benchmarking')}
+                      ref={null}
                       key={`line-brand-${chartKey}`}
                       plugins={[brandAxisLogoPlugin]}
                       data={{
@@ -1359,7 +1393,7 @@ export default function Dashboard() {
                 <div className="h-[280px]">
                   {mounted && (
                     <Line
-                      ref={setChartRef('variation')}
+                      ref={null}
                       key={`area-variation-${chartKey}`}
                       plugins={[brandAxisLogoPlugin]}
                       data={{
@@ -1452,27 +1486,21 @@ export default function Dashboard() {
             {/* Volatilidad en el Tiempo */}
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow col-span-1 md:col-span-2 lg:col-span-1">
               <CardHeader className="space-y-1 pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="card-title flex items-center gap-2">
+                <div className="flex items-center justify-between gap-4">
+                    <CardTitle className="card-title flex items-center gap-2 whitespace-nowrap">
                       <Activity className="h-5 w-5 text-primary" />
-                      Volatilidad: {volatilityBrand !== "all" ? 'Modelos' : 'Marcas'}
+                      Volatilidad: {volatilityBrands.length === 1 ? 'Modelos' : 'Marcas'}
                     </CardTitle>
                     
-                     <div className="w-[120px]">
-                      <Select 
-                        value={volatilityBrand}
-                        onValueChange={setVolatilityBrand}
-                      >
-                        <SelectTrigger className="h-7 text-xs bg-background/50">
-                          <SelectValue placeholder="Marca" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas</SelectItem>
-                          {(brands || []).map(b => (
-                            <SelectItem key={b} value={b}>{b}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                     <div className="w-full max-w-[200px]">
+                      <MultiSelectSearch 
+                        options={brands || []}
+                        selected={volatilityBrands}
+                        onChange={setVolatilityBrands}
+                        placeholder="Filtrar Marcas"
+                        searchPlaceholder="Buscar marca..."
+                        className="h-7 text-xs bg-background/50"
+                      />
                     </div>
                 </div>
 
@@ -1560,8 +1588,8 @@ export default function Dashboard() {
                 <div className="h-[280px]">
                   {mounted && (
                     <Bar
-                      ref={setChartRef('volatility')}
-                      key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrand}`}
+                      ref={null}
+                      key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrands.join(',')}`}
                       data={{
                         // Collect all unique dates from all series to ensure x-axis alignment
                         labels: Array.from(new Set(

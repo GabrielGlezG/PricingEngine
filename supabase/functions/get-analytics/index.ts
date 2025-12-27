@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       dateFrom: url.searchParams.get('dateFrom') || '',
       dateTo: url.searchParams.get('dateTo') || '',
       granularity: url.searchParams.get('granularity') || 'month',
-      volatilityBrand: url.searchParams.get('volatilityBrand') || '', // New param
+      volatilityBrand: url.searchParams.getAll('volatilityBrand') || [],
       variationStartDate: url.searchParams.get('variationStartDate') || '',
       variationEndDate: url.searchParams.get('variationEndDate') || '',
       volatilityStartDate: url.searchParams.get('volatilityStartDate') || '',
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
           dateFrom: sp.get('dateFrom') || filters.dateFrom,
           dateTo: sp.get('dateTo') || filters.dateTo,
           granularity: sp.get('granularity') || filters.granularity,
-          volatilityBrand: sp.get('volatilityBrand') || filters.volatilityBrand,
+          volatilityBrand: sp.getAll('volatilityBrand') || filters.volatilityBrand,
           variationStartDate: sp.get('variationStartDate') || filters.variationStartDate,
           variationEndDate: sp.get('variationEndDate') || filters.variationEndDate,
           volatilityStartDate: sp.get('volatilityStartDate') || filters.volatilityStartDate,
@@ -160,9 +160,22 @@ Deno.serve(async (req) => {
     const lowerQuartile = prices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.25)] : 0;
     const upperQuartile = prices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.75)] : 0;
 
+    // Calculate unique versions (Brand + Model + Submodel)
+    const totalVersions = new Set(filteredData.map(item => {
+      const p = item.products as any;
+      return `${p.brand}|${p.model}|${p.submodel || ''}`;
+    }));
+
+    // Calculate unique model families (Brand + Model)
+    const uniqueModelFamilies = new Set(filteredData.map(item => {
+      const p = item.products as any;
+      return `${p.brand}|${p.model}`;
+    }));
+
     // Calculate metrics based on current scraping date
     const metrics = {
-      total_models: filteredData.length,
+      total_models: totalVersions.size, // Kept as total_models for backward compat, but logic is versions
+      total_model_families: uniqueModelFamilies.size, // New metric
       total_brands: brands.length,
       total_categories: categories.length,
       avg_price: avgPrice,
@@ -547,16 +560,48 @@ Deno.serve(async (req) => {
     // 3. Aggregate based on Scope
     let volatilityTimeSeries: any[] = [];
 
-    // Determine scope: 
-    // If specific volatilityBrand is set, scope is Model (show models of that brand)
-    // If global brand filter has 1 brand, scope is Model
-    // Otherwise scope is Brand (compare brands)
-    const targetVolatilityBrand = filters.volatilityBrand || (filters.brand && filters.brand.length === 1 ? filters.brand[0] : null);
-    const isModelScope = !!targetVolatilityBrand;
+    // Determine scope logic:
+    // 1. If explicit volatilityBrand is selected:
+    //    - Single brand -> MODEL Scope (drill down models of that brand)
+    //    - Multiple brands -> BRAND Scope (compare selected brands against each other)
+    // 2. If no explicit volatilityBrand:
+    //    - If global brand filter has 1 brand -> MODEL Scope
+    //    - Otherwise -> BRAND Scope (compare all available brands)
 
-    if (isModelScope) {
+    // Check params parsing (ensure it comes as array)
+    const volBrandsParam = filters.volatilityBrand;
+    const volBrands = Array.isArray(volBrandsParam) ? volBrandsParam : (volBrandsParam ? [volBrandsParam] : []);
+
+    const globalBrandsParam = filters.brand;
+    const globalBrands = Array.isArray(globalBrandsParam) ? globalBrandsParam : (globalBrandsParam ? [globalBrandsParam] : []);
+
+    let targetScope: 'MODEL' | 'BRAND' = 'BRAND';
+    let targetBrandForModelScope: string | null = null;
+    let targetBrandsForBrandScope: string[] = [];
+
+    if (volBrands.length === 1) {
+      targetScope = 'MODEL';
+      targetBrandForModelScope = volBrands[0];
+    } else if (volBrands.length > 1) {
+      targetScope = 'BRAND';
+      targetBrandsForBrandScope = volBrands;
+    } else {
+      // Fallback to global filters
+      if (globalBrands.length === 1) {
+        targetScope = 'MODEL';
+        targetBrandForModelScope = globalBrands[0];
+      } else {
+        targetScope = 'BRAND';
+        // If global brands are filtered, we should respect that for "All" view too?
+        // Existing logic respected it via filteredData.
+        // So empty here means "All in filteredData".
+        targetBrandsForBrandScope = [];
+      }
+    }
+
+    if (targetScope === 'MODEL' && targetBrandForModelScope) {
       // Return top volatile models for the selected brand
-      const targetBrand = targetVolatilityBrand;
+      const targetBrand = targetBrandForModelScope;
 
       volatilityTimeSeries = Object.values(modelMap)
         .filter(m => m.brand === targetBrand)
@@ -573,7 +618,7 @@ Deno.serve(async (req) => {
         })
         .filter(s => s.data.length > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
+        .slice(0, 20);
 
     } else {
       // Scope: Brand
@@ -582,6 +627,12 @@ Deno.serve(async (req) => {
 
       Object.values(modelMap).forEach(m => {
         const brand = m.brand;
+
+        // Filter if specific brands are targeted
+        if (targetBrandsForBrandScope.length > 0 && !targetBrandsForBrandScope.includes(brand)) {
+          return;
+        }
+
         if (!brandMap[brand]) brandMap[brand] = {};
 
         Object.entries(m.variations).forEach(([bucket, variation]) => {
@@ -607,7 +658,7 @@ Deno.serve(async (req) => {
       })
         .filter(s => s.data.length > 0)
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
+        .slice(0, 20);
     }
 
     // Clean up dates to be sorted in the response

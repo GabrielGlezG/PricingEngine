@@ -1,4 +1,5 @@
-import ExcelJS from "exceljs";
+// @ts-ignore
+import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate';
 import { saveAs } from "file-saver";
 
 interface Metric {
@@ -22,143 +23,169 @@ interface AnalyticsData {
         models_by_principal: Array<{ model_principal: string; count: number; avg_price: number; min_price: number; max_price: number }>;
         brand_variations: Array<{ brand: string; variation_percent: number; startDate?: string; endDate?: string }>;
         volatility_timeseries: Array<{ entity: string; data: Array<{ date: string; variation: number; avg_price: number }> }>;
+        prices_by_segment_breakdown?: Record<string, Array<{ brand: string; avg_price: number }>>;
     };
     generated_at: string;
+    available_dates?: string[];
+}
+
+export interface ExportContext {
+    filters: {
+        tipoVehiculo: string[];
+        brand: string[];
+        model: string[];
+        submodel: string[];
+    };
+    volatilityBrands?: string[];
+    volatilityPeriod?: string;
 }
 
 export const exportDashboardToExcel = async (
     data: AnalyticsData,
-    chartImages: Record<string, string>,
+    context: ExportContext,
     currencySymbol: string = "$",
     convertPrice: (price: number) => number = (p) => p
 ) => {
     if (!data) return;
 
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = "PricingEngine";
-    workbook.created = new Date();
-
-    // Helper to add image to sheet
-    const addChartImage = (sheet: ExcelJS.Worksheet, imageId: string, row: number, col: number) => {
-        if (chartImages[imageId]) {
-            const imageIdInWorkbook = workbook.addImage({
-                base64: chartImages[imageId],
-                extension: 'png',
-            });
-            sheet.addImage(imageIdInWorkbook, {
-                tl: { col: col, row: row },
-                ext: { width: 600, height: 350 }
-            });
+    try {
+        console.log("Loading Dashboard Template...");
+        const response = await fetch('/dashboard_template.xlsx');
+        if (!response.ok) {
+            throw new Error(`Template not found (${response.status}). Ensure 'dashboard_template.xlsx' is in public folder.`);
         }
-    };
+        const buffer = await response.arrayBuffer();
+        const workbook = await XlsxPopulate.fromDataAsync(buffer);
 
-    // 1. Sheet: Resumen
-    const wsSummary = workbook.addWorksheet("Resumen Ejecutivo");
-    wsSummary.columns = [
-        { header: "Métrica", key: "metric", width: 30 },
-        { header: `Valor (${currencySymbol})`, key: "value", width: 20 }
-    ];
+        // Helper to fill table data with auto-clearing
+        const fillTable = (sheetName: string, rows: any[][], startRow: number = 2, startCol: number = 1) => {
+            const sheet = workbook.sheet(sheetName);
+            if (!sheet) {
+                console.warn(`Sheet '${sheetName}' not found in template.`);
+                return;
+            }
 
-    wsSummary.addRows([
-        { metric: "Total Modelos", value: data.metrics.total_models },
-        { metric: "Total Marcas", value: data.metrics.total_brands },
-        { metric: "Precio Promedio", value: convertPrice(data.metrics.avg_price) },
-        { metric: "Precio Mediana", value: convertPrice(data.metrics.median_price) },
-        { metric: "Precio Mínimo", value: convertPrice(data.metrics.min_price) },
-        { metric: "Precio Máximo", value: convertPrice(data.metrics.max_price) },
-        { metric: "Desviación Estándar", value: convertPrice(data.metrics.price_std_dev) },
-        { metric: "Coeficiente Variación (%)", value: data.metrics.variation_coefficient },
-        { metric: "Fecha Generación", value: data.generated_at }
-    ]);
+            // Clear existing data (rows 2 to 500, cols 1 to 10) to remove template text
+            // This ensures "other brands" (dummy data) don't appear
+            try {
+                // Determine max columns based on input or default to a safe number
+                const numCols = rows.length > 0 ? rows[0].length : 10;
+                sheet.range(startRow, startCol, startRow + 500, startCol + numCols - 1).value(null);
+            } catch (e) {
+                console.warn("Error clearing range:", e);
+            }
 
-    // 2. Sheet: Inventario (Modelos por Categoría)
-    const wsInv = workbook.addWorksheet("Inventario");
-    wsInv.columns = [
-        { header: "Categoría", key: "cat", width: 25 },
-        { header: "Cantidad Modelos", key: "count", width: 15 }
-    ];
-    if (data.chart_data.models_by_category?.length) {
-        data.chart_data.models_by_category.forEach(item => {
-            wsInv.addRow({ cat: item.category, count: item.count });
-        });
-        // Add Chart Image
-        addChartImage(wsInv, 'inventory', 2, 4);
-    }
-
-    // 3. Sheet: Precios por Categoría
-    const wsPricesCat = workbook.addWorksheet("Precios por Categoría");
-    wsPricesCat.columns = [
-        { header: "Categoría", key: "cat", width: 25 },
-        { header: "Promedio", key: "avg", width: 15 },
-        { header: "Mínimo", key: "min", width: 15 },
-        { header: "Máximo", key: "max", width: 15 }
-    ];
-    if (data.chart_data.prices_by_category?.length) {
-        data.chart_data.prices_by_category.forEach(item => {
-            wsPricesCat.addRow({
-                cat: item.category,
-                avg: convertPrice(item.avg_price),
-                min: convertPrice(item.min_price),
-                max: convertPrice(item.max_price)
+            // Write data
+            rows.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    sheet.row(startRow + r).cell(startCol + c).value(val);
+                });
             });
-        });
-        // Add Chart Image (Boxplot)
-        addChartImage(wsPricesCat, 'price_breakdown', 2, 6);
-    }
+        };
 
-    // 4. Sheet: Benchmarking Marcas
-    const wsBrands = workbook.addWorksheet("Benchmarking");
-    wsBrands.columns = [
-        { header: "Marca", key: "brand", width: 20 },
-        { header: "Precio Promedio", key: "avg", width: 15 }
-    ];
-    if (data.chart_data.prices_by_brand?.length) {
-        data.chart_data.prices_by_brand.forEach(item => {
-            wsBrands.addRow({ brand: item.brand, avg: convertPrice(item.avg_price) });
-        });
-        addChartImage(wsBrands, 'benchmarking', 2, 4);
-    }
+        // 1. Resumen Ejecutivo
+        const wsSummary = workbook.sheet("Resumen Ejecutivo");
+        if (wsSummary) {
+            // Write Metrics
+            wsSummary.cell("B2").value(data.metrics.total_models);
+            wsSummary.cell("B3").value(data.metrics.total_brands);
+            wsSummary.cell("B4").value(data.metrics.avg_price);
+            wsSummary.cell("B5").value(data.metrics.median_price);
+            wsSummary.cell("B6").value(data.metrics.min_price);
+            wsSummary.cell("B7").value(data.metrics.max_price);
+            wsSummary.cell("B8").value(data.metrics.price_std_dev);
+            wsSummary.cell("B9").value(data.metrics.variation_coefficient);
+            wsSummary.cell("B10").value(new Date().toLocaleDateString());
 
-    // 5. Sheet: Posicionamiento
-    const wsPos = workbook.addWorksheet("Posicionamiento");
-    wsPos.columns = [
-        { header: "Modelo", key: "model", width: 25 },
-        { header: "Precio", key: "price", width: 15 },
-        { header: "Volumen", key: "vol", width: 10 }
-    ];
-    if (data.chart_data.models_by_principal?.length) {
-        data.chart_data.models_by_principal.forEach(item => {
-            wsPos.addRow({
-                model: item.model_principal,
-                price: convertPrice(item.avg_price),
-                vol: item.count
-            });
-        });
-        addChartImage(wsPos, 'positioning', 2, 5);
-    }
+            // Write Active Filters
+            wsSummary.cell("B11").value("Filtros Activos:");
+            wsSummary.cell("A12").value("Categoría:");
+            wsSummary.cell("B12").value(context.filters.tipoVehiculo.join(", ") || "Todas");
 
-    // 6. Sheet: Volatilidad
-    const wsVol = workbook.addWorksheet("Volatilidad");
-    wsVol.columns = [
-        { header: "Entidad", key: "ent", width: 20 },
-        { header: "Fecha", key: "date", width: 15 },
-        { header: "Variación", key: "var", width: 15 }
-    ];
-    if (data.chart_data.volatility_timeseries?.length) {
-        const flatVol = data.chart_data.volatility_timeseries.flatMap(series =>
-            series.data.map(point => ({
-                ent: series.entity,
-                date: point.date,
-                var: point.variation
-            }))
-        );
-        flatVol.forEach(r => wsVol.addRow(r));
-        addChartImage(wsVol, 'volatility', 2, 5);
-    }
+            wsSummary.cell("A13").value("Marca:");
+            wsSummary.cell("B13").value(context.filters.brand.join(", ") || "Todas");
 
-    // Generate buffer and save
-    const buffer = await workbook.xlsx.writeBuffer();
-    const dataBlob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8" });
-    const dateStr = new Date().toISOString().split('T')[0];
-    saveAs(dataBlob, `PricingEngine_Report_With_Charts_${dateStr}.xlsx`);
+            wsSummary.cell("A14").value("Modelo:");
+            wsSummary.cell("B14").value(context.filters.model.join(", ") || "Todos");
+
+            wsSummary.cell("A15").value("Submodelo:");
+            wsSummary.cell("B15").value(context.filters.submodel.join(", ") || "Todos");
+
+            // Volatility Context
+            let currentRow = 16;
+            if (context.volatilityBrands && context.volatilityBrands.length > 0) {
+                wsSummary.cell(`A${currentRow}`).value("Foco Volatilidad:");
+                wsSummary.cell(`B${currentRow}`).value(context.volatilityBrands.join(", "));
+                currentRow++;
+            }
+
+            if (context.volatilityPeriod) {
+                wsSummary.cell(`A${currentRow}`).value("Periodo Volatilidad:");
+                wsSummary.cell(`B${currentRow}`).value(context.volatilityPeriod);
+            }
+
+        } else {
+            console.warn("Sheet 'Resumen Ejecutivo' not found");
+        }
+
+        // 2. Inventario
+        if (data.chart_data.models_by_category?.length) {
+            const rows = data.chart_data.models_by_category.map(i => [i.category, i.count]);
+            fillTable("Inventario", rows, 2, 1);
+        }
+
+        // 3. Precios por Categoría
+        if (data.chart_data.prices_by_category?.length) {
+            const rows = data.chart_data.prices_by_category.map(i => [
+                i.category,
+                i.avg_price,
+                i.min_price,
+                i.max_price
+            ]);
+            fillTable("Precios por Categoría", rows, 2, 1);
+        }
+
+        // 4. Benchmarking
+        if (data.chart_data.prices_by_brand?.length) {
+            const rows = data.chart_data.prices_by_brand.map(i => [i.brand, i.avg_price]);
+            fillTable("Benchmarking", rows, 2, 1);
+        }
+
+        // 5. Posicionamiento
+        if (data.chart_data.models_by_principal?.length) {
+            const rows = data.chart_data.models_by_principal.map(i => [
+                i.model_principal,
+                i.avg_price,
+                i.count
+            ]);
+            fillTable("Posicionamiento", rows, 2, 1);
+        }
+
+        // 6. Volatilidad (Formato Plano/Vertical: Entidad | Fecha | Variación)
+        if (data.chart_data.volatility_timeseries?.length) {
+            const headerRow = ["Entidad", "Fecha", "Variación"];
+
+            const flatRows = data.chart_data.volatility_timeseries.flatMap(series =>
+                series.data.map(point => [
+                    series.entity,
+                    point.date,
+                    point.variation
+                ])
+            );
+
+            // Combine header and data
+            const tableData = [headerRow, ...flatRows];
+
+            fillTable("Volatilidad", tableData, 1, 1);
+        }
+
+        // Output
+        const blob = await workbook.outputAsync();
+        const dateStr = new Date().toISOString().split('T')[0];
+        saveAs(blob, `Dashboard_Report_${dateStr}.xlsx`);
+
+    } catch (e) {
+        console.error("Export template error", e);
+        alert(`Error exportando: ${(e as Error).message}`);
+    }
 };

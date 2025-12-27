@@ -27,7 +27,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
   refreshProfile: () => void
-  makeFirstAdmin: (email: string) => Promise<void>
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -124,33 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Función para hacer bootstrap del primer admin
-  const makeFirstAdmin = async (email: string) => {
-    try {
-      // Actualizar el rol del usuario a admin directamente en la tabla
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ role: 'admin' } as any)
-        .eq('email', email)
-      
-      if (error) throw error
-      
-      toast({
-        title: "Administrador creado",
-        description: "El usuario ha sido convertido en administrador."
-      })
-      
-      // Refrescar el perfil inmediatamente
-      refetchProfile()
-    } catch (error: any) {
-      console.error('Error making first admin:', error)
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      })
-    }
-  }
+
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -187,8 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
-    refreshProfile,
-    makeFirstAdmin
+    refreshProfile
   }
 
   return (

@@ -9,6 +9,7 @@ import { hslVar, cn } from "@/lib/utils"
 import { BrandLogo } from "@/components/BrandLogo"
 import { BrandHeader } from "@/components/BrandHeader"
 import { DashboardFilters } from "@/components/DashboardFilters"
+import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters"
 import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 import { CleanEmptyState } from "@/components/CleanEmptyState"
 
@@ -47,62 +48,13 @@ export default function PriceEvolution() {
     setMounted(true)
   }, [])
 
-  // Fetch filter options
-  const { data: tiposVehiculo } = useQuery({
-    queryKey: ['tiposVehiculo-evolution'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('tipo_vehiculo')
-        .not('tipo_vehiculo', 'is', null)
-        .order('tipo_vehiculo')
-
-      if (error) throw error
-      return [...new Set(data.map((p) => p.tipo_vehiculo).filter(Boolean))] as string[]
-    }
-  })
-
-  const { data: brands } = useQuery({
-    queryKey: ['brands-evolution', filters.tipoVehiculo],
-    queryFn: async () => {
-      let query = supabase.from('products').select('brand').order('brand')
-      if (filters.tipoVehiculo.length > 0) {
-        query = query.in('tipo_vehiculo', filters.tipoVehiculo)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.brand))]
-    }
-  })
-
-  const { data: models } = useQuery({
-    queryKey: ['models-evolution', filters.brand],
-    queryFn: async () => {
-      let query = supabase.from('products').select('model').order('model')
-      if (filters.brand.length > 0) {
-        query = query.in('brand', filters.brand)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.model))]
-    }
-  })
-
-  const { data: submodels } = useQuery({
-    queryKey: ['submodels-evolution', filters.brand, filters.model],
-    queryFn: async () => {
-      let query = supabase.from('products').select('submodel').not('submodel', 'is', null).order('submodel')
-      if (filters.brand.length > 0) {
-        query = query.in('brand', filters.brand)
-      }
-      if (filters.model.length > 0) {
-        query = query.in('model', filters.model)
-      }
-      const { data, error } = await query
-      if (error) throw error
-      return [...new Set(data.map((p) => p.submodel).filter(Boolean))]
-    }
-  })
+  // Fetch filter options using interconnected hook
+  const { 
+    tiposVehiculo, 
+    brands, 
+    models, 
+    submodels 
+  } = useInterconnectedFilters(filters, setFilters, "evolution");
 
   const hasActiveFilters = filters.tipoVehiculo.length > 0 || filters.brand.length > 0 || filters.model.length > 0 || filters.submodel.length > 0
 

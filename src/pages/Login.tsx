@@ -15,7 +15,7 @@ import logo from '@/assets/pricing-engine-logo-new.png'
 
 export default function Login() {
   const { setTheme } = useTheme()
-  const { user, profile, loading, signIn, signUp, makeFirstAdmin } = useAuth()
+  const { user, profile, loading, signIn, signUp } = useAuth()
   const location = useLocation()
   const { toast } = useToast()
   
@@ -27,7 +27,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [showAdminSetup, setShowAdminSetup] = useState(false)
+
   const [justRegistered, setJustRegistered] = useState(false)
   
   const [loginForm, setLoginForm] = useState({
@@ -64,19 +64,7 @@ export default function Login() {
   }
 
 
-  const handleMakeFirstAdmin = async () => {
-    if (!user?.email) return
-    
-    setIsLoading(true)
-    try {
-      await makeFirstAdmin(user.email)
-      setShowAdminSetup(false)
-    } catch (error) {
-      console.error('Error making first admin:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -327,32 +315,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Modal Admin Setup */}
-        {showAdminSetup && user && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
-             <Card className="w-full max-w-md shadow-2xl border-none">
-              <CardHeader className="text-center pb-2">
-                <div className="mx-auto bg-amber-100 p-3 rounded-full w-fit mb-2">
-                   <Crown className="h-6 w-6 text-amber-600" />
-                </div>
-                <CardTitle>Configurar Administrador</CardTitle>
-                <CardDescription>
-                  Confirmar creación de rol administrador.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-2">
-                 <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Cuenta</p>
-                    <p className="font-medium text-slate-900">{user.email}</p>
-                 </div>
-                 <div className="flex gap-3">
-                    <Button variant="outline" onClick={() => setShowAdminSetup(false)} className="flex-1">Cancelar</Button>
-                    <Button onClick={handleMakeFirstAdmin} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white border-none">Confirmar</Button>
-                 </div>
-              </CardContent>
-             </Card>
-          </div>
-        )}
+
 
       </div>
     </div>
