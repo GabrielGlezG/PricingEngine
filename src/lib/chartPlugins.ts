@@ -1,7 +1,8 @@
 import { Plugin } from 'chart.js';
-import brandLogoMap from '@/config/brandLogos';
+import { getBrandLogo, getBrandSvgUrl } from '@/config/brandLogos';
 
 const logoCache: Record<string, HTMLImageElement> = {};
+const failedSvgs: Set<string> = new Set();
 
 export const brandAxisLogoPlugin: Plugin = {
     id: 'brandAxisLogo',
@@ -15,43 +16,54 @@ export const brandAxisLogoPlugin: Plugin = {
             const brandName = chart.data.labels?.[index] as string;
             if (!brandName) return;
 
-            const normalizedBrand = brandName.toString().trim().toUpperCase();
-            const logoUrl = brandLogoMap[normalizedBrand];
-
-            // If no logo, we fall back to existing label logic (text is already transparent/hidden via options)
-            // or we could draw text here if we wanted mix mode.
-            if (!logoUrl) return;
-
-            let img = logoCache[logoUrl];
+            const cacheKey = brandName.trim().toUpperCase();
+            let img = logoCache[cacheKey];
 
             // Load image if not in cache
             if (!img) {
                 img = new Image();
                 img.crossOrigin = 'Anonymous';
-                img.src = logoUrl;
-                // Trigger chart update once loaded to render it
+
+                const svgUrl = getBrandSvgUrl(brandName);
+                const pngUrl = getBrandLogo(brandName);
+
+                // Strategy: Try SVG first. If it fails, fallback to PNG.
+                if (svgUrl && !failedSvgs.has(cacheKey)) {
+                    img.src = svgUrl;
+                    img.onerror = () => {
+                        // console.warn(`Failed to load SVG for ${brandName}, falling back to PNG`);
+                        failedSvgs.add(cacheKey);
+                        if (pngUrl) {
+                            img.src = pngUrl;
+                        }
+                    };
+                } else if (pngUrl) {
+                    img.src = pngUrl;
+                } else {
+                    return; // No URL found
+                }
+
                 img.onload = () => {
-                    // console.log('Logo loaded:', logoUrl);
                     chart.draw();
                 };
-                logoCache[logoUrl] = img;
-            } else {
-                // console.log('Logo found in cache:', logoUrl);
+
+                logoCache[cacheKey] = img;
             }
 
             // Draw if loaded
             if (img.complete && img.naturalHeight !== 0) {
                 const xPos = x.getPixelForTick(index);
-                const yPos = x.top + 10; // Position below axis line, ignoring tick height
-                const size = 28; // Slightly larger for better visibility
+                const yPos = x.top + 10; // Position below axis line
+                const size = 30; // Optimized size for vector logos
 
-                // Draw image centered horizontally
                 try {
+                    // Draw image centered horizontally
                     ctx.drawImage(img, xPos - size / 2, yPos, size, size);
                 } catch (e) {
-                    // Ignore inconsistent state errors during resize
+                    // Ignore transient errors
                 }
             }
         });
     }
 };
+
