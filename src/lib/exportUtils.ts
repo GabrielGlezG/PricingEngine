@@ -1,6 +1,7 @@
 // @ts-ignore
 import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate';
 import { saveAs } from "file-saver";
+import { ModelData } from "./fetchModelsData";
 
 interface Metric {
     total_models: number;
@@ -44,7 +45,8 @@ export const exportDashboardToExcel = async (
     data: AnalyticsData,
     context: ExportContext,
     currencySymbol: string = "$",
-    convertPrice: (price: number) => number = (p) => p
+    convertPrice: (price: number) => number = (p) => p,
+    modelsData?: ModelData[]
 ) => {
     if (!data) return;
 
@@ -204,6 +206,54 @@ export const exportDashboardToExcel = async (
             const tableData = [headerRow, ...flatRows];
 
             fillTable("Volatilidad", tableData, 1, 1);
+        }
+
+        // 7. Modelos (New Sheet)
+        if (modelsData && modelsData.length > 0) {
+            let sheet = workbook.sheet("Modelos");
+            if (!sheet) {
+                sheet = workbook.addSheet("Modelos");
+            }
+
+            // Header
+            const headers = ["Marca", "Modelo", "Submodelo", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "vs Lista %"];
+            sheet.range(1, 1, 1, headers.length).value([headers]).style({ bold: true });
+
+            // Data
+            const rows = modelsData.map(m => {
+                const vsList = (m.precio_con_bono && m.precio_lista)
+                    ? ((m.precio_con_bono - m.precio_lista) / m.precio_lista)
+                    : 0;
+
+                return [
+                    m.brand,
+                    m.model,
+                    m.submodel || '-',
+                    m.estado || 'N/A',
+                    m.tipo_vehiculo || 'N/A',
+                    convertPrice(m.precio_con_bono || 0),
+                    convertPrice(m.precio_lista || 0),
+                    convertPrice(m.bono || 0),
+                    vsList
+                ];
+            });
+
+            // Write data starting at Row 2
+            const startRow = 2;
+            rows.forEach((row, r) => {
+                row.forEach((val, c) => {
+                    sheet.row(startRow + r).cell(1 + c).value(val);
+                });
+            });
+
+            // Formatting
+            const endRow = startRow + rows.length - 1;
+            if (endRow >= startRow) {
+                // Currency cols: F (6), G (7), H (8)
+                sheet.range(startRow, 6, endRow, 8).style("numberFormat", currencyFmt);
+                // Percent col: I (9)
+                sheet.range(startRow, 9, endRow, 9).style("numberFormat", "0.0%");
+            }
         }
 
         // Output
