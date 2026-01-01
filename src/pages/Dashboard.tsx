@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency, CURRENCY_SYMBOLS } from "@/contexts/CurrencyContext";
+import { fetchModelsData } from "@/lib/fetchModelsData";
+import { format as formatDate } from "date-fns";
 import { useLastUpdate } from "@/contexts/LastUpdateContext";
 import {
   Card,
@@ -697,6 +699,9 @@ export default function Dashboard() {
 
   const handleExport = async () => {
     if (analytics) {
+      // Fetch details for Models tab (Active + Inactive)
+      const modelsData = await fetchModelsData({ filters, statusFilter: 'all' });
+
       await exportDashboardToExcel(
           analytics, 
           {
@@ -705,7 +710,8 @@ export default function Dashboard() {
               volatilityPeriod: volatilityPeriod
           },
           CURRENCY_SYMBOLS[currency], 
-          convertPrice
+          convertPrice,
+          modelsData // Pass new data
       );
     }
   };
