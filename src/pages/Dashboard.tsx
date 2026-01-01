@@ -712,22 +712,21 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <InstitutionalHeader
           title="Dashboard Principal"
           description="Resumen ejecutivo de métricas clave y estado del mercado."
-          className="mb-1 pb-4"
+          action={
+            <Button 
+              onClick={handleExport}
+              disabled={!analytics}
+              variant="outline" 
+              className="gap-2 border-primary/20 hover:bg-primary/5 text-primary hover:text-primary"
+            >
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </Button>
+          }
         />
-        <Button 
-          onClick={handleExport}
-          disabled={!analytics}
-          variant="outline" 
-          className="gap-2 border-primary/20 hover:bg-primary/5 text-primary hover:text-primary self-start md:self-center"
-        >
-          <Download className="h-4 w-4" />
-          Exportar Excel
-        </Button>
-      </div>
 
       <DashboardFilters
         filters={filters}
