@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react";
 
 interface DataCardProps {
   title: string;
-  value: string | number;
+  value: string | number | React.ReactNode;
   subValue?: string;
   icon?: LucideIcon;
   trend?: {
