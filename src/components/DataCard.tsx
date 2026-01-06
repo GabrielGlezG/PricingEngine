@@ -4,7 +4,7 @@ import { LucideIcon } from "lucide-react";
 
 interface DataCardProps {
   title: string;
-  value: string | number;
+  value: string | number | React.ReactNode;
   subValue?: string;
   icon?: LucideIcon;
   trend?: {
@@ -25,24 +25,24 @@ export function DataCard({
 }: DataCardProps) {
   return (
     <Card className={cn(
-      "border border-border/60 shadow-sm rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 group relative bg-card",
+      "border border-primary/10 shadow-md rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/20 group relative bg-gradient-to-br from-card to-card/50",
       className
     )}>
       {/* Subtle Gradient Overlay on Hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-secondary/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-transparent relative z-10">
-        <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
           {title}
         </CardTitle>
         {Icon && (
-          <div className="p-2 bg-primary/5 text-primary rounded-lg group-hover:bg-primary/10 group-hover:scale-110 transition-all duration-300">
-             <Icon className="h-4 w-4" />
+          <div className="p-2.5 bg-primary/10 text-primary rounded-xl group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
+             <Icon className="h-5 w-5" />
           </div>
         )}
       </CardHeader>
       <CardContent className="pt-2 relative z-10">
-        <div className="text-3xl font-bold text-foreground font-heading tracking-tight mb-1">
+        <div className="text-3xl md:text-4xl font-bold text-foreground font-heading tracking-tight mb-2">
           {value}
         </div>
         
@@ -59,7 +59,7 @@ export function DataCard({
               </span>
             )}
             {subValue && (
-              <p className="text-muted-foreground/80 font-medium">
+              <p className="text-muted-foreground font-medium">
                 {subValue}
               </p>
             )}
