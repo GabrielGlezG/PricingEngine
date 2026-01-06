@@ -105,7 +105,7 @@ export function DashboardFilters({
                 )}
               >
                 <Grid className="mr-2 h-3.5 w-3.5" />
-                Categoría
+                Segmento
                 {filters.tipoVehiculo.length > 0 && (
                   <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 bg-background/50 text-foreground text-[10px] shadow-none">
                     {filters.tipoVehiculo.length}
@@ -116,7 +116,7 @@ export function DashboardFilters({
             </PopoverTrigger>
             <PopoverContent className="w-[220px] p-0 rounded-xl shadow-xl border-border/50" align="start">
               <Command>
-                <CommandInput placeholder="Buscar categoría..." className="h-9" />
+                <CommandInput placeholder="Buscar segmento..." className="h-9" />
                 <CommandList>
                   <CommandEmpty>Sin resultados.</CommandEmpty>
                   <CommandGroup className="p-1.5">
@@ -256,7 +256,7 @@ export function DashboardFilters({
                 )}
               >
                 <Layers className="mr-2 h-3.5 w-3.5" />
-                Submodelo
+                Versión
                 {filters.submodel.length > 0 && (
                    <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 bg-background/50 text-foreground text-[10px] shadow-none">
                     {filters.submodel.length}
@@ -267,7 +267,7 @@ export function DashboardFilters({
             </PopoverTrigger>
             <PopoverContent className="w-[240px] p-0 rounded-xl shadow-xl border-border/50" align="start">
               <Command>
-                <CommandInput placeholder="Buscar submodelo..." className="h-9" />
+                <CommandInput placeholder="Buscar versión..." className="h-9" />
                 <CommandList>
                   <CommandEmpty>Sin resultados.</CommandEmpty>
                   <CommandGroup className="p-1.5">

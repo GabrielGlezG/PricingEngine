@@ -63,7 +63,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <div className="hidden lg:flex items-center gap-2 mr-3 text-muted-foreground">
           <CalendarClock className="h-4 w-4 flex-shrink-0" />
           <span className="text-xs whitespace-nowrap">
-          Última actualización: {formatDistanceToNow(new Date(lastUpdate), { addSuffix: true, locale: es })}
+          Última actualización: {format(new Date(lastUpdate), "dd/MM/yyyy", { locale: es })}
           </span>
 
         </div>
