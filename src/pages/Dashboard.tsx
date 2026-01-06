@@ -757,7 +757,12 @@ export default function Dashboard() {
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <DataCard
           title="Mercado Total"
-          value={`Marcas ${analytics.metrics.total_brands}`}
+          value={
+             <div className="flex items-baseline gap-2">
+                <span>{analytics.metrics.total_brands}</span>
+                <span className="text-lg font-medium text-muted-foreground">Marcas</span>
+             </div>
+          }
           subValue={`${analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos / ${analytics.metrics.total_models} versiones`}
           icon={Package}
         />

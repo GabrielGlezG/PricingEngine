@@ -145,15 +145,26 @@ export default function Login() {
           <img src={logo} alt="PricingEngine" className="h-20 w-auto object-contain brightness-0 invert opacity-90" />
         </div>
 
-        <div className="relative z-10 space-y-8 max-w-lg">
-          <h1 className="text-5xl font-bold tracking-tight leading-none font-heading text-white">
-            DDS... <br/>
-            <span className="text-blue-200">Data, decisions, solutions</span>
-          </h1>
-          <p className="text-blue-100/80 text-lg leading-relaxed font-light">
-            Plataforma avanzada de inteligencia de precios especializada en el sector automotriz. 
-            Proporciona información en tiempo real que facilita la toma de decisiones estratégicas con agilidad y eficiencia.
-          </p>
+        <div className="relative z-10 space-y-6 max-w-lg">
+          <div className="space-y-2">
+            <h1 className="text-6xl font-bold tracking-tighter text-white font-heading">
+              DDS
+            </h1>
+            <p className="text-2xl font-light tracking-wide text-blue-100 flex items-center">
+              Data <span className="mx-3 text-blue-400/50">•</span> Decisions <span className="mx-3 text-blue-400/50">•</span> Solutions
+            </p>
+          </div>
+          
+          <div className="h-px w-20 bg-gradient-to-r from-blue-400/50 to-transparent my-6" />
+
+          <div className="space-y-4 text-blue-100/80 text-lg leading-relaxed font-light">
+            <p>
+              Plataforma avanzada de inteligencia de precios especializada en el sector automotriz.
+            </p>
+            <p>
+              Proporciona información en tiempo real que facilita la toma de decisiones estratégicas con agilidad y eficiencia.
+            </p>
+          </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-4 text-xs font-medium tracking-widest text-blue-200/40 uppercase">

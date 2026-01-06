@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { BrandLogo } from "@/components/BrandLogo"
 import { useState } from "react"
 import { Separator } from "@/components/ui/separator"
+import { SavedQueriesMenu } from "@/components/SavedQueriesMenu"
 
 
 
@@ -295,6 +296,11 @@ export function DashboardFilters({
 
         {/* Clear & Refresh Actions */}
         <div className="flex items-center pl-2 md:border-l border-border/50 md:ml-auto gap-2">
+           <SavedQueriesMenu 
+              currentFilters={filters} 
+              onLoadFilters={(savedFilters) => setFilters(prev => ({ ...prev, ...savedFilters }))} 
+           />
+
            {hasActiveFilters && (
              <Button
               variant="destructive"
