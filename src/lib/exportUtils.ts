@@ -104,8 +104,8 @@ export const exportDashboardToExcel = async (
 
             // Write Active Filters
             wsSummary.cell("B11").value("Filtros Activos:");
-            wsSummary.cell("A12").value("Categoría:");
-            wsSummary.cell("B12").value(context.filters.tipoVehiculo.join(", ") || "Todas");
+            wsSummary.cell("A12").value("Segmento:");
+            wsSummary.cell("B12").value(context.filters.tipoVehiculo.join(", ") || "Todos");
 
             wsSummary.cell("A13").value("Marca:");
             wsSummary.cell("B13").value(context.filters.brand.join(", ") || "Todas");
@@ -113,8 +113,8 @@ export const exportDashboardToExcel = async (
             wsSummary.cell("A14").value("Modelo:");
             wsSummary.cell("B14").value(context.filters.model.join(", ") || "Todos");
 
-            wsSummary.cell("A15").value("Submodelo:");
-            wsSummary.cell("B15").value(context.filters.submodel.join(", ") || "Todos");
+            wsSummary.cell("A15").value("Versión:");
+            wsSummary.cell("B15").value(context.filters.submodel.join(", ") || "Todas");
 
             // Volatility Context
             let currentRow = 16;
@@ -139,7 +139,7 @@ export const exportDashboardToExcel = async (
             fillTable("Inventario", rows, 2, 1);
         }
 
-        // 3. Precios por Categoría
+        // 3. Precios por Segmento
         if (data.chart_data.prices_by_category?.length) {
             const rows = data.chart_data.prices_by_category.map(i => [
                 i.category,
@@ -147,12 +147,12 @@ export const exportDashboardToExcel = async (
                 convertPrice(i.min_price),
                 convertPrice(i.max_price)
             ]);
-            fillTable("Precios por Categoría", rows, 2, 1);
+            fillTable("Precios por Segmento", rows, 2, 1);
 
             // Apply currency format to cols B, C, D (indices 2, 3, 4 of sheet) starting row 2
             const startRow = 2;
             const endRow = startRow + rows.length;
-            const sheet = workbook.sheet("Precios por Categoría");
+            const sheet = workbook.sheet("Precios por Segmento");
             if (sheet) {
                 sheet.range(startRow, 2, endRow, 4).style("numberFormat", currencyFmt);
             }
@@ -216,7 +216,7 @@ export const exportDashboardToExcel = async (
             }
 
             // Header
-            const headers = ["Marca", "Modelo", "Submodelo", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "vs Lista %"];
+            const headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "vs Lista %"];
             sheet.range(1, 1, 1, headers.length).value([headers]).style({ bold: true });
 
             // Data

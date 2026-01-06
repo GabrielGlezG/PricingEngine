@@ -92,7 +92,7 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-[180px]">Modelo</TableHead>
-                <TableHead className="min-w-[120px]">Submodelo</TableHead>
+                <TableHead className="min-w-[120px]">Versión</TableHead>
                 <TableHead className="text-right">Precio c/Bono</TableHead>
                 <TableHead className="text-right">Precio Lista</TableHead>
                 <TableHead className="text-right">Bono</TableHead>

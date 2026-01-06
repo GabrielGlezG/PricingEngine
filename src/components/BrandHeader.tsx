@@ -25,12 +25,11 @@ export function BrandHeader({ brands, tipoVehiculo, models, className }: BrandHe
       
       <div className="relative z-10">
         {isSingleBrand ? (
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <BrandLogo brand={brands[0]} size="2xl" showName={false} />
-            <div className="space-y-2">
-              <p className="label-text">Marca seleccionada</p>
-              <h1 className="display-text text-foreground">{brands[0]}</h1>
-              <div className="flex flex-wrap gap-2 mt-3">
+          <div className="space-y-4">
+            <p className="label-text">Marca seleccionada</p>
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <BrandLogo brand={brands[0]} size="2xl" showName={false} />
+              <div className="flex flex-wrap gap-2">
                 {tipoVehiculo && tipoVehiculo.length > 0 && (
                   tipoVehiculo.map(tipo => (
                     <Badge key={tipo} variant="secondary" className="text-xs font-medium">
@@ -53,7 +52,7 @@ export function BrandHeader({ brands, tipoVehiculo, models, className }: BrandHe
             <p className="label-text">Marcas seleccionadas</p>
             <div className="flex flex-wrap items-center gap-4">
               {brands.map((brand) => (
-                <BrandLogo key={brand} brand={brand} size="xl" />
+                <BrandLogo key={brand} brand={brand} size="xl" showName={false} />
               ))}
             </div>
             {(tipoVehiculo && tipoVehiculo.length > 0) || (models && models.length > 0) ? (

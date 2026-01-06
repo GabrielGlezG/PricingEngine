@@ -334,7 +334,7 @@ export default function UploadComponent() {
             <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Estructura Requerida (Referencia)</p>
             <pre className="bg-muted/30 border border-border/40 p-4 rounded-lg text-xs font-mono text-muted-foreground overflow-x-auto">
               {`{
-  "UID", "ID_Base", "Categoría", "Modelo Principal", "Modelo",
+  "UID", "ID_Base", "Segmento", "Modelo Principal", "Modelo",
   "Tipo_Vehiculo", "ctx_precio", "precio_num", "precio_lista_num",
   "Fecha", "Timestamp", "estado" ...
 }`}

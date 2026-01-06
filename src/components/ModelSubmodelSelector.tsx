@@ -256,7 +256,7 @@ export function ModelSubmodelSelector({
                 )}
               >
                 <Filter className="mr-2 h-3.5 w-3.5" />
-                Categoría
+                Segmento
                 {selectedCategory && (
                   <>
                     <span className="mx-1">:</span>
@@ -268,9 +268,9 @@ export function ModelSubmodelSelector({
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Buscar categoría..." />
+                <CommandInput placeholder="Buscar segmento..." />
                 <CommandList>
-                  <CommandEmpty>No se encontró categoría.</CommandEmpty>
+                  <CommandEmpty>No se encontró segmento.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem onSelect={() => {
                       onCategoryChange("")
@@ -282,7 +282,7 @@ export function ModelSubmodelSelector({
                           !selectedCategory ? "opacity-100" : "opacity-0"
                         )}
                       />
-                      Todas las categorías
+                      Todas los segmentos
                     </CommandItem>
                     {categories?.map((category) => (
                       <CommandItem
@@ -383,7 +383,7 @@ export function ModelSubmodelSelector({
               )}
             >
               <Filter className="mr-2 h-3.5 w-3.5" />
-              Submodelo
+              Versión
               {selectedSubmodel && (
                 <>
                   <span className="mx-1">:</span>
@@ -395,9 +395,9 @@ export function ModelSubmodelSelector({
           </PopoverTrigger>
           <PopoverContent className="w-[250px] p-0" align="start">
             <Command>
-              <CommandInput placeholder="Buscar submodelo..." />
+              <CommandInput placeholder="Buscar versión..." />
               <CommandList>
-                <CommandEmpty>No se encontró submodelo.</CommandEmpty>
+                <CommandEmpty>No se encontró versión.</CommandEmpty>
                 <CommandGroup>
                   <CommandItem onSelect={() => {
                     onSubmodelChange("")
@@ -409,7 +409,7 @@ export function ModelSubmodelSelector({
                         !selectedSubmodel ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    Todos los submodelos
+                    Todas las versiones
                   </CommandItem>
                   {(submodels || []).map((submodel) => (
                     <CommandItem
