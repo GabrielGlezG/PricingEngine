@@ -719,8 +719,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
         <InstitutionalHeader
-          title="Dashboard Principal"
-          description="Resumen ejecutivo de métricas clave y estado del mercado."
+          title="Información General"
+          description="Visión general de métricas clave y situación del mercado."
           action={
             <Button 
               onClick={handleExport}
@@ -757,33 +757,27 @@ export default function Dashboard() {
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <DataCard
           title="Mercado Total"
-          value={analytics.metrics.total_brands}
-          subValue={`${analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos / ${analytics.metrics.total_models} submodelos`}
+          value={`Marcas ${analytics.metrics.total_brands}`}
+          subValue={`${analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos / ${analytics.metrics.total_models} versiones`}
           icon={Package}
         />
         
         <DataCard
           title="Precio Promedio"
           value={formatPrice(analytics.metrics.avg_price)}
-          subValue="Media del mercado actual"
           icon={DollarSign}
-          trend={{ value: Number(analytics.metrics.variation_coefficient.toFixed(1)), label: "Var", positive: true }}
         />
 
         <DataCard
           title="Precio Mínimo"
           value={formatPrice(analytics.metrics.min_price)}
-          subValue="Base de entrada"
           icon={TrendingDown}
-          
         />
 
         <DataCard
           title="Precio Máximo"
           value={formatPrice(analytics.metrics.max_price)}
-          subValue="Tope de gama"
           icon={TrendingUp}
-          
         />
       </div>
 
@@ -816,10 +810,10 @@ export default function Dashboard() {
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  Composición del Inventario por Segmento
+                  Composición de Versiones por Segmento
                 </CardTitle>
                 <CardDescription className="subtitle">
-                  Desglose porcentual de la flota según clasificación vehicular
+                  Distribución del volumen de versiones por segmento
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
@@ -894,12 +888,12 @@ export default function Dashboard() {
                 <div className="space-y-1">
                   <CardTitle className="card-title flex items-center gap-2">
                     <DollarSign className="h-5 w-5 text-primary" />
-                    Estructura de Precios por Categoría
+                    Estructura de Precios por Segmento
                   </CardTitle>
                   <CardDescription className="subtitle">
                     {selectedPriceSegment === "all" 
-                      ? "Evaluación comparativa de medias por clasificación" 
-                      : `Análisis de precios por Marca en ${selectedPriceSegment}`}
+                      ? "Evaluación comparativa de precios promedio."
+                      : "Distribución de precios para el segmento seleccionado"}
                   </CardDescription>
                 </div>
                 <div className="w-[200px]">
@@ -960,7 +954,7 @@ export default function Dashboard() {
                         responsive: true,
                         maintainAspectRatio: false,
                         layout: {
-                          padding: { bottom: 40 }
+                          padding: { bottom: 40, left: 30, right: 30 }
                         },
                         plugins: {
                           legend: { display: false },
@@ -1117,15 +1111,15 @@ export default function Dashboard() {
 
           {/* Sección: Análisis de Precios y Análisis por Marca */}
           <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-            {/* Precios por Categoría - Boxplot Pequeño */}
+            {/* Precios por Segmento - Boxplot Pequeño */}
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
                   <BarChart3 className="h-5 w-5 text-primary" />
-                  Dispersión de Precios por Segmento
+                  Precios por Segmento
                 </CardTitle>
                 <CardDescription className="subtitle">
-                  Análisis de cuartiles (min, avg, max) para evaluar variabilidad
+                  Análisis de cuartiles (min, avg, max)
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
@@ -1267,7 +1261,7 @@ export default function Dashboard() {
                         responsive: true,
                         maintainAspectRatio: false,
                         layout: {
-                          padding: { bottom: 40 }
+                          padding: { bottom: 40, left: 30, right: 30 }
                         },
                         scales: {
                           x: {
@@ -1379,14 +1373,16 @@ export default function Dashboard() {
                         {/* Dynamic Description */}
                         <p className="text-[11px] text-muted-foreground">
                           {(() => {
+                             const fmt = (d: string) => new Date(d).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+                             
                              if (variationPeriod === 'total') {
                                  if (!analytics.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
-                                 const min = formatLabelDate(analytics.available_dates[0]);
-                                 const max = formatLabelDate(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const min = fmt(analytics.available_dates[0]);
+                                 const max = fmt(analytics.available_dates[analytics.available_dates.length - 1]);
                                  return `Periodo: ${min} - ${max}`;
                              }
                              if (variationStartDate !== 'all' && variationEndDate !== 'all' && variationStartDate && variationEndDate) {
-                                return `Comparando: ${formatLabelDate(variationStartDate)} al ${formatLabelDate(variationEndDate)}`;
+                                return `Comparando: ${fmt(variationStartDate)} al ${fmt(variationEndDate)}`;
                              }
                              return "Seleccione rango";
                           })()}
@@ -1413,8 +1409,8 @@ export default function Dashboard() {
                                if (variations.length > 0 && variations[0].startDate) {
                                   const dates = variations.flatMap(v => [v.startDate, v.endDate]).filter(Boolean).sort();
                                   if (dates.length > 0) {
-                                     const minDate = new Date(dates[0]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
-                                     const maxDate = new Date(dates[dates.length-1]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' });
+                                     const minDate = new Date(dates[0]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+                                     const maxDate = new Date(dates[dates.length-1]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
                                      return `Variación % (${minDate} - ${maxDate})`;
                                   }
                                }
@@ -1440,7 +1436,7 @@ export default function Dashboard() {
                         responsive: true,
                         maintainAspectRatio: false,
                         layout: {
-                          padding: { bottom: 40 },
+                          padding: { bottom: 40, left: 30, right: 30 },
                         },
                         plugins: {
                           legend: { display: false },
@@ -1574,14 +1570,16 @@ export default function Dashboard() {
                         {/* Dynamic Description */}
                         <p className="text-[11px] text-muted-foreground">
                           {(() => {
+                             const fmt = (d: string) => new Date(d).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+
                              if (volatilityPeriod === 'total') {
                                  if (!analytics?.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
-                                 const min = formatLabelDate(analytics.available_dates[0]);
-                                 const max = formatLabelDate(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const min = fmt(analytics.available_dates[0]);
+                                 const max = fmt(analytics.available_dates[analytics.available_dates.length - 1]);
                                  return `Periodo: ${min} - ${max}`;
                              }
                              if (volatilityStartDate !== 'all' && volatilityEndDate !== 'all' && volatilityStartDate && volatilityEndDate) {
-                                return `Analizando: ${formatLabelDate(volatilityStartDate)} al ${formatLabelDate(volatilityEndDate)}`;
+                                return `Analizando: ${fmt(volatilityStartDate)} al ${fmt(volatilityEndDate)}`;
                              }
                              return "Seleccione rango";
                           })()}

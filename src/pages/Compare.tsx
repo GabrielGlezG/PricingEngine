@@ -325,7 +325,7 @@ export default function Compare() {
                       ))}
                     </tr>
                     <tr className="border-b border-border">
-                      <td className="p-3 label-text">Categoría</td>
+                      <td className="p-3 label-text">Segmento</td>
                       {comparisonData.map((item, index) => (
                         <td key={index} className="p-3 text-center">
                           <Badge variant="default">{item.product.tipo_vehiculo || "Sin Categoría"}</Badge>

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Eye, EyeOff, Crown } from 'lucide-react'
+import { Eye, EyeOff, Crown, Mail, Lock, User } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import logo from '@/assets/pricing-engine-logo-new.png'
@@ -147,12 +147,12 @@ export default function Login() {
 
         <div className="relative z-10 space-y-8 max-w-lg">
           <h1 className="text-5xl font-bold tracking-tight leading-none font-heading text-white">
-            La inteligencia <br/>
-            <span className="text-blue-200">da claridad.</span>
+            DDS... <br/>
+            <span className="text-blue-200">Data, decisions, solutions</span>
           </h1>
           <p className="text-blue-100/80 text-lg leading-relaxed font-light">
-            Plataforma de inteligencia de precios diseñada para el mercado automotriz. 
-            Datos precisos, decisiones estratégicas.
+            Plataforma avanzada de inteligencia de precios especializada en el sector automotriz. 
+            Proporciona información en tiempo real que facilita la toma de decisiones estratégicas con agilidad y eficiencia.
           </p>
         </div>
 
@@ -179,9 +179,6 @@ export default function Login() {
               <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Bienvenido
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Accede a la plataforma
-              </p>
             </div>
 
             <Tabs defaultValue="login" className="w-full">
@@ -200,29 +197,33 @@ export default function Login() {
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Correo Electrónico</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="nombre@empresa.com"
-                      value={loginForm.email}
-                      onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                      required
-                      className="h-11 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                    />
+                    <div className="relative group">
+                      <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="nombre@empresa.com"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="h-11 pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Contraseña</Label>
                       <a href="#" className="text-xs font-medium text-primary hover:underline hover:text-primary/80">¿Olvidaste tu contraseña?</a>
                     </div>
-                    <div className="relative">
+                    <div className="relative group">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={loginForm.password}
                         onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                         required
-                        className="h-11 pr-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        className="h-11 pl-10 pr-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
                       />
                       <Button
                         type="button"
@@ -239,7 +240,7 @@ export default function Login() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full h-11 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all font-medium text-[15px]">
+                  <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 transition-all font-medium text-[15px] hover:scale-[1.01] active:scale-[0.99]">
                     Iniciar Sesión
                   </Button>
                 </form>
@@ -249,53 +250,65 @@ export default function Login() {
                 <form onSubmit={handleSignup} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="signup-name" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Nombre Completo</Label>
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Juan Pérez"
-                        value={signupForm.name}
-                        onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
-                        required
-                        className="h-11 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
+                      <div className="relative group">
+                        <User className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="Juan Pérez"
+                          value={signupForm.name}
+                          onChange={(e) => setSignupForm(prev => ({ ...prev, name: e.target.value }))}
+                          required
+                          className="h-11 pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-email" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Email</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="nombre@empresa.com"
-                        value={signupForm.email}
-                        onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                        className="h-11 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
+                      <div className="relative group">
+                        <Mail className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="nombre@empresa.com"
+                          value={signupForm.email}
+                          onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
+                          required
+                          className="h-11 pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="signup-password" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Contraseña</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Crear contraseña"
-                        value={signupForm.password}
-                        onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
-                        required
-                        className="h-11 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
+                      <div className="relative group">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Crear contraseña"
+                          value={signupForm.password}
+                          onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
+                          required
+                          className="h-11 pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirm-password" className="text-xs font-semibold uppercase text-slate-500 tracking-wider">Confirmar Contraseña</Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="Repetir contraseña"
-                        value={signupForm.confirmPassword}
-                        onChange={(e) => setSignupForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                        required
-                        className="h-11 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
+                      <div className="relative group">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Repetir contraseña"
+                          value={signupForm.confirmPassword}
+                          onChange={(e) => setSignupForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                          required
+                          className="h-11 pl-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        />
+                      </div>
                     </div>
-                    <Button type="submit" className="w-full h-11 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all font-medium text-[15px] mt-2">
+                    <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 transition-all font-medium text-[15px] mt-2 hover:scale-[1.01] active:scale-[0.99]">
                       Crear Cuenta
                     </Button>
                   </form>
