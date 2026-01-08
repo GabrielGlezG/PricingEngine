@@ -178,6 +178,7 @@ Deno.serve(async (req) => {
     const brandStats: {
       [key: string]: {
         products: Set<string>
+        models: Set<string>
         dataPoints: number
         totalPrice: number
       }
@@ -185,16 +186,18 @@ Deno.serve(async (req) => {
 
     recentData.forEach(item => {
       if (!item.products) return
-      const product = item.products as unknown as { brand: string }
+      const product = item.products as unknown as { brand: string; model: string }
       const brand = product.brand
       if (!brandStats[brand]) {
         brandStats[brand] = {
           products: new Set(),
+          models: new Set(),
           dataPoints: 0,
           totalPrice: 0
         }
       }
       brandStats[brand].products.add(item.product_id)
+      brandStats[brand].models.add(product.model)
       brandStats[brand].dataPoints += 1
       brandStats[brand].totalPrice += item.price
     })
@@ -212,7 +215,8 @@ Deno.serve(async (req) => {
     const allBrands = Object.entries(brandStats)
       .map(([brand, stats]) => ({
         brand,
-        productCount: stats.products.size
+        productCount: stats.products.size,
+        modelCount: stats.models.size
       }))
       .sort((a, b) => a.brand.localeCompare(b.brand))
 
