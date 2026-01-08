@@ -5,7 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext"
 import { useTheme } from "next-themes"
 import { hslVar, cn } from "@/lib/utils"
 import { getScaleOptions } from "@/config/chartColors"
-import { Card } from "@/components/custom/Card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Scale, DollarSign } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
@@ -279,11 +279,15 @@ export default function Compare() {
       )}
 
        {!hasActiveFilters && (
-        <CleanEmptyState 
-          icon={Scale}
-          title="Comienza tu comparación"
-          description="Utiliza la barra de filtros superior para buscar por marca, modelo o categoría."
-        />
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <Scale className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Comienza tu comparación</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Utiliza la barra de filtros superior para buscar por marca, modelo o categoría.
+            </p>
+          </CardContent>
+        </Card>
        )}
 
       {/* Comparación Detallada */}
@@ -433,11 +437,15 @@ export default function Compare() {
       )}
 
       {comparisonData.length === 0 && hasActiveFilters && (
-        <CleanEmptyState 
-          icon={Scale}
-          title="No hay modelos que coincidan"
-          description="Intenta ajustar los filtros para encontrar vehículos."
-        />
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <Scale className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No hay modelos que coincidan</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
+              Intenta ajustar los filtros para encontrar vehículos.
+            </p>
+          </CardContent>
+        </Card>
       )}
     </div>
   )
