@@ -7,6 +7,7 @@ interface BrandLogoProps {
   size?: "sm" | "md" | "lg" | "xl" | "2xl";
   className?: string;
   showName?: boolean;
+  variant?: "default" | "raw";
 }
 
 const sizeClasses = {
@@ -33,7 +34,7 @@ const nameSizeClasses = {
   "2xl": "text-4xl font-extrabold tracking-tight",
 };
 
-export function BrandLogo({ brand, size = "md", className, showName = true }: BrandLogoProps) {
+export function BrandLogo({ brand, size = "md", className, showName = true, variant = "default" }: BrandLogoProps) {
   const [renderMode, setRenderMode] = useState<'svg' | 'png' | 'initials'>('svg');
   
   const svgUrl = getBrandSvgUrl(brand);
@@ -63,11 +64,13 @@ export function BrandLogo({ brand, size = "md", className, showName = true }: Br
     <div className={cn("flex items-center gap-3", className)}>
       {showImage && currentUrl ? (
         <div className={cn(
-          "relative flex-shrink-0 rounded-xl overflow-hidden bg-white shadow-sm flex items-center justify-center",
+          "relative flex-shrink-0 flex items-center justify-center",
+          variant === "default" && "rounded-xl overflow-hidden bg-white shadow-sm",
           sizeClasses[size],
-          size === "xl" && "shadow-md",
-          size === "2xl" && "shadow-lg",
-          renderMode === 'svg' ? "p-1.5" : "p-1" // Slightly more padding for SVGs to prevent edge clipping
+          variant === "default" && size === "xl" && "shadow-md",
+          variant === "default" && size === "2xl" && "shadow-lg",
+          variant === "default" && (renderMode === 'svg' ? "p-1.5" : "p-1"),
+          variant === "raw" && "object-contain"
         )}>
           <img
             key={`${brand}-${renderMode}`} // Force re-render on mode change
@@ -99,4 +102,3 @@ export function BrandLogo({ brand, size = "md", className, showName = true }: Br
     </div>
   );
 }
-
