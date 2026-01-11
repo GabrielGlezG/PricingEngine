@@ -51,9 +51,11 @@ export function BrandLogo({ brand, size = "md", className, showName = true, vari
       // SVG failed, try PNG if available, otherwise initials
       if (pngUrl) setRenderMode('png');
       else setRenderMode('initials');
-    } else {
+    } else if (renderMode === 'png') {
       // PNG failed (or wasn't available), use initials
       setRenderMode('initials');
+    } else {
+        setRenderMode('initials');
     }
   };
 

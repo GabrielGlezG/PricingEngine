@@ -282,7 +282,10 @@ Deno.serve(async (req) => {
     const modelsByPrincipal = modelPrincipals.map(modelPrincipal => {
       const modelData = filteredData.filter(item => item.products?.model === modelPrincipal);
       const modelPrices = modelData.map(item => parseFloat(item.price));
+      const brand = modelData.length > 0 ? (modelData[0].products as any).brand : 'Unknown';
+
       return {
+        brand,
         model_principal: modelPrincipal,
         count: modelData.length,
         avg_price: modelPrices.reduce((a, b) => a + b, 0) / modelPrices.length,

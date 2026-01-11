@@ -59,10 +59,10 @@ export function Sidebar({ isMobileOpen, setIsMobileOpen }: SidebarProps) {
         </button>
 
         <div className="relative z-10">
-          <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'h-16 w-16 mx-auto' : 'h-24 sm:h-28 w-auto mx-4'} object-contain transition-all duration-300 mt-8 mb-6 drop-shadow-lg opacity-90 hover:opacity-100`} />
+          <img src={logo} alt="PricingEngine" className={`${isCollapsed ? 'w-10 h-10 mx-auto mb-6' : 'w-5/6 max-w-[200px] h-auto mx-auto mb-6'} object-contain transition-all duration-300 mt-6 drop-shadow-xl hover:scale-105`} />
         </div>
 
-        <nav className="flex-1 p-4 space-y-2 mt-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 mt-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           {filteredItems.map((item) => (
             <NavLink
               key={item.url}
