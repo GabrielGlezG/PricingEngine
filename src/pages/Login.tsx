@@ -133,44 +133,43 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full grid lg:grid-cols-2">
       {/* LEFT PANEL: Branding & Value Prop (Enterprise Style) */}
-      <div className="hidden lg:flex flex-col justify-between bg-[#002B5E] text-white p-16 relative overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#003B73] to-[#001A38]" />
+      <div className="hidden lg:flex flex-col justify-center bg-[#002B5E] text-white p-12 relative overflow-hidden">
+        {/* Background Gradients & Depth */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#001A38] via-[#002B5E] to-[#003B73] opacity-90" />
         
-        {/* Abstract Deco */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-400/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none" />
-        
-        <div className="relative z-10">
-          <img src={logo} alt="PricingEngine" className="h-20 w-auto object-contain brightness-0 invert opacity-90" />
+        {/* Decorative Elements - Subtle Data Feel */}
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none mix-blend-overlay" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none mix-blend-overlay" />
+
+        {/* Main Content Group - Vertically Centered */}
+        <div className="relative z-10 flex flex-col items-start max-w-xl">
+           <div className="transition-transform duration-500 hover:scale-105 origin-left mb-12">
+             <img src={logo} alt="PricingEngine" className="w-48 sm:w-64 h-auto object-contain drop-shadow-2xl -ml-10" />
+           </div>
+
+           <div className="space-y-8">
+             <div className="space-y-3">
+               <h1 className="text-6xl font-bold tracking-tighter text-white font-heading drop-shadow-lg">
+                 DDS
+               </h1>
+               <p className="text-xl font-medium tracking-widest text-blue-200/90 uppercase flex items-center gap-4">
+                 Data <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Decisions <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Solutions
+               </p>
+             </div>
+             
+             <div className="h-px w-24 bg-gradient-to-r from-blue-400 to-transparent opacity-70" />
+
+             <p className="text-lg leading-loose text-blue-100/90 font-light max-w-lg text-pretty">
+               Plataforma avanzada de inteligencia de precios para el sector automotriz. Toma decisiones estratégicas con información en tiempo real, agilidad y eficiencia.
+             </p>
+           </div>
         </div>
 
-        <div className="relative z-10 space-y-6 max-w-lg">
-          <div className="space-y-2">
-            <h1 className="text-6xl font-bold tracking-tighter text-white font-heading">
-              DDS
-            </h1>
-            <p className="text-2xl font-light tracking-wide text-blue-100 flex items-center">
-              Data <span className="mx-3 text-blue-400/50">•</span> Decisions <span className="mx-3 text-blue-400/50">•</span> Solutions
-            </p>
-          </div>
-          
-          <div className="h-px w-20 bg-gradient-to-r from-blue-400/50 to-transparent my-6" />
-
-          <div className="space-y-4 text-blue-100/80 text-lg leading-relaxed font-light">
-            <p>
-              Plataforma avanzada de inteligencia de precios especializada en el sector automotriz.
-            </p>
-            <p>
-              Proporciona información en tiempo real que facilita la toma de decisiones estratégicas con agilidad y eficiencia.
-            </p>
-          </div>
-        </div>
-
-        <div className="relative z-10 flex items-center gap-4 text-xs font-medium tracking-widest text-blue-200/40 uppercase">
+        {/* Footer - Anchored to bottom */}
+        <div className="absolute bottom-12 left-12 z-10 flex items-center gap-4 text-xs font-bold tracking-widest text-blue-200/30 uppercase">
            <span>PricingEngine</span>
            <span className="w-1 h-1 bg-current rounded-full" />
-           <span>2025</span>
+           <span>2026</span>
         </div>
       </div>
 
@@ -234,6 +233,7 @@ export default function Login() {
                         value={loginForm.password}
                         onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                         required
+                        placeholder="*********"
                         className="h-11 pl-10 pr-10 bg-slate-50 border-slate-200 focus:bg-white transition-all ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
                       />
                       <Button
