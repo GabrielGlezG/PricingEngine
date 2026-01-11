@@ -27,11 +27,10 @@ export const brandAxisLogoPlugin: Plugin = {
                 const svgUrl = getBrandSvgUrl(brandName);
                 const pngUrl = getBrandLogo(brandName);
 
-                // Strategy: Try SVG first. If it fails, fallback to PNG.
+                // Strategy: Try SVG first (Quality). If it fails, fallback to PNG.
                 if (svgUrl && !failedSvgs.has(cacheKey)) {
                     img.src = svgUrl;
                     img.onerror = () => {
-                        // console.warn(`Failed to load SVG for ${brandName}, falling back to PNG`);
                         failedSvgs.add(cacheKey);
                         if (pngUrl) {
                             img.src = pngUrl;

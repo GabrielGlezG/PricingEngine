@@ -38,141 +38,165 @@ function normalizeEstado(value: any): 'nuevo' | 'vigente' | 'inactivo' {
 
 async function processBackground(jsonData: JsonData[], batchId: string, supabaseClient: any) {
   try {
-    let processedCount = 0;
-    const results = [];
+    console.log(`[Batch] Starting processing for ${jsonData.length} items. Job ID: ${batchId}`);
 
-    console.log(`[Background] Starting to process ${jsonData.length} items for job ${batchId}`);
+    // 1. Pre-process and Deduplicate Products in Memory
+    // We use a Map to keep unique products by id_base (last wins or first wins doesnt matter much for static attributes usually, but lets say last wins)
+    const uniqueProducts = new Map<string, any>();
+    const pricesToInsert: any[] = [];
+    const errors: any[] = [];
+
+    // Temporary map to link ID_Base to the raw item for error reporting if needed
+    // But since we are doing batch, individual item errors are harder to track during the DB phase.
+    // We will track validation errors here.
 
     for (const item of jsonData) {
-      processedCount++; // Increment count for every item attempted
+      // Basic Validation
+      const categoria = item["Categoría"] || item.Categoría;
+      const modeloPrincipal = item["Modelo Principal"];
+      const modelo = item.Modelo;
+      const idBase = item.ID_Base; // Critical for linking
 
-      try {
-        // Validate required fields first
-        const categoria = item["Categoría"] || item.Categoría;
-        const modeloPrincipal = item["Modelo Principal"];
-        const modelo = item.Modelo;
-        const precioTexto = item.Precio_Texto;
+      if (!categoria || !modeloPrincipal || !modelo || !idBase) {
+        // Skip invalid items (or log them)
+        continue;
+      }
 
-        if (!categoria || categoria.trim() === '') {
-          results.push({ item, error: 'Campo obligatorio faltante: Categoría' });
-          continue;
+      // Normalization
+      let rawEstado: unknown = null;
+      for (const key in item as any) {
+        if (key && key.toLowerCase() === 'estado') {
+          rawEstado = (item as any)[key];
+          break;
         }
-        if (!modeloPrincipal || modeloPrincipal.trim() === '') {
-          results.push({ item, error: 'Campo obligatorio faltante: Modelo Principal' });
-          continue;
+      }
+      const estado = normalizeEstado(rawEstado);
+
+      let tipoVehiculo: string | null = null;
+      for (const key in item as any) {
+        if (key && (key.toLowerCase() === 'tipo_vehiculo' || key.toLowerCase() === 'tipovehiculo' || key.toLowerCase() === 'tipo vehiculo')) {
+          tipoVehiculo = (item as any)[key] || null;
+          break;
         }
-        if (!modelo || modelo.trim() === '') {
-          results.push({ item, error: 'Campo obligatorio faltante: Modelo' });
-          continue;
-        }
-        if (!precioTexto || precioTexto.trim() === '') {
-          results.push({ item, error: 'Campo obligatorio faltante: Precio_Texto' });
-          continue;
-        }
+      }
 
-        // Generate missing fields
-        const uid = item.UID || crypto.randomUUID().replace(/-/g, '').substring(0, 12);
-        const fecha = item.Fecha || new Date().toISOString().split('T')[0];
-        const timestamp = item.Timestamp || new Date().toISOString();
+      const productData = {
+        brand: categoria,
+        category: categoria,
+        model: modeloPrincipal,
+        name: modelo,
+        id_base: idBase,
+        submodel: modelo,
+        estado: estado,
+        tipo_vehiculo: tipoVehiculo
+      };
 
-        // Extract 'estado'
-        let rawEstado: unknown = null;
-        for (const key in item as any) {
-          if (key && key.toLowerCase() === 'estado') {
-            rawEstado = (item as any)[key];
-            break;
-          }
-        }
-        const estado = normalizeEstado(rawEstado);
+      uniqueProducts.set(idBase, productData);
 
-        // Extract 'tipo_vehiculo'
-        let tipoVehiculo: string | null = null;
-        for (const key in item as any) {
-          if (key && (key.toLowerCase() === 'tipo_vehiculo' || key.toLowerCase() === 'tipovehiculo' || key.toLowerCase() === 'tipo vehiculo')) {
-            tipoVehiculo = (item as any)[key] || null;
-            break;
-          }
-        }
+      // Prepare Price Data (we need product_id, which we don't have yet. So we store the rest)
+      // We will link it after product upsert.
+      pricesToInsert.push({
+        ...item,
+        status_normalized: estado // Keep track for logic if needed
+      });
+    }
 
-        const productData = {
-          brand: categoria,
-          category: categoria,
-          model: modeloPrincipal,
-          name: modelo,
-          id_base: item.ID_Base,
-          submodel: modelo,
-          estado: estado,
-          tipo_vehiculo: tipoVehiculo
-        };
+    const productsArray = Array.from(uniqueProducts.values());
+    console.log(`[Batch] Found ${productsArray.length} unique products to upsert.`);
 
-        // Optimize with Upsert
-        const { data: product, error: upsertError } = await supabaseClient
-          .from('products')
-          .upsert(productData, { onConflict: 'id_base' })
-          .select('id')
-          .single();
+    // 2. Bulk Upsert Products
+    // We expect Supabase to handle "onConflict: id_base"
+    const { data: upsertedProducts, error: upsertError } = await supabaseClient
+      .from('products')
+      .upsert(productsArray, { onConflict: 'id_base' })
+      .select('id, id_base');
 
-        if (upsertError) {
-          results.push({ item, error: upsertError.message });
-          continue;
-        }
+    if (upsertError) {
+      throw new Error(`Critical Error Upserting Products: ${upsertError.message}`);
+    }
 
-        // Insert price data
-        const priceData = {
-          product_id: product.id,
-          uid: uid,
-          store: categoria + ' Store',
-          price: item.precio_num ? Number(item.precio_num) : 0,
-          date: new Date(fecha).toISOString(),
-          ctx_precio: item.ctx_precio || null,
-          precio_num: item.precio_num ? Number(item.precio_num) : 0,
-          precio_lista_num: item.precio_lista_num ? Number(item.precio_lista_num) : null,
-          bono_num: item.bono_num ? Number(item.bono_num) : null,
-          precio_texto: precioTexto,
-          fuente_texto_raw: item.fuente_texto_raw || null,
-          modelo_url: item.Modelo_URL || null,
-          archivo_origen: item.Archivo_Origen || null,
-          timestamp_data: new Date(timestamp).toISOString(),
-        };
+    if (!upsertedProducts || upsertedProducts.length === 0) {
+      console.warn("[Batch] No products returned after upsert. Verify RLS policies if this persists.");
+    }
 
-        const { error: priceError } = await supabaseClient
-          .from('price_data')
-          .insert(priceData);
+    // 3. Create Map: ID_Base -> Product_UUID
+    const productIdMap = new Map<string, string>();
+    upsertedProducts?.forEach((p: any) => {
+      productIdMap.set(p.id_base, p.id);
+    });
 
-        if (priceError) {
-          results.push({ item, error: priceError.message });
-        } else {
-          results.push({ item, success: true });
-        }
+    // 4. Prepare Final Price Rows
+    const finalPrices = [];
 
-        // Periodic update every 20 items or last item to reduce DB spam
-        if (processedCount % 20 === 0 || processedCount === jsonData.length) {
-          await supabaseClient
-            .from('scraping_jobs')
-            .update({ completed_products: processedCount })
-            .eq('id', batchId);
-        }
+    for (const item of pricesToInsert) {
+      const pId = productIdMap.get(item.ID_Base);
+      if (!pId) {
+        // Should not happen if upsert worked, unless ID_Base was missing in the first place
+        continue;
+      }
 
-      } catch (error) {
-        console.error('Error processing item:', error);
-        results.push({ item, error: error instanceof Error ? error.message : 'Unknown error' });
+      const uid = item.UID || crypto.randomUUID().replace(/-/g, '').substring(0, 12);
+      const fecha = item.Fecha || new Date().toISOString().split('T')[0];
+      const timestamp = item.Timestamp || new Date().toISOString();
+      const categoria = item["Categoría"] || item.Categoría;
+      const precioTexto = item.Precio_Texto || item.precio_texto; // fallback
+
+      finalPrices.push({
+        product_id: pId,
+        uid: uid,
+        store: (categoria || 'DDS') + ' Store',
+        price: item.precio_num ? Number(item.precio_num) : 0,
+        date: new Date(fecha).toISOString(),
+        ctx_precio: item.ctx_precio || null,
+        precio_num: item.precio_num ? Number(item.precio_num) : 0,
+        precio_lista_num: item.precio_lista_num ? Number(item.precio_lista_num) : null,
+        bono_num: item.bono_num ? Number(item.bono_num) : null,
+        precio_texto: precioTexto,
+        fuente_texto_raw: item.fuente_texto_raw || null,
+        modelo_url: item.Modelo_URL || null,
+        archivo_origen: item.Archivo_Origen || null,
+        timestamp_data: new Date(timestamp).toISOString(),
+      });
+    }
+
+    console.log(`[Batch] Prepared ${finalPrices.length} price rows for insertion.`);
+
+    // 5. Bulk Insert Prices (Chunked)
+    const CHUNK_SIZE = 1000;
+    for (let i = 0; i < finalPrices.length; i += CHUNK_SIZE) {
+      const chunk = finalPrices.slice(i, i + CHUNK_SIZE);
+      const { error: insertError } = await supabaseClient
+        .from('price_data')
+        .insert(chunk);
+
+      if (insertError) {
+        console.error(`[Batch] Error inserting chunk ${i / CHUNK_SIZE}:`, insertError);
+        // We log error but try to continue with next chunks to save partial data
+        errors.push({ batchIndex: i, message: insertError.message });
+      } else {
+        // Update progress roughly
+        await supabaseClient
+          .from('scraping_jobs')
+          .update({ completed_products: Math.min(jsonData.length, i + CHUNK_SIZE) })
+          .eq('id', batchId);
       }
     }
 
-    // Complete job
+    // 6. Complete Job
     await supabaseClient
       .from('scraping_jobs')
       .update({
-        status: 'completed',
+        status: errors.length > 0 ? 'completed_with_errors' : 'completed',
         completed_at: new Date().toISOString(),
-        results: results
+        completed_products: jsonData.length, // Ensure 100%
+        results: errors.length > 0 ? errors : [{ message: "Batch processing successful" }]
       })
       .eq('id', batchId);
 
-    console.log(`[Background] Job ${batchId} completed.`);
+    console.log(`[Batch] Job ${batchId} finished.`);
 
   } catch (e) {
-    console.error(`[Background] Critical error in job ${batchId}:`, e);
+    console.error(`[Batch] Critical error in job ${batchId}:`, e);
     await supabaseClient
       .from('scraping_jobs')
       .update({

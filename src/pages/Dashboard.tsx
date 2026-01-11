@@ -142,6 +142,7 @@ interface AnalyticsData {
     prices_by_segment_breakdown?: Record<string, Array<{ brand: string; avg_price: number; count: number }>>;
     models_by_category: Array<{ category: string; count: number }>;
     models_by_principal: Array<{
+      brand: string;
       model_principal: string;
       count: number;
       avg_price: number;
@@ -823,67 +824,111 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="pt-2">
                 <div className="h-[220px] sm:h-[260px]">
-                  {mounted && (
-                    <Bar
-                      ref={null}
-                      key={`bar-category-${chartKey}`}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.models_by_category || []
-                        ).map((d) => d.category),
-                        datasets: [
-                          {
-                            label: "Cantidad",
-                            data: (
-                              analytics.chart_data?.models_by_category || []
-                            ).map((d) => d.count),
-                            backgroundColor: getChartPalette((analytics.chart_data?.models_by_category || []).length, 0.8),
-                            hoverBackgroundColor: getChartPalette((analytics.chart_data?.models_by_category || []).length, 1),
-                            borderRadius: 4,
-                            barThickness: "flex",
-                            maxBarThickness: 40,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                          },
-                        },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            grid: { display: false },
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: hslVar('--muted-foreground'),
-                            }
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                                ...getScaleOptions().ticks,
-                                color: hslVar('--muted-foreground'),
-                            },
-                            grid: {
-                                ...getScaleOptions().grid,
-                                color: hslVar('--border'),
-                            }
-                          },
-                        },
-                      }}
-                    />
-                  )}
+                  {mounted && (() => {
+                    const breakdown = analytics.chart_data?.prices_by_segment_breakdown || {};
+                    const segments = Object.keys(breakdown).sort(); // Categories like 'SUV', 'Sedan'
+                    const allBrands = Array.from(new Set(
+                        Object.values(breakdown).flatMap(stats => stats.map(s => s.brand))
+                    )).sort();
+
+                    // Dynamic palette based on brand count
+                    const brandColors = getChartPalette(allBrands.length, 0.8);
+
+                    return (
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 min-h-0">
+                            <Bar
+                              ref={null}
+                              key={`bar-category-stacked-${chartKey}`}
+                              data={{
+                                labels: segments,
+                                datasets: allBrands.map((brand, idx) => ({
+                                    label: brand,
+                                    data: segments.map(seg => {
+                                        const brandStat = breakdown[seg]?.find(s => s.brand === brand);
+                                        return brandStat ? brandStat.count : 0;
+                                    }),
+                                    backgroundColor: brandColors[idx % brandColors.length],
+                                    // hoverBackgroundColor: brandColors[idx % brandColors.length].replace(/[\d.]+\)$/g, "1)"), // tricky to adjust alpha on string
+                                    borderRadius: 2,
+                                    barThickness: "flex",
+                                    maxBarThickness: 45,
+                                    stack: 'stack1',
+                                })),
+                              }}
+                              options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false, // Show tooltip for all items in the stack
+                                },
+                                plugins: {
+                                  legend: { display: false },
+                                  tooltip: {
+                                    backgroundColor: tooltipColors.backgroundColor(),
+                                    borderColor: tooltipColors.borderColor(),
+                                    borderWidth: tooltipColors.borderWidth,
+                                    titleColor: tooltipColors.titleColor(),
+                                    bodyColor: tooltipColors.bodyColor(),
+                                    padding: tooltipColors.padding,
+                                    cornerRadius: tooltipColors.cornerRadius,
+                                    callbacks: {
+                                        // Show brand name and count
+                                        label: (ctx) => {
+                                            if (ctx.parsed.y === 0) return ''; // Hide 0 values
+                                            return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+                                        }
+                                    }
+                                  },
+                                },
+                                scales: {
+                                  x: {
+                                    ...getScaleOptions(),
+                                    stacked: true,
+                                    grid: { display: false },
+                                    ticks: {
+                                      ...getScaleOptions().ticks,
+                                      color: hslVar('--muted-foreground'),
+                                    }
+                                  },
+                                  y: {
+                                    ...getScaleOptions(),
+                                    stacked: true,
+                                    ticks: {
+                                        ...getScaleOptions().ticks,
+                                        color: hslVar('--muted-foreground'),
+                                    },
+                                    grid: {
+                                        ...getScaleOptions().grid,
+                                        color: hslVar('--border'),
+                                    }
+                                  },
+                                },
+                              }}
+                            />
+                        </div>
+                        {/* Custom Legend for Stacked Bar */}
+                        <div className="mt-2 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 px-2 border-t border-border/50 pt-2">
+                             {allBrands.map((brand, idx) => (
+                               <div key={brand} className="flex items-center gap-1.5" title={brand}>
+                                   <div 
+                                     className="h-2 w-2 rounded-full shadow-sm" 
+                                     style={{ backgroundColor: brandColors[idx % brandColors.length] }} 
+                                   />
+                                   <BrandLogo 
+                                     brand={brand} 
+                                     variant="raw" 
+                                     size="sm" 
+                                     showName={false} 
+                                     className="!w-auto !h-4 opacity-90 hover:opacity-100 transition-opacity" 
+                                   />
+                               </div>
+                             ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1022,94 +1067,131 @@ export default function Dashboard() {
                 Matriz de Posicionamiento Precio-Volumen
               </CardTitle>
               <CardDescription className="subtitle">
-                Correlación entre precio promedio y volumen de variantes
+                Correlación entre precio promedio y volumen de versiones
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="h-[320px]">
-                {mounted && (
-                  <Bubble
-                    ref={null}
-                    key={`bubble-principal-${chartKey}`}
-                    data={{
-                      datasets: [
-                        {
-                          label: "Modelo Principal",
-                          data: (
-                            analytics.chart_data?.models_by_principal || []
-                          ).map((item, index) => ({
-                            x: index + 1,
-                            y: item.avg_price,
-                            r: Math.sqrt(item.count) * 3,
-                          })),
-                          backgroundColor: bubbleChartColors.primary(),
-                          borderColor: bubbleChartColors.primary(),
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          backgroundColor: tooltipColors.backgroundColor(),
-                          borderColor: tooltipColors.borderColor(),
-                          borderWidth: tooltipColors.borderWidth,
-                          titleColor: tooltipColors.titleColor(),
-                          bodyColor: tooltipColors.bodyColor(),
-                          padding: tooltipColors.padding,
-                          cornerRadius: tooltipColors.cornerRadius,
-                          callbacks: {
-                            label: (context) => {
-                              const item = (analytics.chart_data
-                                ?.models_by_principal || [])[
-                                context.dataIndex
-                              ];
-                              return [
-                                `Modelo: ${item.model_principal}`,
-                                `Precio Promedio: ${formatPrice(
-                                  item.avg_price
-                                )}`,
-                                `Volumen: ${item.count} variantes`,
-                                `Rango: ${formatPrice(
-                                  item.min_price
-                                )} - ${formatPrice(item.max_price)}`,
-                              ];
-                            },
-                          },
-                        },
-                      },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            title: {
-                              display: true,
-                              text: "Modelo",
-                              color: axisColor,
-                            },
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                            }
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              color: axisColor,
-                              font: { size: axisColors.tickFontSize },
-                              callback: (value) => formatPrice(value as number),
-                            },
-                            title: {
-                              display: true,
-                              text: "Precio Promedio",
-                              color: axisColor,
-                            },
-                          },
-                        },
-                    }}
-                  />
-                )}
+                  {mounted && (() => {
+                     const data = analytics.chart_data?.models_by_principal || [];
+                     const brands = Array.from(new Set(data.map(d => d.brand))).sort();
+                     const brandColors = getChartPalette(brands.length);
+
+                     // Función simple para generar un jitter determinista basado en el nombre del modelo
+                     const getStableJitter = (str: string) => {
+                        let hash = 0;
+                        for (let i = 0; i < str.length; i++) {
+                          hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                        }
+                        // Retorna un valor entre -0.35 y +0.35
+                        return ((Math.abs(hash) % 100) / 100 - 0.5) * 0.7;
+                     };
+                     
+                     return (
+                      <div className="flex flex-col h-full">
+                        <div className="flex-1 min-h-0">
+                          <Bubble
+                            ref={null}
+                            key={`bubble-principal-branded-${chartKey}-v4`}
+                            data={{
+                              datasets: brands.map((brand, idx) => ({
+                                label: brand,
+                                data: data.filter(d => d.brand === brand).map(d => ({
+                                    x: d.count + getStableJitter(d.model_principal), // Base X = Volume + Jitter
+                                    y: d.avg_price,
+                                    r: Math.max(6, Math.sqrt(d.count) * 5),
+                                    _custom: d 
+                                })),
+                                backgroundColor: brandColors[idx % brandColors.length],
+                                borderColor: brandColors[idx % brandColors.length],
+                                borderWidth: 1,
+                              }))
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: { 
+                                    display: false // Usamos leyenda personalizada abajo
+                                },
+                                tooltip: {
+                                  backgroundColor: tooltipColors.backgroundColor(),
+                                  borderColor: tooltipColors.borderColor(),
+                                  borderWidth: tooltipColors.borderWidth,
+                                  titleColor: tooltipColors.titleColor(),
+                                  bodyColor: tooltipColors.bodyColor(),
+                                  padding: tooltipColors.padding,
+                                  cornerRadius: tooltipColors.cornerRadius,
+                                  callbacks: {
+                                    title: () => '',
+                                    label: (context: any) => {
+                                      const item = (context.raw as any)._custom;
+                                      if (!item) return '';
+                                      return [
+                                          `MODELO: ${item.brand} ${item.model_principal}`,
+                                          `Precio Prom: ${formatPrice(item.avg_price)}`,
+                                          `Volumen: ${item.count} versiones`,
+                                          `Rango: ${formatPrice(item.min_price)} - ${formatPrice(item.max_price)}`
+                                      ];
+                                    }
+                                  }
+                                },
+                              },
+                              scales: {
+                                x: {
+                                  ...getScaleOptions(),
+                                  type: 'linear',
+                                  title: { 
+                                      display: true, 
+                                      text: 'Volumen de Versiones (Cantidad)', 
+                                      color: hslVar('--muted-foreground'),
+                                      font: { size: 11 }
+                                  },
+                                  ticks: { 
+                                      ...getScaleOptions().ticks, 
+                                      stepSize: 1,
+                                      callback: (val: any) => Math.round(Number(val)) 
+                                  }
+                                },
+                                y: {
+                                  ...getScaleOptions(),
+                                  title: { 
+                                      display: true, 
+                                      text: 'Precio Promedio', 
+                                      color: hslVar('--muted-foreground'),
+                                      font: { size: 11 }
+                                  },
+                                  ticks: {
+                                      ...getScaleOptions().ticks,
+                                      callback: (val: any) => formatPrice(Number(val), { notation: 'compact' } as any)
+                                  },
+                                  grid: { ...getScaleOptions().grid, color: hslVar('--border') }
+                                },
+                              },
+                            }}
+                          />
+                        </div>
+                        {/* Custom Legend with Logos */}
+                        <div className="mt-4 flex flex-wrap justify-center items-center gap-x-6 gap-y-3 px-2 border-t border-border/50 pt-3">
+                            {brands.map((brand, idx) => (
+                              <div key={brand} className="flex items-center gap-2" title={brand}>
+                                  <div 
+                                    className="h-2.5 w-2.5 rounded-full shadow-sm" 
+                                    style={{ backgroundColor: brandColors[idx % brandColors.length] }} 
+                                  />
+                                  <BrandLogo 
+                                    brand={brand} 
+                                    variant="raw" 
+                                    size="sm" 
+                                    showName={false} 
+                                    className="!w-auto !h-5 opacity-90 hover:opacity-100 transition-opacity" 
+                                  />
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                     );
+                  })()}
               </div>
             </CardContent>
           </Card>
@@ -1495,7 +1577,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between gap-4">
                     <CardTitle className="card-title flex items-center gap-2 whitespace-nowrap">
                       <Activity className="h-5 w-5 text-primary" />
-                      Volatilidad: {volatilityBrands.length === 1 ? 'Modelos' : 'Marcas'}
+                      Volatilidad: {volatilityBrands.length === 1 || filters.brand?.length === 1 ? 'Modelos' : 'Marcas'}
                     </CardTitle>
                     
                      <div className="w-full max-w-[200px]">
@@ -1670,20 +1752,30 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Custom Legend with Logos */}
+                {/* Custom Legend with Logos (or Text for Models) */}
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 px-2">
-                  {(analytics.chart_data?.volatility_timeseries || []).map((series, idx) => (
-                    <div key={series.entity} className="flex items-center gap-2">
-                       <div 
-                         className="w-3 h-3 rounded-full shrink-0" 
-                         style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
-                       />
-                       <div className="flex items-center gap-1.5">
-                          <BrandLogo brand={series.entity} size="sm" showName={false} />
-                          <span className="text-xs text-muted-foreground font-medium">{series.entity}</span>
-                       </div>
-                    </div>
-                  ))}
+                  {(() => {
+                      const isModelMode = volatilityBrands.length === 1 || filters.brand?.length === 1;
+                      return (analytics.chart_data?.volatility_timeseries || []).map((series, idx) => (
+                         <div key={series.entity} className="flex items-center gap-2" title={series.entity}>
+                            <div 
+                              className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" 
+                              style={{ backgroundColor: COLORS[idx % COLORS.length] }} 
+                            />
+                            {isModelMode ? (
+                                <span className="text-xs text-muted-foreground font-medium">{series.entity}</span>
+                            ) : (
+                                <BrandLogo 
+                                   brand={series.entity} 
+                                   variant="raw" 
+                                   size="sm" 
+                                   showName={false} 
+                                   className="!w-auto !h-5 opacity-90 hover:opacity-100 transition-opacity"
+                                />
+                            )}
+                         </div>
+                      ));
+                  })()}
                 </div>
               </CardContent>
             </Card>
