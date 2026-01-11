@@ -133,7 +133,7 @@ export default function Login() {
   return (
     <div className="min-h-screen w-full grid lg:grid-cols-2">
       {/* LEFT PANEL: Branding & Value Prop (Institutional Style) */}
-      <div className="hidden lg:flex flex-col justify-center bg-[#002B5E] text-white p-8 lg:p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-col h-full bg-[#002B5E] text-white p-8 xl:p-12 relative overflow-hidden">
         {/* Background Gradients & Depth */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#001A38] via-[#002B5E] to-[#003B73] opacity-90" />
         
@@ -141,52 +141,54 @@ export default function Login() {
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none mix-blend-overlay" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none mix-blend-overlay" />
 
-        {/* LOGO - Anchored to Top Left */}
-        <div className="absolute top-12 left-12 z-20">
-             <img src={logo} alt="PricingEngine" className="w-40 sm:w-48 h-auto object-contain drop-shadow-2xl" />
-        </div>
+        {/* CONTENT CONTAINER: Flex Column for robust spacing */}
+        <div className="relative z-10 flex flex-col h-full justify-between gap-8">
+            
+            {/* LOGO - Top */}
+            <div className="pt-2 xl:pt-4 transition-transform duration-500 hover:scale-105 origin-left">
+                 <img src={logo} alt="PricingEngine" className="w-36 xl:w-48 h-auto object-contain drop-shadow-2xl" />
+            </div>
 
-        {/* Main Content Group - Vertically Centered */}
-        <div className="relative z-10 flex flex-col items-start w-full max-w-lg mt-12">
-           <div className="space-y-8">
-             <div className="space-y-4">
-               <h1 className="text-6xl lg:text-7xl font-bold tracking-tighter text-white font-heading drop-shadow-lg">
-                 DDS
-               </h1>
-               <p className="text-xl lg:text-2xl font-medium tracking-widest text-blue-200/90 uppercase flex items-center gap-4">
-                 Data <span className="w-2 h-2 rounded-full bg-blue-400" /> Decisions <span className="w-2 h-2 rounded-full bg-blue-400" /> Solutions
-               </p>
-             </div>
-             
-             <div className="h-1.5 w-32 bg-gradient-to-r from-blue-400 to-transparent opacity-80 rounded-full" />
+            {/* MAIN TEXT - Center */}
+            <div className="flex flex-col justify-center max-w-lg space-y-6 xl:space-y-8">
+                 <div className="space-y-3 xl:space-y-4">
+                   <h1 className="text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tighter text-white font-heading drop-shadow-lg">
+                     DDS
+                   </h1>
+                   <p className="text-lg lg:text-xl xl:text-2xl font-medium tracking-widest text-blue-200/90 uppercase flex items-center gap-3 xl:gap-4">
+                     Data <span className="w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full bg-blue-400" /> Decisions <span className="w-1.5 h-1.5 xl:w-2 xl:h-2 rounded-full bg-blue-400" /> Solutions
+                   </p>
+                 </div>
+                 
+                 <div className="h-1.5 w-24 xl:w-32 bg-gradient-to-r from-blue-400 to-transparent opacity-80 rounded-full" />
 
-             <p className="text-lg lg:text-xl leading-relaxed text-blue-100/90 font-light max-w-md text-pretty border-l-2 border-blue-400/30 pl-6">
-               Plataforma avanzada de inteligencia de precios para el sector automotriz. Toma decisiones estratégicas con información en tiempo real.
-             </p>
-           </div>
-        </div>
+                 <p className="text-base lg:text-lg xl:text-xl leading-relaxed text-blue-100/90 font-light max-w-md text-pretty border-l-2 border-blue-400/30 pl-5 xl:pl-6">
+                   Plataforma avanzada de inteligencia de precios para el sector automotriz. Toma decisiones estratégicas con información en tiempo real.
+                 </p>
+            </div>
 
-        {/* Footer - Anchored to Bottom Left */}
-        <div className="absolute bottom-8 left-8 lg:bottom-12 lg:left-12 z-10 flex items-center gap-4 text-xs font-bold tracking-widest text-blue-200/30 uppercase">
-           <span>PricingEngine</span>
-           <span className="w-1 h-1 bg-current rounded-full" />
-           <span>2026</span>
+            {/* FOOTER - Bottom */}
+            <div className="flex items-center gap-3 xl:gap-4 text-[10px] xl:text-xs font-bold tracking-widest text-blue-200/30 uppercase pb-2">
+               <span>PricingEngine</span>
+               <span className="w-1 h-1 bg-current rounded-full" />
+               <span>2026</span>
+            </div>
         </div>
       </div>
 
       {/* RIGHT PANEL: Authentication Form */}
-      <div className="relative flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950/50 z-0">
+      <div className="relative flex items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-slate-950/50 z-0">
         <div className="w-full max-w-[440px] space-y-8 animate-in fade-in slide-in-from-right-8 duration-700">
           
            {/* Card Container for Form */}
-           <div className="bg-white dark:bg-slate-900 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 md:p-10">
+           <div className="bg-white dark:bg-slate-900 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 md:p-10">
             
             {/* Mobile Logo (only visible on small screens) */}
-            <div className="lg:hidden flex justify-center mb-8">
-              <img src={logo} alt="PricingEngine" className="h-24 w-auto object-contain invert" />
+            <div className="lg:hidden flex justify-center mb-6 sm:mb-8">
+              <img src={logo} alt="PricingEngine" className="h-16 sm:h-20 w-auto object-contain invert" />
             </div>
 
-            <div className="space-y-2 text-center mb-8">
+            <div className="space-y-2 text-center mb-6 sm:mb-8">
               <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Bienvenido
               </h2>

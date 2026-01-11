@@ -16,30 +16,49 @@ export const brandAxisLogoPlugin: Plugin = {
             const brandName = chart.data.labels?.[index] as string;
             if (!brandName) return;
 
+            // SAFETY: Ignore known Segment names to prevent overwriting axis labels
+            // if this plugin is accidentally attached to a Segment chart.
+            const IGNORED_LABELS = new Set(['SUV', 'SEDAN', 'HATCHBACK', 'CONVERTIBLE', 'PICK UP', 'PICKUP', 'VAN', 'COUPE']);
+            if (IGNORED_LABELS.has(brandName.trim().toUpperCase())) return;
+
             const cacheKey = brandName.trim().toUpperCase();
             let img = logoCache[cacheKey];
 
-            // Load image if not in cache
-            if (!img) {
+            // Load image if not in cache (and not known to fail)
+            if (!img && !failedSvgs.has(cacheKey)) {
                 img = new Image();
                 img.crossOrigin = 'Anonymous';
 
-                const svgUrl = getBrandSvgUrl(brandName);
+                // PRIORITY: PNG (Reliable Map) -> SVG (Dynamic Fallback)
                 const pngUrl = getBrandLogo(brandName);
+                const svgUrl = getBrandSvgUrl(brandName);
 
-                // Strategy: Try SVG first (Quality). If it fails, fallback to PNG.
-                if (svgUrl && !failedSvgs.has(cacheKey)) {
+                // Use PNG if available in our map (guaranteed valid usually)
+                // Otherwise try generic SVG
+                if (pngUrl) {
+                    img.src = pngUrl;
+                    // If PNG fails (rare), try SVG
+                    img.onerror = () => {
+                        if (svgUrl && img.src !== svgUrl) {
+                            img.src = svgUrl;
+                            // If SVG also fails, mark as failed
+                            img.onerror = () => {
+                                failedSvgs.add(cacheKey);
+                                chart.draw(); // Redraw to show text
+                            };
+                        } else {
+                            failedSvgs.add(cacheKey);
+                            chart.draw();
+                        }
+                    };
+                } else if (svgUrl) {
                     img.src = svgUrl;
                     img.onerror = () => {
                         failedSvgs.add(cacheKey);
-                        if (pngUrl) {
-                            img.src = pngUrl;
-                        }
+                        chart.draw();
                     };
-                } else if (pngUrl) {
-                    img.src = pngUrl;
                 } else {
-                    return; // No URL found
+                    failedSvgs.add(cacheKey); // No URL at all
                 }
 
                 img.onload = () => {
@@ -49,16 +68,16 @@ export const brandAxisLogoPlugin: Plugin = {
                 logoCache[cacheKey] = img;
             }
 
-            // Draw if loaded
-            if (img.complete && img.naturalHeight !== 0) {
-                const xPos = x.getPixelForTick(index);
-                const yPos = x.top + 10; // Position below axis line
+            const xPos = x.getPixelForTick(index);
+            const yPos = x.top + 10; // Position below axis line
+            const tickWidth = x.width / x.ticks.length;
+            const availableWidth = Math.min(60, tickWidth - 4); // Keep some padding
 
-                // Dynamic width calculation to prevent overlap
-                const tickWidth = x.width / x.ticks.length;
-                const availableWidth = Math.min(60, tickWidth - 8); // Max 60px or available space minus padding
+            // Check if we can draw image
+            const shouldDrawImage = img && img.complete && img.naturalHeight !== 0;
 
-                const maxWidth = Math.max(20, availableWidth); // Ensure at least 20px visible
+            if (shouldDrawImage) {
+                const maxWidth = Math.max(20, availableWidth);
                 const maxHeight = 35;
                 const ratio = img.naturalWidth / img.naturalHeight;
 
@@ -70,20 +89,33 @@ export const brandAxisLogoPlugin: Plugin = {
                     width = height * ratio;
                 }
 
-                // If width still exceeds available, constrain by width again (redundant but safe)
-                if (width > maxWidth) {
-                    width = maxWidth;
-                    height = width / ratio;
-                }
-
+                // Draw image
                 try {
-                    // Draw image centered horizontally
                     ctx.drawImage(img, xPos - width / 2, yPos, width, height);
                 } catch (e) {
-                    // Ignore transient errors
+                    // Fallback to text if draw fails
+                    drawTextFallback(ctx, brandName, xPos, yPos);
                 }
+            } else {
+                // FALLBACK: Draw Text
+                drawTextFallback(ctx, brandName, xPos, yPos);
             }
         });
     }
 };
+
+function drawTextFallback(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
+    ctx.save();
+    ctx.fillStyle = '#64748b'; // muted-foreground color
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // Truncate if too long
+    const displayText = text.length > 8 ? text.substring(0, 8) + '..' : text;
+
+    // Add a slight offset to align with where images would be
+    ctx.fillText(displayText, x, y + 5);
+    ctx.restore();
+}
 

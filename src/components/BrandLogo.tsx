@@ -35,7 +35,10 @@ const nameSizeClasses = {
 };
 
 export function BrandLogo({ brand, size = "md", className, showName = true, variant = "default" }: BrandLogoProps) {
-  const [renderMode, setRenderMode] = useState<'svg' | 'png' | 'initials'>('svg');
+  // Optimize: Use PNG (fast CDN) for small sizes to avoid SVG 404 overhead
+  // Use SVG for large sizes (quality)
+  const initialMode = (size === 'sm' || size === 'md') ? 'png' : 'svg';
+  const [renderMode, setRenderMode] = useState<'svg' | 'png' | 'initials'>(initialMode);
   
   const svgUrl = getBrandSvgUrl(brand);
   const pngUrl = getBrandLogo(brand);
@@ -43,8 +46,8 @@ export function BrandLogo({ brand, size = "md", className, showName = true, vari
   const brandColor = getBrandColor(brand);
 
   useEffect(() => {
-    setRenderMode('svg');
-  }, [brand]);
+    setRenderMode(initialMode);
+  }, [brand, initialMode]);
 
   const handleError = () => {
     if (renderMode === 'svg') {

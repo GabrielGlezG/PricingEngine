@@ -909,7 +909,7 @@ export default function Dashboard() {
                             />
                         </div>
                         {/* Custom Legend for Stacked Bar */}
-                        <div className="mt-2 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 px-2 border-t border-border/50 pt-2">
+                        <div className="mt-2 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 px-2 border-t border-border/50 pt-2 max-h-[100px] overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted/50">
                              {allBrands.map((brand, idx) => (
                                <div key={brand} className="flex items-center gap-1.5" title={brand}>
                                    <div 
@@ -966,92 +966,80 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[220px] sm:h-[260px]">
-                  {mounted && (
-                    <Bar
-                      ref={null}
-                      plugins={[brandAxisLogoPlugin]}
-                      key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
-                      data={{
-                        labels: selectedPriceSegment === "all"
+                <div className="h-[220px] sm:h-[260px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                      const dataLabels = selectedPriceSegment === "all"
                           ? (analytics.chart_data?.prices_by_category || []).map(d => d.category)
-                          : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.brand),
-                        datasets: [
-                          {
-                            label: "Precio Promedio",
-                            data: selectedPriceSegment === "all"
-                              ? (analytics.chart_data?.prices_by_category || []).map(d => d.avg_price)
-                              : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.avg_price),
-                            backgroundColor: getChartPalette(
-                              selectedPriceSegment === "all"
-                                ? (analytics.chart_data?.prices_by_category || []).length
-                                : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).length, 
-                              0.8
-                            ),
-                            hoverBackgroundColor: getChartPalette(
-                              selectedPriceSegment === "all"
-                                ? (analytics.chart_data?.prices_by_category || []).length
-                                : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).length, 
-                              1
-                            ),
-                            borderRadius: 4,
-                            barThickness: "flex",
-                            maxBarThickness: 40,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                          padding: { bottom: 40, left: 30, right: 30 }
-                        },
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: (context) => formatPrice(context.parsed.y)
-                            },
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                          },
-                        },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            grid: { display: false },
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: (c: any) => {
-                                const label = c.chart.data.labels?.[c.index] as string;
-                                return getBrandLogo(label) ? 'transparent' : axisColor;
-                              },
-                              maxRotation: 45,
-                              minRotation: 0,
-                              autoSkip: false,
-                            }
-                          },
-                          y: {
-                             ...getScaleOptions(),
-                             ticks: {
-                               ...getScaleOptions().ticks,
-                               color: axisColor,
-                               callback: (value) => formatPrice(value as number)
-                             },
-                             grid: {
-                               ...getScaleOptions().grid,
-                               color: hslVar('--border'),
-                             }
-                          },
-                        },
-                      }}
-                    />
-                  )}
+                          : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.brand);
+                      
+                      const minWidth = selectedPriceSegment !== "all" ? Math.max(100, dataLabels.length * 50) + 'px' : '100%';
+
+                      return (
+                        <div style={{ width: selectedPriceSegment !== "all" ? minWidth : '100%', height: '100%' }}>
+                            <Bar
+                                ref={null}
+                                plugins={[brandAxisLogoPlugin]}
+                                key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
+                                data={{
+                                    labels: dataLabels,
+                                    datasets: [
+                                    {
+                                        label: "Precio Promedio",
+                                        data: selectedPriceSegment === "all"
+                                        ? (analytics.chart_data?.prices_by_category || []).map(d => d.avg_price)
+                                        : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.avg_price),
+                                        backgroundColor: getChartPalette(dataLabels.length, 0.8),
+                                        hoverBackgroundColor: getChartPalette(dataLabels.length, 1),
+                                        borderRadius: 4,
+                                        barThickness: "flex",
+                                        maxBarThickness: 40,
+                                    },
+                                    ],
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    layout: { padding: { bottom: 30 } },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: tooltipColors.backgroundColor(),
+                                            borderColor: tooltipColors.borderColor(),
+                                            borderWidth: tooltipColors.borderWidth,
+                                            titleColor: tooltipColors.titleColor(),
+                                            bodyColor: tooltipColors.bodyColor(),
+                                            padding: tooltipColors.padding,
+                                            cornerRadius: tooltipColors.cornerRadius,
+                                            callbacks: {
+                                                label: (context: any) => `${context.dataset.label}: ${formatPrice(context.parsed.y)}`
+                                            }
+                                        },
+                                    },
+                                    scales: {
+                                        x: {
+                                            ...getScaleOptions(),
+                                            ticks: {
+                                                ...getScaleOptions().ticks,
+                                                color: (ctx) => {
+                                                    return selectedPriceSegment !== 'all' ? 'transparent' : hslVar('--muted-foreground');
+                                                },
+                                                font: { size: 11 }
+                                            }
+                                        },
+                                        y: {
+                                            ...getScaleOptions(),
+                                            ticks: {
+                                                ...getScaleOptions().ticks,
+                                                color: axisColor,
+                                                callback: (value) => formatPrice(value as number, { notation: 'compact' } as any),
+                                            },
+                                        },
+                                    },
+                                }}
+                            />
+                        </div>
+                      );
+                  })() }
                 </div>
               </CardContent>
             </Card>
@@ -1172,7 +1160,7 @@ export default function Dashboard() {
                           />
                         </div>
                         {/* Custom Legend with Logos */}
-                        <div className="mt-4 flex flex-wrap justify-center items-center gap-x-6 gap-y-3 px-2 border-t border-border/50 pt-3">
+                        <div className="mt-4 flex flex-wrap justify-center items-center gap-x-6 gap-y-3 px-2 border-t border-border/50 pt-3 max-h-[120px] overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted/50">
                             {brands.map((brand, idx) => (
                               <div key={brand} className="flex items-center gap-2" title={brand}>
                                   <div 
@@ -1210,95 +1198,93 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Bar
-                      key={`boxplot-price-category-${chartKey}`}
-                      plugins={[brandAxisLogoPlugin]}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.prices_by_category || []
-                        ).map((d) => d.category),
-                        datasets: [
-                          {
-                            label: "Mínimo",
-                            data: (
-                              analytics.chart_data?.prices_by_category || []
-                            ).map((d) => d.min_price),
-                            backgroundColor: hslVar("--chart-4", 0.7),
-                            borderColor: hslVar("--chart-4"),
-                            borderWidth: 1,
-                          },
-                          {
-                            label: "Promedio",
-                            data: (
-                              analytics.chart_data?.prices_by_category || []
-                            ).map((d) => d.avg_price),
-                            backgroundColor: hslVar("--chart-1", 0.7),
-                            borderColor: hslVar("--chart-1"),
-                            borderWidth: 1,
-                          },
-                          {
-                            label: "Máximo",
-                            data: (
-                              analytics.chart_data?.prices_by_category || []
-                            ).map((d) => d.max_price),
-                            backgroundColor: hslVar("--chart-5", 0.7),
-                            borderColor: hslVar("--chart-5"),
-                            borderWidth: 1,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                          padding: { bottom: 30 }
-                        },
-                        plugins: {
-                          legend: {
-                            position: "top",
-                            labels: {
-                              color: legendColor,
-                              padding: 8,
-                              font: { size: 10 },
-                            },
-                          },
-                          tooltip: {
-                            // ... existing tooltip config ...
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context: any) => {
-                                return `${context.dataset.label}: ${formatPrice(
-                                  context.parsed.y
-                                )}`;
-                              },
-                            },
-                          },
-                        },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                      const categoryData = analytics.chart_data?.prices_by_category || [];
+                      const minWidth = Math.max(100, categoryData.length * 50) + 'px';
 
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              callback: (value) => formatPrice(value as number),
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
+                      return (
+                        <div style={{ width: categoryData.length > 8 ? minWidth : '100%', height: '100%' }}>
+                            <Bar
+                            key={`boxplot-price-category-${chartKey}`}
+                            // plugins={[brandAxisLogoPlugin]} // Removed: Segments don't have logos
+                            data={{
+                                labels: categoryData.map((d) => d.category),
+                                datasets: [
+                                {
+                                    label: "Mínimo",
+                                    data: categoryData.map((d) => d.min_price),
+                                    backgroundColor: hslVar("--chart-4", 0.7),
+                                    borderColor: hslVar("--chart-4"),
+                                    borderWidth: 1,
+                                },
+                                {
+                                    label: "Promedio",
+                                    data: categoryData.map((d) => d.avg_price),
+                                    backgroundColor: hslVar("--chart-1", 0.7),
+                                    borderColor: hslVar("--chart-1"),
+                                    borderWidth: 1,
+                                },
+                                {
+                                    label: "Máximo",
+                                    data: categoryData.map((d) => d.max_price),
+                                    backgroundColor: hslVar("--chart-5", 0.7),
+                                    borderColor: hslVar("--chart-5"),
+                                    borderWidth: 1,
+                                },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                layout: {
+                                    padding: { bottom: 30 }
+                                },
+                                plugins: {
+                                legend: {
+                                    position: "top",
+                                    labels: {
+                                    color: legendColor,
+                                    padding: 8,
+                                    font: { size: 10 },
+                                    },
+                                },
+                                tooltip: {
+                                    backgroundColor: tooltipColors.backgroundColor(),
+                                    borderColor: tooltipColors.borderColor(),
+                                    borderWidth: tooltipColors.borderWidth,
+                                    titleColor: tooltipColors.titleColor(),
+                                    bodyColor: tooltipColors.bodyColor(),
+                                    padding: tooltipColors.padding,
+                                    cornerRadius: tooltipColors.cornerRadius,
+                                    callbacks: {
+                                    label: (context: any) => {
+                                        return `${context.dataset.label}: ${formatPrice(
+                                        context.parsed.y
+                                        )}`;
+                                    },
+                                    },
+                                },
+                                },
+                                scales: {
+                                x: {
+                                    ...getScaleOptions(),
+
+                                },
+                                y: {
+                                    ...getScaleOptions(),
+                                    ticks: {
+                                    ...getScaleOptions().ticks,
+                                    color: axisColor,
+                                    callback: (value) => formatPrice(value as number),
+                                    },
+                                },
+                                },
+                            }}
+                            />
+                        </div>
+                      );
+                   })()}
                 </div>
               </CardContent>
             </Card>
@@ -1315,77 +1301,80 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Line
-                      ref={null}
-                      key={`line-brand-${chartKey}`}
-                      plugins={[brandAxisLogoPlugin]}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.prices_by_brand || []
-                        ).map((d) => d.brand),
-                        datasets: [
-                          {
-                            label: "Precio Promedio",
-                            data: (
-                              analytics.chart_data?.prices_by_brand || []
-                            ).map((d) => d.avg_price),
-                            borderColor: hslVar("--chart-2"),
-                            backgroundColor: hslVar("--chart-2", 0.1),
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: hslVar("--chart-2"),
-                            pointBorderColor: hslVar("--card"),
-                            pointBorderWidth: 2,
-                            tension: 0.3,
-                            fill: false,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                          padding: { bottom: 40, left: 30, right: 30 }
-                        },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: 'transparent',
-                              font: { size: 14 },
-                            },
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              callback: (value) => formatPrice(value as number),
-                            },
-                          },
-                        },
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) => formatPrice(context.parsed.y),
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                      const brandData = analytics.chart_data?.prices_by_brand || [];
+                      const minWidth = Math.max(100, brandData.length * 50) + 'px';
+                      
+                      return (
+                        <div style={{ width: brandData.length > 8 ? minWidth : '100%', height: '100%' }}>
+                            <Line
+                            ref={null}
+                            key={`line-brand-${chartKey}`}
+                            plugins={[brandAxisLogoPlugin]}
+                            data={{
+                                labels: brandData.map((d) => d.brand),
+                                datasets: [
+                                {
+                                    label: "Precio Promedio",
+                                    data: brandData.map((d) => d.avg_price),
+                                    borderColor: hslVar("--chart-2"),
+                                    backgroundColor: hslVar("--chart-2", 0.1),
+                                    borderWidth: 2,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: hslVar("--chart-2"),
+                                    pointBorderColor: hslVar("--card"),
+                                    pointBorderWidth: 2,
+                                    tension: 0.3,
+                                    fill: false,
+                                },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                layout: {
+                                    padding: { bottom: 40, left: 10, right: 10 }
+                                },
+                                scales: {
+                                x: {
+                                    ...getScaleOptions(),
+                                    ticks: {
+                                        ...getScaleOptions().ticks,
+                                        color: 'transparent', // Hide text, assume logos are shown
+                                        font: { size: 14 },
+                                    },
+                                },
+                                y: {
+                                    ...getScaleOptions(),
+                                    ticks: {
+                                        ...getScaleOptions().ticks,
+                                        color: axisColor,
+                                        callback: (value) => formatPrice(value as number, { notation: 'compact' } as any),
+                                    },
+                                },
+                                },
+                                plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: tooltipColors.backgroundColor(),
+                                    borderColor: tooltipColors.borderColor(),
+                                    borderWidth: tooltipColors.borderWidth,
+                                    titleColor: tooltipColors.titleColor(),
+                                    bodyColor: tooltipColors.bodyColor(),
+                                    padding: tooltipColors.padding,
+                                    cornerRadius: tooltipColors.cornerRadius,
+                                    callbacks: {
+                                        label: (context) => formatPrice(context.parsed.y),
+                                    },
+                                },
+                                },
+                            }}
+                            />
+                        </div>
+                      );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1478,92 +1467,95 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Line
-                      ref={null}
-                      key={`area-variation-${chartKey}`}
-                      plugins={[brandAxisLogoPlugin]}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.brand_variations || []
-                        ).map((d) => d.brand),
-                        datasets: [
-                          {
-                            label: (() => {
-                               // Calculate explicit date range string for label
-                               const variations = analytics.chart_data?.brand_variations || [];
-                               if (variations.length > 0 && variations[0].startDate) {
-                                  const dates = variations.flatMap(v => [v.startDate, v.endDate]).filter(Boolean).sort();
-                                  if (dates.length > 0) {
-                                     const minDate = new Date(dates[0]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
-                                     const maxDate = new Date(dates[dates.length-1]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
-                                     return `Variación % (${minDate} - ${maxDate})`;
-                                  }
-                               }
-                               return "Variación %";
-                            })(),
-                            data: (
-                              analytics.chart_data?.brand_variations || []
-                            ).map((d) => d.variation_percent),
-                            borderColor: hslVar("--chart-3"),
-                            backgroundColor: hslVar("--chart-3", 0.3),
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: hslVar("--chart-3"),
-                            pointBorderColor: hslVar("--card"),
-                            pointBorderWidth: 2,
-                            tension: 0.3,
-                            fill: true,
-                          },
-                        ],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        layout: {
-                          padding: { bottom: 40, left: 30, right: 30 },
-                        },
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: tooltipColors.backgroundColor(),
-                            borderColor: tooltipColors.borderColor(),
-                            borderWidth: tooltipColors.borderWidth,
-                            titleColor: tooltipColors.titleColor(),
-                            bodyColor: tooltipColors.bodyColor(),
-                            padding: tooltipColors.padding,
-                            cornerRadius: tooltipColors.cornerRadius,
-                            callbacks: {
-                              label: (context) =>
-                                `${context.parsed.y.toFixed(2)}%`,
-                            },
-                          },
-                        },
-                        scales: {
-                          x: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: 'transparent',
-                              maxRotation: 45,
-                              minRotation: 45,
-                              font: { size: 14 },
-                            },
-                          },
-                          y: {
-                            ...getScaleOptions(),
-                            ticks: {
-                              ...getScaleOptions().ticks,
-                              color: axisColor,
-                              callback: (value) => `${value}%`,
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  )}
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                      const variationData = analytics.chart_data?.brand_variations || [];
+                      const minWidth = Math.max(100, variationData.length * 50) + 'px';
+                      
+                      return (
+                        <div style={{ width: variationData.length > 8 ? minWidth : '100%', height: '100%' }}>
+                            <Line
+                            ref={null}
+                            key={`area-variation-${chartKey}`}
+                            plugins={[brandAxisLogoPlugin]}
+                            data={{
+                                labels: variationData.map((d) => d.brand),
+                                datasets: [
+                                {
+                                    label: (() => {
+                                    // Calculate explicit date range string for label
+                                    const variations = analytics.chart_data?.brand_variations || [];
+                                    if (variations.length > 0 && variations[0].startDate) {
+                                        const dates = variations.flatMap(v => [v.startDate, v.endDate]).filter(Boolean).sort();
+                                        if (dates.length > 0) {
+                                            const minDate = new Date(dates[0]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+                                            const maxDate = new Date(dates[dates.length-1]).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+                                            return `Variación % (${minDate} - ${maxDate})`;
+                                        }
+                                    }
+                                    return "Variación %";
+                                    })(),
+                                    data: variationData.map((d) => d.variation_percent),
+                                    borderColor: hslVar("--chart-3"),
+                                    backgroundColor: hslVar("--chart-3", 0.3),
+                                    borderWidth: 2,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: hslVar("--chart-3"),
+                                    pointBorderColor: hslVar("--card"),
+                                    pointBorderWidth: 2,
+                                    tension: 0.3,
+                                    fill: true,
+                                },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                layout: {
+                                    padding: { bottom: 40, left: 10, right: 10 },
+                                },
+                                plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: tooltipColors.backgroundColor(),
+                                    borderColor: tooltipColors.borderColor(),
+                                    borderWidth: tooltipColors.borderWidth,
+                                    titleColor: tooltipColors.titleColor(),
+                                    bodyColor: tooltipColors.bodyColor(),
+                                    padding: tooltipColors.padding,
+                                    cornerRadius: tooltipColors.cornerRadius,
+                                    callbacks: {
+                                    label: (context) =>
+                                        `${context.parsed.y.toFixed(2)}%`,
+                                    },
+                                },
+                                },
+                                scales: {
+                                x: {
+                                    ...getScaleOptions(),
+                                    ticks: {
+                                        ...getScaleOptions().ticks,
+                                        color: 'transparent',
+                                        maxRotation: 45,
+                                        minRotation: 45,
+                                        font: { size: 14 },
+                                    },
+                                },
+                                y: {
+                                    ...getScaleOptions(),
+                                    ticks: {
+                                        ...getScaleOptions().ticks,
+                                        color: axisColor,
+                                        callback: (value) => `${value}%`,
+                                    },
+                                },
+                                },
+                            }}
+                            />
+                        </div>
+                      );
+                   })()}
                 </div>
                 
 
@@ -1752,8 +1744,7 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Custom Legend with Logos (or Text for Models) */}
-                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 px-2">
+                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 px-2 max-h-[100px] overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted/50">
                   {(() => {
                       const isModelMode = volatilityBrands.length === 1 || filters.brand?.length === 1;
                       return (analytics.chart_data?.volatility_timeseries || []).map((series, idx) => (

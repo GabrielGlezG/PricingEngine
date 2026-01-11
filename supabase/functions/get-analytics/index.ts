@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Cache-Control': 'public, max-age=60, stale-while-revalidate=600', // Cache for 1 min, allow stale for 10 min
 }
 
 Deno.serve(async (req) => {
@@ -67,61 +68,78 @@ Deno.serve(async (req) => {
 
     console.log('Received filters:', filters);
 
-    // Get latest price data for each product with related product information
-    const { data: priceData, error: priceError } = await supabaseClient
-      .from('price_data')
-      .select(`
-        id,
-        price,
-        date,
-        store,
-        ctx_precio,
-        precio_num,
-        precio_lista_num,
-        bono_num,
-        precio_texto,
-        products!inner (
-          id,
-          brand,
-          category,
-          model,
-          name,
-          submodel,
-          tipo_vehiculo
-        )
-      `)
-      .order('date', { ascending: false });
+    // Get latest price data from the optimized VIEW
+    // Implemented Serial Pagination (Proven Stable)
+    let viewData: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (priceError) {
-      console.error('Error fetching price data:', priceError);
-      throw priceError;
+    console.log('Fetching data with serial pagination...');
+
+    while (hasMore) {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      const { data, error } = await supabaseClient
+        .from('latest_prices_view')
+        .select('*')
+        .range(from, to);
+
+      if (error) {
+        console.error('Error fetching latest_prices_view:', error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        viewData = viewData.concat(data);
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
     }
 
-    console.log('Retrieved price data count:', priceData?.length || 0);
+    console.log('Retrieved view data count:', viewData?.length || 0);
 
-    // Get latest price for each product (most recent date per product)
-    const latestPrices = new Map();
-    priceData?.forEach(item => {
-      const productId = (item.products as any).id;
-      if (!latestPrices.has(productId) || new Date(item.date) > new Date(latestPrices.get(productId).date)) {
-        latestPrices.set(productId, item);
+    // Re-hydrate the nested structure expected by the analysis logic
+    // The view is flat, but code expects: item.products.brand, etc.
+    let filteredData = (viewData || []).map((row: any) => ({
+      id: row.price_id,
+      price: row.price,
+      date: row.date,
+      store: row.store,
+      ctx_precio: row.ctx_precio,
+      precio_num: row.precio_num,
+      precio_lista_num: row.precio_lista_num,
+      bono_num: row.bono_num,
+      precio_texto: row.precio_texto,
+      products: {
+        id: row.product_id,
+        brand: row.brand,
+        category: row.category,
+        model: row.model,
+        name: row.name,
+        submodel: row.submodel,
+        tipo_vehiculo: row.tipo_vehiculo
       }
-    });
-
-    let filteredData = Array.from(latestPrices.values());
+    }));
 
     // Apply filters (tipoVehiculo, brand, model, submodel)
     if (filters.tipoVehiculo && filters.tipoVehiculo.length > 0) {
-      filteredData = filteredData.filter(item => filters.tipoVehiculo.includes(item.products?.tipo_vehiculo));
+      filteredData = filteredData.filter((item: any) => filters.tipoVehiculo.includes(item.products?.tipo_vehiculo));
     }
     if (filters.brand && filters.brand.length > 0) {
-      filteredData = filteredData.filter(item => filters.brand.includes(item.products?.brand));
+      filteredData = filteredData.filter((item: any) => filters.brand.includes(item.products?.brand));
     }
     if (filters.model && filters.model.length > 0) {
-      filteredData = filteredData.filter(item => filters.model.includes(item.products?.model));
+      filteredData = filteredData.filter((item: any) => filters.model.includes(item.products?.model));
     }
     if (filters.submodel && filters.submodel.length > 0) {
-      filteredData = filteredData.filter(item => filters.submodel.includes(item.products?.submodel));
+      filteredData = filteredData.filter((item: any) => filters.submodel.includes(item.products?.submodel));
     }
 
     console.log('Filtered data count:', filteredData.length);
@@ -135,8 +153,8 @@ Deno.serve(async (req) => {
       return Number.isNaN(parsed) ? 0 : parsed;
     };
     const prices = filteredData.map((item: any) => getPrice(item)).filter((p: number) => p > 0);
-    const brands = [...new Set(filteredData.map(item => item.products?.brand))].filter(Boolean);
-    const categories = [...new Set(filteredData.map(item => item.products?.category))].filter(Boolean);
+    const brands = [...new Set(filteredData.map((item: any) => item.products?.brand))].filter(Boolean);
+    const categories = [...new Set(filteredData.map((item: any) => item.products?.category))].filter(Boolean);
 
     const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
@@ -151,7 +169,7 @@ Deno.serve(async (req) => {
 
     // Calculate price standard deviation and variation coefficient
     const variance = prices.length > 1 ?
-      prices.reduce((acc, price) => acc + Math.pow(price - avgPrice, 2), 0) / (prices.length - 1) : 0;
+      prices.reduce((acc: number, price: number) => acc + Math.pow(price - avgPrice, 2), 0) / (prices.length - 1) : 0;
     const stdDev = Math.sqrt(variance);
     const variationCoeff = avgPrice > 0 ? (stdDev / avgPrice) * 100 : 0;
 
@@ -161,13 +179,13 @@ Deno.serve(async (req) => {
     const upperQuartile = prices.length > 0 ? sortedPrices[Math.floor(sortedPrices.length * 0.75)] : 0;
 
     // Calculate unique versions (Brand + Model + Submodel)
-    const totalVersions = new Set(filteredData.map(item => {
+    const totalVersions = new Set(filteredData.map((item: any) => {
       const p = item.products as any;
       return `${p.brand}|${p.model}|${p.submodel || ''}`;
     }));
 
     // Calculate unique model families (Brand + Model)
-    const uniqueModelFamilies = new Set(filteredData.map(item => {
+    const uniqueModelFamilies = new Set(filteredData.map((item: any) => {
       const p = item.products as any;
       return `${p.brand}|${p.model}`;
     }));
@@ -200,11 +218,11 @@ Deno.serve(async (req) => {
     metrics.total_scraping_sessions = uniqueDates.length;
 
     // Group data for comprehensive charts WITH TEMPORAL ANALYSIS
-    const pricesByBrand = await Promise.all(brands.map(async (brand) => {
+    const pricesByBrand = await Promise.all(brands.map(async (brand: any) => {
       const brandPrices = filteredData
-        .filter(item => item.products?.brand === brand)
-        .map(item => parseFloat(item.price));
-      const brandAvg = brandPrices.reduce((a, b) => a + b, 0) / brandPrices.length;
+        .filter((item: any) => item.products?.brand === brand)
+        .map((item: any) => getPrice(item));
+      const brandAvg = brandPrices.reduce((a: number, b: number) => a + b, 0) / brandPrices.length;
 
       // Get historical trend for this brand with filters applied
       let brandHistoryQuery = supabaseClient
@@ -227,7 +245,11 @@ Deno.serve(async (req) => {
       const { data: brandHistory } = await brandHistoryQuery;
 
       // Calculate trend
-      const recentPrices = brandHistory?.map(h => parseFloat(h.price)) || [];
+      const recentPrices = brandHistory?.map(h => {
+        // robust parsing for history too
+        const p = Number(h.price);
+        return isNaN(p) ? parseFloat(String(h.price).replace(/[^0-9.-]/g, '')) : p;
+      }).filter(p => !isNaN(p) && p > 0) || [];
       const trend = recentPrices.length > 1 ?
         ((recentPrices[0] - recentPrices[recentPrices.length - 1]) / recentPrices[recentPrices.length - 1] * 100) : 0;
 
@@ -242,15 +264,16 @@ Deno.serve(async (req) => {
       };
     }));
 
-    const tiposVehiculoForModels = [...new Set(filteredData.map(item => item.products?.tipo_vehiculo))].filter(Boolean);
+    const types = filteredData.map((item: any) => item.products?.tipo_vehiculo);
+    const tiposVehiculoForModels = [...new Set(types)].filter(Boolean);
 
-    const pricesByCategory = tiposVehiculoForModels.map(tipo => {
+    const pricesByCategory = tiposVehiculoForModels.map((tipo: any) => {
       const categoryPrices = filteredData
-        .filter(item => item.products?.tipo_vehiculo === tipo)
-        .map(item => parseFloat(item.price));
+        .filter((item: any) => item.products?.tipo_vehiculo === tipo)
+        .map((item: any) => getPrice(item));
       return {
         category: tipo,
-        avg_price: categoryPrices.length > 0 ? categoryPrices.reduce((a, b) => a + b, 0) / categoryPrices.length : 0,
+        avg_price: categoryPrices.length > 0 ? categoryPrices.reduce((a: number, b: number) => a + b, 0) / categoryPrices.length : 0,
         min_price: categoryPrices.length > 0 ? Math.min(...categoryPrices) : 0,
         max_price: categoryPrices.length > 0 ? Math.max(...categoryPrices) : 0,
         count: categoryPrices.length
@@ -258,41 +281,72 @@ Deno.serve(async (req) => {
     });
 
     // Drill-down: Prices by Brand per Category (Segment)
-    const pricesBySegmentBreakdown = tiposVehiculoForModels.reduce((acc, tipo) => {
-      const segmentData = filteredData.filter(item => item.products?.tipo_vehiculo === tipo);
-      const brandsInSegment = [...new Set(segmentData.map(item => item.products?.brand))].filter(Boolean);
+    const pricesBySegmentBreakdown = tiposVehiculoForModels.reduce((acc: any, tipo: any) => {
+      const segmentData = filteredData.filter((item: any) => item.products?.tipo_vehiculo === tipo);
+      const brandsInSegment = [...new Set(segmentData.map((item: any) => item.products?.brand))].filter(Boolean);
 
-      const brandMetrics = brandsInSegment.map(brand => {
+      const brandMetrics = brandsInSegment.map((brand: any) => {
         const brandPrices = segmentData
-          .filter(item => item.products?.brand === brand)
-          .map(item => parseFloat(item.price));
+          .filter((item: any) => item.products?.brand === brand)
+          .map((item: any) => getPrice(item));
         return {
           brand,
-          avg_price: brandPrices.length > 0 ? brandPrices.reduce((a, b) => a + b, 0) / brandPrices.length : 0,
+          avg_price: brandPrices.length > 0 ? brandPrices.reduce((a: number, b: number) => a + b, 0) / brandPrices.length : 0,
           count: brandPrices.length
         };
-      }).sort((a, b) => b.avg_price - a.avg_price); // Sort by highest price
+      }).sort((a: any, b: any) => b.avg_price - a.avg_price); // Sort by highest price
 
       acc[tipo] = brandMetrics;
       return acc;
     }, {} as Record<string, Array<{ brand: string; avg_price: number; count: number }>>);
 
-    // Group by main model for model principal analysis
-    const modelPrincipals = [...new Set(filteredData.map(item => item.products?.model))].filter(Boolean);
-    const modelsByPrincipal = modelPrincipals.map(modelPrincipal => {
-      const modelData = filteredData.filter(item => item.products?.model === modelPrincipal);
-      const modelPrices = modelData.map(item => parseFloat(item.price));
-      const brand = modelData.length > 0 ? (modelData[0].products as any).brand : 'Unknown';
+    // Group by main model for model principal analysis (Optimized O(N))
+    const modelsMap = new Map<string, {
+      brand: string;
+      model_principal: string;
+      count: number;
+      total_price: number;
+      min_price: number;
+      max_price: number;
+    }>();
 
-      return {
-        brand,
-        model_principal: modelPrincipal,
-        count: modelData.length,
-        avg_price: modelPrices.reduce((a, b) => a + b, 0) / modelPrices.length,
-        min_price: Math.min(...modelPrices),
-        max_price: Math.max(...modelPrices)
-      };
-    });
+    for (const item of filteredData as any[]) {
+      const modelPrincipal = item.products?.model;
+      if (!modelPrincipal) continue;
+
+      const price = getPrice(item);
+      if (price <= 0) continue;
+
+      // Use composite key to prevent collisions between brands having same model names
+      const brand = item.products.brand || 'Unknown';
+      const key = `${brand}-${modelPrincipal}`;
+
+      if (!modelsMap.has(key)) {
+        modelsMap.set(key, {
+          brand: brand,
+          model_principal: modelPrincipal,
+          count: 0,
+          total_price: 0,
+          min_price: price,
+          max_price: price
+        });
+      }
+
+      const entry = modelsMap.get(key)!;
+      entry.count++;
+      entry.total_price += price;
+      entry.min_price = Math.min(entry.min_price, price);
+      entry.max_price = Math.max(entry.max_price, price);
+    }
+
+    const modelsByPrincipal = Array.from(modelsMap.values()).map(entry => ({
+      brand: entry.brand,
+      model_principal: entry.model_principal,
+      count: entry.count,
+      avg_price: entry.total_price / entry.count,
+      min_price: entry.min_price,
+      max_price: entry.max_price
+    }));
 
     const modelsByCategory = tiposVehiculoForModels.map(tipo => ({
       category: tipo,
@@ -401,8 +455,7 @@ Deno.serve(async (req) => {
       });
 
       monthlyVariation.most_volatile = volatilityAnalysis
-        .sort((a, b) => b.avg_monthly_variation - a.avg_monthly_variation)
-        .slice(0, 5);
+        .sort((a, b) => b.avg_monthly_variation - a.avg_monthly_variation);
     }
 
     // Calculate brand price variations between scraping dates with filters
@@ -620,8 +673,7 @@ Deno.serve(async (req) => {
           };
         })
         .filter(s => s.data.length > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
+        .sort((a, b) => b.score - a.score);
 
     } else {
       // Scope: Brand
@@ -660,8 +712,7 @@ Deno.serve(async (req) => {
         };
       })
         .filter(s => s.data.length > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 20);
+        .sort((a, b) => b.score - a.score);
     }
 
     // Clean up dates to be sorted in the response
@@ -724,28 +775,28 @@ Deno.serve(async (req) => {
 
     // Best value models (price below median)
     const bestValueModels = filteredData
-      .filter(item => parseFloat(item.price) <= medianPrice)
-      .sort((a, b) => parseFloat(a.price) - parseFloat(b.price))
+      .filter(item => getPrice(item) <= medianPrice)
+      .sort((a, b) => getPrice(a) - getPrice(b))
       .slice(0, 5)
       .map(item => ({
         brand: item.products?.brand,
         name: item.products?.name,
         category: item.products?.category,
-        price: parseFloat(item.price),
-        value_rating: ((medianPrice - parseFloat(item.price)) / medianPrice * 100).toFixed(1)
+        price: getPrice(item),
+        value_rating: ((medianPrice - getPrice(item)) / medianPrice * 100).toFixed(1)
       }));
 
     // Top 5 most expensive and cheapest (use filtered data)
-    const sortedByPrice = [...filteredData].sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+    const sortedByPrice = [...filteredData].sort((a, b) => getPrice(b) - getPrice(a));
     const top5Expensive = sortedByPrice.slice(0, 5).map(item => ({
       brand: item.products?.brand,
       model: item.products?.name,
-      price: parseFloat(item.price)
+      price: getPrice(item)
     }));
     const top5Cheapest = sortedByPrice.slice(-5).reverse().map(item => ({
       brand: item.products?.brand,
       model: item.products?.name,
-      price: parseFloat(item.price)
+      price: getPrice(item)
     }));
 
     // Historical data for selected models
@@ -811,7 +862,7 @@ Deno.serve(async (req) => {
           date_to: filters.dateTo
         },
         // Sort ascending (Oldest -> Newest) as requested
-        available_dates: [...new Set(priceData?.map(d => d.date.split('T')[0]))].sort(),
+        available_dates: [...new Set(filteredData?.map(d => d.date.split('T')[0]))].sort(),
         generated_at: new Date().toISOString()
       }),
       {
