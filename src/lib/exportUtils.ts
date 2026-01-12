@@ -1,11 +1,22 @@
+/**
+ * Excel Export Utility
+ * Calls Python microservice to generate native Excel charts
+ * Falls back to local generation if service unavailable
+ */
+
 // @ts-ignore
 import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate';
 import { saveAs } from "file-saver";
 import { ModelData } from "./fetchModelsData";
 
+// Excel Chart Service URL - Update this after deploying to Render
+const EXCEL_SERVICE_URL = import.meta.env.VITE_EXCEL_SERVICE_URL || '';
+
 interface Metric {
     total_models: number;
     total_brands: number;
+    total_model_families?: number;
+    total_categories?: number;
     avg_price: number;
     min_price: number;
     max_price: number;
@@ -24,7 +35,7 @@ interface AnalyticsData {
         models_by_principal: Array<{ model_principal: string; count: number; avg_price: number; min_price: number; max_price: number }>;
         brand_variations: Array<{ brand: string; variation_percent: number; startDate?: string; endDate?: string }>;
         volatility_timeseries: Array<{ entity: string; data: Array<{ date: string; variation: number; avg_price: number }> }>;
-        prices_by_segment_breakdown?: Record<string, Array<{ brand: string; avg_price: number }>>;
+        prices_by_segment_breakdown?: Record<string, Array<{ brand: string; avg_price: number; count?: number }>>;
     };
     generated_at: string;
     available_dates?: string[];
@@ -41,6 +52,18 @@ export interface ExportContext {
     volatilityPeriod?: string;
 }
 
+// Color palette for Excel styling (fallback)
+const COLORS = {
+    primary: "4F46E5",
+    header: "1E293B",
+    headerText: "FFFFFF",
+    altRow: "F1F5F9",
+    border: "E2E8F0"
+};
+
+/**
+ * Export Dashboard data to Excel with native charts (via Python service)
+ */
 export const exportDashboardToExcel = async (
     data: AnalyticsData,
     context: ExportContext,
@@ -50,219 +73,256 @@ export const exportDashboardToExcel = async (
 ) => {
     if (!data) return;
 
-    try {
-        console.log("Loading Dashboard Template...");
-        const response = await fetch('/dashboard_template.xlsx');
-        if (!response.ok) {
-            throw new Error(`Template not found (${response.status}). Ensure 'dashboard_template.xlsx' is in public folder.`);
-        }
-        const buffer = await response.arrayBuffer();
-        const workbook = await XlsxPopulate.fromDataAsync(buffer);
+    const dateStr = new Date().toISOString().split('T')[0];
 
-        // Helper to fill table data with auto-clearing
-        const fillTable = (sheetName: string, rows: any[][], startRow: number = 2, startCol: number = 1) => {
-            const sheet = workbook.sheet(sheetName);
-            if (!sheet) {
-                console.warn(`Sheet '${sheetName}' not found in template.`);
-                return;
-            }
+    // Try Python service first (native charts)
+    if (EXCEL_SERVICE_URL) {
+        try {
+            console.log("[Excel Export] Using Python service for native charts...");
 
-            // Clear existing data (rows 2 to 500, cols 1 to 10) to remove template text
-            // This ensures "other brands" (dummy data) don't appear
-            try {
-                // Determine max columns based on input or default to a safe number
-                const numCols = rows.length > 0 ? rows[0].length : 10;
-                sheet.range(startRow, startCol, startRow + 500, startCol + numCols - 1).value(null);
-            } catch (e) {
-                console.warn("Error clearing range:", e);
-            }
+            const payload = {
+                filename: `Dashboard_Report_${dateStr}.xlsx`,
+                currencySymbol,
+                timezoneOffset: -(new Date().getTimezoneOffset() / 60), // Convert minutes to hours, negate for correct UTC offset
+                summary: {
+                    total_models: data.metrics.total_models,
+                    total_brands: data.metrics.total_brands,
+                    avg_price: convertPrice(data.metrics.avg_price),
+                    median_price: convertPrice(data.metrics.median_price),
+                    min_price: convertPrice(data.metrics.min_price),
+                    max_price: convertPrice(data.metrics.max_price),
+                    price_std_dev: convertPrice(data.metrics.price_std_dev),
+                    variation_coefficient: data.metrics.variation_coefficient / 100, // Convert to decimal
+                    filters: context.filters
+                },
+                sheets: [
+                    // Precios por Segmento
+                    data.chart_data.prices_by_category?.length ? {
+                        name: "Precios por Segmento",
+                        chart_type: "bar",
+                        chart_title: "Precios por Segmento",
+                        data: data.chart_data.prices_by_category.map(d => ({
+                            Segmento: d.category,
+                            Promedio: convertPrice(d.avg_price),
+                            Mínimo: convertPrice(d.min_price),
+                            Máximo: convertPrice(d.max_price)
+                        }))
+                    } : null,
+                    // Benchmarking
+                    data.chart_data.prices_by_brand?.length ? {
+                        name: "Benchmarking",
+                        chart_type: "line",
+                        chart_title: "Benchmarking de Precios por Marca",
+                        data: [...data.chart_data.prices_by_brand]
+                            .sort((a, b) => b.avg_price - a.avg_price)
+                            .map(d => ({
+                                Marca: d.brand,
+                                "Precio Promedio": convertPrice(d.avg_price)
+                            }))
+                    } : null,
+                    // Volatilidad
+                    data.chart_data.brand_variations?.length ? {
+                        name: "Volatilidad",
+                        chart_type: "bar",
+                        chart_title: "Índice de Volatilidad Histórica",
+                        data: [...data.chart_data.brand_variations]
+                            .sort((a, b) => b.variation_percent - a.variation_percent)
+                            .map(d => ({
+                                Marca: d.brand,
+                                "Variación %": d.variation_percent / 100
+                            }))
+                    } : null
+                ].filter(Boolean),
+                models: modelsData?.map(m => ({
+                    brand: m.brand,
+                    model: m.model,
+                    submodel: m.submodel,
+                    estado: m.estado,
+                    tipo_vehiculo: m.tipo_vehiculo,
+                    precio_con_bono: convertPrice(m.precio_con_bono || 0),
+                    precio_lista: convertPrice(m.precio_lista || 0),
+                    bono: convertPrice(m.bono || 0)
+                }))
+            };
 
-            // Write data
-            rows.forEach((row, r) => {
-                row.forEach((val, c) => {
-                    sheet.row(startRow + r).cell(startCol + c).value(val);
-                });
+            const response = await fetch(`${EXCEL_SERVICE_URL}/generate-excel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-        };
 
-        // Helper to format currency
+            if (response.ok) {
+                const blob = await response.blob();
+                saveAs(blob, `Dashboard_Report_${dateStr}.xlsx`);
+                console.log("[Excel Export] ✓ Native charts export completed!");
+                return;
+            } else {
+                console.warn("[Excel Export] Service returned error, falling back to local...");
+            }
+        } catch (error) {
+            console.warn("[Excel Export] Service unavailable, falling back to local...", error);
+        }
+    }
+
+    // Fallback: Local generation without charts
+    console.log("[Excel Export] Using local generation (no native charts)...");
+    await exportLocalExcel(data, context, currencySymbol, convertPrice, modelsData);
+};
+
+/**
+ * Local Excel generation fallback (styled tables, no charts)
+ */
+async function exportLocalExcel(
+    data: AnalyticsData,
+    context: ExportContext,
+    currencySymbol: string,
+    convertPrice: (price: number) => number,
+    modelsData?: ModelData[]
+) {
+    try {
+        const workbook = await XlsxPopulate.fromBlankAsync();
+        const dateStr = new Date().toISOString().split('T')[0];
         const currencyFmt = currencySymbol === "UF" ? `"${currencySymbol}" #,##0.00` : `"${currencySymbol}" #,##0`;
 
-        // 1. Resumen Ejecutivo
-        const wsSummary = workbook.sheet("Resumen Ejecutivo");
-        if (wsSummary) {
-            // Write Metrics
-            wsSummary.cell("B2").value(data.metrics.total_models);
-            wsSummary.cell("B3").value(data.metrics.total_brands);
-            wsSummary.cell("B4").value(convertPrice(data.metrics.avg_price)).style("numberFormat", currencyFmt);
-            wsSummary.cell("B5").value(convertPrice(data.metrics.median_price)).style("numberFormat", currencyFmt);
-            wsSummary.cell("B6").value(convertPrice(data.metrics.min_price)).style("numberFormat", currencyFmt);
-            wsSummary.cell("B7").value(convertPrice(data.metrics.max_price)).style("numberFormat", currencyFmt);
-            wsSummary.cell("B8").value(convertPrice(data.metrics.price_std_dev)).style("numberFormat", currencyFmt);
-            wsSummary.cell("B9").value(data.metrics.variation_coefficient).style("numberFormat", "0.00%");
-            wsSummary.cell("B10").value(new Date().toLocaleDateString());
-
-            // Write Active Filters
-            wsSummary.cell("B11").value("Filtros Activos:");
-            wsSummary.cell("A12").value("Segmento:");
-            wsSummary.cell("B12").value(context.filters.tipoVehiculo.join(", ") || "Todos");
-
-            wsSummary.cell("A13").value("Marca:");
-            wsSummary.cell("B13").value(context.filters.brand.join(", ") || "Todas");
-
-            wsSummary.cell("A14").value("Modelo:");
-            wsSummary.cell("B14").value(context.filters.model.join(", ") || "Todos");
-
-            wsSummary.cell("A15").value("Versión:");
-            wsSummary.cell("B15").value(context.filters.submodel.join(", ") || "Todas");
-
-            // Volatility Context
-            let currentRow = 16;
-            if (context.volatilityBrands && context.volatilityBrands.length > 0) {
-                wsSummary.cell(`A${currentRow}`).value("Foco Volatilidad:");
-                wsSummary.cell(`B${currentRow}`).value(context.volatilityBrands.join(", "));
-                currentRow++;
-            }
-
-            if (context.volatilityPeriod) {
-                wsSummary.cell(`A${currentRow}`).value("Periodo Volatilidad:");
-                wsSummary.cell(`B${currentRow}`).value(context.volatilityPeriod);
-            }
-
-        } else {
-            console.warn("Sheet 'Resumen Ejecutivo' not found");
-        }
-
-        // 2. Inventario (Nothing to convert)
-        if (data.chart_data.models_by_category?.length) {
-            const rows = data.chart_data.models_by_category.map(i => [i.category, i.count]);
-            fillTable("Inventario", rows, 2, 1);
-        }
-
-        // 3. Precios por Segmento
-        if (data.chart_data.prices_by_category?.length) {
-            const rows = data.chart_data.prices_by_category.map(i => [
-                i.category,
-                convertPrice(i.avg_price),
-                convertPrice(i.min_price),
-                convertPrice(i.max_price)
-            ]);
-            fillTable("Precios por Segmento", rows, 2, 1);
-
-            // Apply currency format to cols B, C, D (indices 2, 3, 4 of sheet) starting row 2
-            const startRow = 2;
-            const endRow = startRow + rows.length;
-            const sheet = workbook.sheet("Precios por Segmento");
-            if (sheet) {
-                sheet.range(startRow, 2, endRow, 4).style("numberFormat", currencyFmt);
-            }
-        }
-
-        // 4. Benchmarking
-        if (data.chart_data.prices_by_brand?.length) {
-            const rows = data.chart_data.prices_by_brand.map(i => [i.brand, convertPrice(i.avg_price)]);
-            fillTable("Benchmarking", rows, 2, 1);
-
-            // Apply currency to Col B
-            const startRow = 2;
-            const endRow = startRow + rows.length;
-            const sheet = workbook.sheet("Benchmarking");
-            if (sheet) {
-                sheet.range(startRow, 2, endRow, 2).style("numberFormat", currencyFmt);
-            }
-        }
-
-        // 5. Posicionamiento
-        if (data.chart_data.models_by_principal?.length) {
-            const rows = data.chart_data.models_by_principal.map(i => [
-                i.model_principal,
-                convertPrice(i.avg_price),
-                i.count
-            ]);
-            fillTable("Posicionamiento", rows, 2, 1);
-
-            // Apply currency to Col B
-            const startRow = 2;
-            const endRow = startRow + rows.length;
-            const sheet = workbook.sheet("Posicionamiento");
-            if (sheet) {
-                sheet.range(startRow, 2, endRow, 2).style("numberFormat", currencyFmt);
-            }
-        }
-
-        // 6. Volatilidad (Formato Plano/Vertical: Entidad | Fecha | Variación)
-        if (data.chart_data.volatility_timeseries?.length) {
-            const headerRow = ["Entidad", "Fecha", "Variación"];
-
-            const flatRows = data.chart_data.volatility_timeseries.flatMap(series =>
-                series.data.map(point => [
-                    series.entity,
-                    point.date,
-                    point.variation
-                ])
-            );
-
-            // Combine header and data
-            const tableData = [headerRow, ...flatRows];
-
-            fillTable("Volatilidad", tableData, 1, 1);
-        }
-
-        // 7. Modelos (New Sheet)
-        if (modelsData && modelsData.length > 0) {
-            let sheet = workbook.sheet("Modelos");
-            if (!sheet) {
-                sheet = workbook.addSheet("Modelos");
-            }
-
-            // Header
-            const headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "vs Lista %"];
-            sheet.range(1, 1, 1, headers.length).value([headers]).style({ bold: true });
-
-            // Data
-            const rows = modelsData.map(m => {
-                const vsList = (m.precio_con_bono && m.precio_lista)
-                    ? ((m.precio_con_bono - m.precio_lista) / m.precio_lista)
-                    : 0;
-
-                return [
-                    m.brand,
-                    m.model,
-                    m.submodel || '-',
-                    m.estado || 'N/A',
-                    m.tipo_vehiculo || 'N/A',
-                    convertPrice(m.precio_con_bono || 0),
-                    convertPrice(m.precio_lista || 0),
-                    convertPrice(m.bono || 0),
-                    vsList
-                ];
-            });
-
-            // Write data starting at Row 2
-            const startRow = 2;
-            rows.forEach((row, r) => {
-                row.forEach((val, c) => {
-                    sheet.row(startRow + r).cell(1 + c).value(val);
+        const styleHeader = (sheet: any, row: number, cols: number) => {
+            for (let c = 1; c <= cols; c++) {
+                sheet.cell(row, c).style({
+                    bold: true,
+                    fill: COLORS.header,
+                    fontColor: COLORS.headerText,
+                    horizontalAlignment: "center",
+                    border: true
                 });
-            });
-
-            // Formatting
-            const endRow = startRow + rows.length - 1;
-            if (endRow >= startRow) {
-                // Currency cols: F (6), G (7), H (8)
-                sheet.range(startRow, 6, endRow, 8).style("numberFormat", currencyFmt);
-                // Percent col: I (9)
-                sheet.range(startRow, 9, endRow, 9).style("numberFormat", "0.0%");
             }
+        };
+
+        const styleDataRows = (sheet: any, startRow: number, endRow: number, cols: number) => {
+            for (let r = startRow; r <= endRow; r++) {
+                for (let c = 1; c <= cols; c++) {
+                    const isAlt = (r - startRow) % 2 === 1;
+                    sheet.cell(r, c).style({
+                        fill: isAlt ? COLORS.altRow : "FFFFFF",
+                        border: { color: COLORS.border }
+                    });
+                }
+            }
+        };
+
+        // Summary Sheet
+        const wsSummary = workbook.sheet(0).name("Resumen Ejecutivo");
+        wsSummary.cell("A1").value("REPORTE DE DASHBOARD").style({ bold: true, fontSize: 16 });
+        wsSummary.cell("A2").value(`Generado: ${new Date().toLocaleDateString()}`).style({ italic: true, fontColor: "666666" });
+
+        wsSummary.cell("A4").value("Métrica").style({ bold: true, fill: COLORS.header, fontColor: COLORS.headerText });
+        wsSummary.cell("B4").value("Valor").style({ bold: true, fill: COLORS.header, fontColor: COLORS.headerText });
+
+        const metrics = [
+            ["Total Modelos", data.metrics.total_models],
+            ["Total Marcas", data.metrics.total_brands],
+            ["Precio Promedio", convertPrice(data.metrics.avg_price)],
+            ["Precio Mediano", convertPrice(data.metrics.median_price)],
+            ["Precio Mínimo", convertPrice(data.metrics.min_price)],
+            ["Precio Máximo", convertPrice(data.metrics.max_price)],
+            ["Desviación Estándar", convertPrice(data.metrics.price_std_dev)],
+            ["Coef. Variación", data.metrics.variation_coefficient]
+        ];
+
+        metrics.forEach((m, i) => {
+            const row = 5 + i;
+            wsSummary.cell(row, 1).value(m[0]);
+            wsSummary.cell(row, 2).value(m[1]);
+            if (i >= 2 && i <= 6) wsSummary.cell(row, 2).style("numberFormat", currencyFmt);
+            else if (i === 7) wsSummary.cell(row, 2).style("numberFormat", "0.00%");
+        });
+
+        // Precios por Segmento
+        if (data.chart_data.prices_by_category?.length) {
+            const ws = workbook.addSheet("Precios por Segmento");
+            ws.cell(1, 1).value("Segmento");
+            ws.cell(1, 2).value("Precio Mínimo");
+            ws.cell(1, 3).value("Precio Promedio");
+            ws.cell(1, 4).value("Precio Máximo");
+            styleHeader(ws, 1, 4);
+
+            data.chart_data.prices_by_category.forEach((item, i) => {
+                const row = i + 2;
+                ws.cell(row, 1).value(item.category);
+                ws.cell(row, 2).value(convertPrice(item.min_price)).style("numberFormat", currencyFmt);
+                ws.cell(row, 3).value(convertPrice(item.avg_price)).style("numberFormat", currencyFmt);
+                ws.cell(row, 4).value(convertPrice(item.max_price)).style("numberFormat", currencyFmt);
+            });
+            styleDataRows(ws, 2, data.chart_data.prices_by_category.length + 1, 4);
         }
 
-        // Output
+        // Benchmarking
+        if (data.chart_data.prices_by_brand?.length) {
+            const ws = workbook.addSheet("Benchmarking");
+            ws.cell(1, 1).value("Marca");
+            ws.cell(1, 2).value("Precio Promedio");
+            ws.cell(1, 3).value("Precio Mínimo");
+            ws.cell(1, 4).value("Precio Máximo");
+            ws.cell(1, 5).value("Cantidad");
+            styleHeader(ws, 1, 5);
+
+            const sorted = [...data.chart_data.prices_by_brand].sort((a, b) => b.avg_price - a.avg_price);
+            sorted.forEach((item, i) => {
+                const row = i + 2;
+                ws.cell(row, 1).value(item.brand);
+                ws.cell(row, 2).value(convertPrice(item.avg_price)).style("numberFormat", currencyFmt);
+                ws.cell(row, 3).value(convertPrice(item.min_price)).style("numberFormat", currencyFmt);
+                ws.cell(row, 4).value(convertPrice(item.max_price)).style("numberFormat", currencyFmt);
+                ws.cell(row, 5).value(item.count);
+            });
+            styleDataRows(ws, 2, sorted.length + 1, 5);
+        }
+
+        // Volatilidad
+        if (data.chart_data.brand_variations?.length) {
+            const ws = workbook.addSheet("Volatilidad");
+            ws.cell(1, 1).value("Marca");
+            ws.cell(1, 2).value("Variación %");
+            styleHeader(ws, 1, 2);
+
+            const sorted = [...data.chart_data.brand_variations].sort((a, b) => b.variation_percent - a.variation_percent);
+            sorted.forEach((item, i) => {
+                const row = i + 2;
+                ws.cell(row, 1).value(item.brand);
+                ws.cell(row, 2).value(item.variation_percent / 100).style("numberFormat", "0.00%");
+            });
+            styleDataRows(ws, 2, sorted.length + 1, 2);
+        }
+
+        // Modelos
+        if (modelsData && modelsData.length > 0) {
+            const ws = workbook.addSheet("Modelos");
+            const headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "Dif. vs Lista"];
+            headers.forEach((h, i) => ws.cell(1, i + 1).value(h));
+            styleHeader(ws, 1, headers.length);
+
+            modelsData.forEach((m, rowIdx) => {
+                const row = rowIdx + 2;
+                const diff = (m.precio_con_bono && m.precio_lista && m.precio_lista !== 0)
+                    ? ((m.precio_con_bono - m.precio_lista) / m.precio_lista) : 0;
+
+                ws.cell(row, 1).value(m.brand);
+                ws.cell(row, 2).value(m.model);
+                ws.cell(row, 3).value(m.submodel || '-');
+                ws.cell(row, 4).value(m.estado || 'N/A');
+                ws.cell(row, 5).value(m.tipo_vehiculo || 'N/A');
+                ws.cell(row, 6).value(convertPrice(m.precio_con_bono || 0)).style("numberFormat", currencyFmt);
+                ws.cell(row, 7).value(convertPrice(m.precio_lista || 0)).style("numberFormat", currencyFmt);
+                ws.cell(row, 8).value(convertPrice(m.bono || 0)).style("numberFormat", currencyFmt);
+                ws.cell(row, 9).value(diff).style("numberFormat", "0.0%");
+            });
+            styleDataRows(ws, 2, modelsData.length + 1, headers.length);
+        }
+
         const blob = await workbook.outputAsync();
-        const dateStr = new Date().toISOString().split('T')[0];
         saveAs(blob, `Dashboard_Report_${dateStr}.xlsx`);
+        console.log("[Excel Export] ✓ Local export completed (no charts)");
 
     } catch (e) {
-        console.error("Export template error", e);
+        console.error("[Excel Export] Error:", e);
         alert(`Error exportando: ${(e as Error).message}`);
     }
-};
+}

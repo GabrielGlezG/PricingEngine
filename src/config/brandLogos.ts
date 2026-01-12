@@ -181,4 +181,41 @@ export function getBrandColor(brand: string): string {
   return `hsl(${hue}, 70%, 45%)`;
 }
 
+// Cache to track preloaded logos
+const preloadedLogos: Set<string> = new Set();
+
+/**
+ * Preload all brand logos into browser cache
+ * Should be called after login to ensure logos are ready for Dashboard
+ * @returns Promise that resolves when all logos are attempted to load
+ */
+export async function preloadBrandLogos(): Promise<void> {
+  // Don't preload twice
+  if (preloadedLogos.size > 0) {
+    console.log('[BrandLogos] Already preloaded, skipping...');
+    return;
+  }
+
+  const urls = Object.values(brandLogoMap);
+  console.log(`[BrandLogos] Preloading ${urls.length} brand logos...`);
+
+  const promises = urls.map(url => {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        preloadedLogos.add(url);
+        resolve();
+      };
+      img.onerror = () => {
+        // Still resolve to not block on failures
+        resolve();
+      };
+      img.src = url;
+    });
+  });
+
+  await Promise.all(promises);
+  console.log(`[BrandLogos] Preloaded ${preloadedLogos.size}/${urls.length} logos successfully`);
+}
+
 export default brandLogoMap;

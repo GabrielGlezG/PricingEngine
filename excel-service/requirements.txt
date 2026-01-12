@@ -1,0 +1,5 @@
+# Python dependencies for Excel Chart Generator Service
+flask==3.0.0
+flask-cors==4.0.0
+openpyxl==3.1.2
+gunicorn==21.2.0
