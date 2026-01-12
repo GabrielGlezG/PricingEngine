@@ -109,6 +109,11 @@ def generate_excel():
         summary = data.get('summary', None)
         models = data.get('models', None)
         currency_symbol = data.get('currencySymbol', '$')
+        timezone_offset = data.get('timezoneOffset', -3)  # Default to Chile (UTC-3)
+        
+        # Calculate local time with offset
+        from datetime import timedelta
+        local_time = datetime.utcnow() + timedelta(hours=timezone_offset)
         
         # Create workbook
         wb = Workbook()
@@ -123,7 +128,7 @@ def generate_excel():
             # Title
             ws['A1'] = "REPORTE DE DASHBOARD"
             ws['A1'].font = Font(bold=True, size=16)
-            ws['A2'] = f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+            ws['A2'] = f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}"
             ws['A2'].font = Font(italic=True, color="666666")
             
             # Metrics table
