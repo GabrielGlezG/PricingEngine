@@ -1,9 +1,7 @@
 /**
  * Generic Excel Export Functions for Different Pages
+ * Uses Vercel Python serverless function at /api/generate-excel
  */
-
-// Excel Chart Service URL
-const EXCEL_SERVICE_URL = import.meta.env.VITE_EXCEL_SERVICE_URL || '';
 
 interface ExportSheet {
     name: string;
@@ -23,21 +21,15 @@ interface GenericExportPayload {
 }
 
 /**
- * Export data to Excel with native charts via Python service
+ * Export data to Excel with native charts via Vercel Python function
  */
 export async function exportToExcel(payload: GenericExportPayload): Promise<boolean> {
     const dateStr = new Date().toISOString().split('T')[0];
 
     try {
-        if (!EXCEL_SERVICE_URL) {
-            console.warn('[Export] No service URL configured, export unavailable');
-            alert('El servicio de exportación no está configurado. Contacte al administrador.');
-            return false;
-        }
+        console.log('[Export] Sending to Vercel Python function...');
 
-        console.log('[Export] Sending to Python service...');
-
-        const response = await fetch(`${EXCEL_SERVICE_URL}/generate-excel`, {
+        const response = await fetch('/api/generate-excel', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
