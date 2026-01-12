@@ -1,6 +1,6 @@
 /**
- * Excel Export Utility
- * Calls Python microservice to generate native Excel charts
+ * Excel Export Utility for Dashboard
+ * Uses Vercel Python serverless function at /api/generate-excel
  * Falls back to local generation if service unavailable
  */
 
@@ -8,9 +8,6 @@
 import XlsxPopulate from 'xlsx-populate/browser/xlsx-populate';
 import { saveAs } from "file-saver";
 import { ModelData } from "./fetchModelsData";
-
-// Excel Chart Service URL - Update this after deploying to Render
-const EXCEL_SERVICE_URL = import.meta.env.VITE_EXCEL_SERVICE_URL || '';
 
 interface Metric {
     total_models: number;
@@ -75,98 +72,98 @@ export const exportDashboardToExcel = async (
 
     const dateStr = new Date().toISOString().split('T')[0];
 
-    // Try Python service first (native charts)
-    if (EXCEL_SERVICE_URL) {
-        try {
-            console.log("[Excel Export] Using Python service for native charts...");
+    // Try Vercel Python function first (native charts)
+    try {
+        console.log("[Excel Export] Using Vercel Python function for native charts...");
 
-            const payload = {
-                filename: `Dashboard_Report_${dateStr}.xlsx`,
-                currencySymbol,
-                timezoneOffset: -(new Date().getTimezoneOffset() / 60), // Convert minutes to hours, negate for correct UTC offset
-                summary: {
-                    total_models: data.metrics.total_models,
-                    total_brands: data.metrics.total_brands,
-                    avg_price: convertPrice(data.metrics.avg_price),
-                    median_price: convertPrice(data.metrics.median_price),
-                    min_price: convertPrice(data.metrics.min_price),
-                    max_price: convertPrice(data.metrics.max_price),
-                    price_std_dev: convertPrice(data.metrics.price_std_dev),
-                    variation_coefficient: data.metrics.variation_coefficient / 100, // Convert to decimal
-                    filters: context.filters
-                },
-                sheets: [
-                    // Precios por Segmento
-                    data.chart_data.prices_by_category?.length ? {
-                        name: "Precios por Segmento",
-                        chart_type: "bar",
-                        chart_title: "Precios por Segmento",
-                        data: data.chart_data.prices_by_category.map(d => ({
-                            Segmento: d.category,
-                            Promedio: convertPrice(d.avg_price),
-                            Mínimo: convertPrice(d.min_price),
-                            Máximo: convertPrice(d.max_price)
+        const payload = {
+            filename: `Dashboard_Report_${dateStr}.xlsx`,
+            currencySymbol,
+            timezoneOffset: -(new Date().getTimezoneOffset() / 60), // Convert minutes to hours, negate for correct UTC offset
+            summary: {
+                total_models: data.metrics.total_models,
+                total_brands: data.metrics.total_brands,
+                avg_price: convertPrice(data.metrics.avg_price),
+                median_price: convertPrice(data.metrics.median_price),
+                min_price: convertPrice(data.metrics.min_price),
+                max_price: convertPrice(data.metrics.max_price),
+                price_std_dev: convertPrice(data.metrics.price_std_dev),
+                variation_coefficient: data.metrics.variation_coefficient / 100, // Convert to decimal
+                filters: context.filters
+            },
+            sheets: [
+                // Precios por Segmento
+                data.chart_data.prices_by_category?.length ? {
+                    name: "Precios por Segmento",
+                    chart_type: "bar",
+                    chart_title: "Precios por Segmento",
+                    data: data.chart_data.prices_by_category.map(d => ({
+                        Segmento: d.category,
+                        Promedio: convertPrice(d.avg_price),
+                        Mínimo: convertPrice(d.min_price),
+                        Máximo: convertPrice(d.max_price)
+                    }))
+                } : null,
+                // Benchmarking
+                data.chart_data.prices_by_brand?.length ? {
+                    name: "Benchmarking",
+                    chart_type: "line",
+                    chart_title: "Benchmarking de Precios por Marca",
+                    data: [...data.chart_data.prices_by_brand]
+                        .sort((a, b) => b.avg_price - a.avg_price)
+                        .map(d => ({
+                            Marca: d.brand,
+                            "Precio Promedio": convertPrice(d.avg_price)
                         }))
-                    } : null,
-                    // Benchmarking
-                    data.chart_data.prices_by_brand?.length ? {
-                        name: "Benchmarking",
-                        chart_type: "line",
-                        chart_title: "Benchmarking de Precios por Marca",
-                        data: [...data.chart_data.prices_by_brand]
-                            .sort((a, b) => b.avg_price - a.avg_price)
-                            .map(d => ({
-                                Marca: d.brand,
-                                "Precio Promedio": convertPrice(d.avg_price)
-                            }))
-                    } : null,
-                    // Volatilidad
-                    data.chart_data.brand_variations?.length ? {
-                        name: "Volatilidad",
-                        chart_type: "bar",
-                        chart_title: "Índice de Volatilidad Histórica",
-                        data: [...data.chart_data.brand_variations]
-                            .sort((a, b) => b.variation_percent - a.variation_percent)
-                            .map(d => ({
-                                Marca: d.brand,
-                                "Variación %": d.variation_percent / 100
-                            }))
-                    } : null
-                ].filter(Boolean),
-                models: modelsData?.map(m => ({
-                    brand: m.brand,
-                    model: m.model,
-                    submodel: m.submodel,
-                    estado: m.estado,
-                    tipo_vehiculo: m.tipo_vehiculo,
-                    precio_con_bono: convertPrice(m.precio_con_bono || 0),
-                    precio_lista: convertPrice(m.precio_lista || 0),
-                    bono: convertPrice(m.bono || 0)
-                }))
-            };
+                } : null,
+                // Volatilidad
+                data.chart_data.brand_variations?.length ? {
+                    name: "Volatilidad",
+                    chart_type: "bar",
+                    chart_title: "Índice de Volatilidad Histórica",
+                    data: [...data.chart_data.brand_variations]
+                        .sort((a, b) => b.variation_percent - a.variation_percent)
+                        .map(d => ({
+                            Marca: d.brand,
+                            "Variación %": d.variation_percent / 100
+                        }))
+                } : null
+            ].filter(Boolean),
+            models: modelsData?.map(m => ({
+                brand: m.brand,
+                model: m.model,
+                submodel: m.submodel,
+                estado: m.estado,
+                tipo_vehiculo: m.tipo_vehiculo,
+                precio_con_bono: convertPrice(m.precio_con_bono || 0),
+                precio_lista: convertPrice(m.precio_lista || 0),
+                bono: convertPrice(m.bono || 0)
+            }))
+        };
 
-            const response = await fetch(`${EXCEL_SERVICE_URL}/generate-excel`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        const response = await fetch('/api/generate-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-            if (response.ok) {
-                const blob = await response.blob();
-                saveAs(blob, `Dashboard_Report_${dateStr}.xlsx`);
-                console.log("[Excel Export] ✓ Native charts export completed!");
-                return;
-            } else {
-                console.warn("[Excel Export] Service returned error, falling back to local...");
-            }
-        } catch (error) {
-            console.warn("[Excel Export] Service unavailable, falling back to local...", error);
+        if (response.ok) {
+            const blob = await response.blob();
+            saveAs(blob, `Dashboard_Report_${dateStr}.xlsx`);
+            console.log("[Excel Export] ✓ Native charts export completed!");
+            return;
+        } else {
+            console.warn("[Excel Export] Service returned error, falling back to local...");
+            // Fallback: Local generation without charts
+            console.log("[Excel Export] Using local generation (no native charts)...");
+            await exportLocalExcel(data, context, currencySymbol, convertPrice, modelsData);
         }
+    } catch (error) {
+        console.warn("[Excel Export] Service unavailable, falling back to local...", error);
+        // Fallback: Local generation without charts
+        console.log("[Excel Export] Using local generation (no native charts)...");
+        await exportLocalExcel(data, context, currencySymbol, convertPrice, modelsData);
     }
-
-    // Fallback: Local generation without charts
-    console.log("[Excel Export] Using local generation (no native charts)...");
-    await exportLocalExcel(data, context, currencySymbol, convertPrice, modelsData);
 };
 
 /**
