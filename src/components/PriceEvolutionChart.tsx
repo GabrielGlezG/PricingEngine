@@ -34,7 +34,8 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
-import { TrendingUp, Calendar, RefreshCw } from "lucide-react";
+import { TrendingUp, Calendar, RefreshCw, Download } from "lucide-react";
+import { exportPriceEvolutionData } from "@/lib/exportPages";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, useMemo } from "react";
 
@@ -439,6 +440,34 @@ export function PriceEvolutionChart({
                 <RefreshCw className="h-4 w-4" />
               )}
             </Button>
+
+            {evolutionData && evolutionData.labels.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportPriceEvolutionData(
+                  {
+                    labels: evolutionData.labels.map(l => formatDateForDisplay(l, groupBy)),
+                    datasets: evolutionData.datasets.map(ds => ({
+                      label: ds.label,
+                      data: ds.data
+                    }))
+                  },
+                  {
+                    tipoVehiculo: tipoVehiculoFilters,
+                    brand: brandFilters,
+                    model: modelFilters,
+                    submodel: submodelFilters
+                  },
+                  currency === 'CLP' ? '$' : 'UF',
+                  (price) => price
+                )}
+                className="w-full sm:w-auto gap-2"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Exportar</span>
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
