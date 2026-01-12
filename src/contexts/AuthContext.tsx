@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { useQuery } from '@tanstack/react-query'
 import { useToast } from '@/hooks/use-toast'
+import { preloadBrandLogos } from '@/config/brandLogos'
 
 interface UserProfile {
   user_id: string
@@ -118,6 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
         setAuthLoading(false)
+
+        // Preload brand logos after successful login for faster Dashboard rendering
+        if (event === 'SIGNED_IN' && session) {
+          preloadBrandLogos();
+        }
       }
     )
 
