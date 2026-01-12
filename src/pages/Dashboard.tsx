@@ -823,7 +823,7 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[220px] sm:h-[260px]">
+                <div className="h-[220px] sm:h-[260px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
                   {mounted && (() => {
                     const breakdown = analytics.chart_data?.prices_by_segment_breakdown || {};
                     const segments = Object.keys(breakdown).sort(); // Categories like 'SUV', 'Sedan'
@@ -833,8 +833,10 @@ export default function Dashboard() {
 
                     // Dynamic palette based on brand count
                     const brandColors = getChartPalette(allBrands.length, 0.8);
+                    const minWidth = Math.max(100, segments.length * 80) + 'px';
 
                     return (
+                      <div style={{ width: segments.length > 8 ? minWidth : '100%', height: '100%' }}>
                       <div className="flex flex-col h-full">
                         <div className="flex-1 min-h-0">
                             <Bar
@@ -927,6 +929,7 @@ export default function Dashboard() {
                              ))}
                         </div>
                       </div>
+                      </div>
                     );
                   })()}
                 </div>
@@ -966,13 +969,20 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[220px] sm:h-[260px]">
-                  {mounted && (
-                    <Bar
-                      ref={null}
-                      plugins={[brandAxisLogoPlugin]}
-                      key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
-                      data={{
+                <div className="h-[220px] sm:h-[260px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                    const chartData = selectedPriceSegment === "all"
+                      ? (analytics.chart_data?.prices_by_category || [])
+                      : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []);
+                    const minWidth = Math.max(100, chartData.length * 60) + 'px';
+                    
+                    return (
+                      <div style={{ width: chartData.length > 8 ? minWidth : '100%', height: '100%' }}>
+                        <Bar
+                          ref={null}
+                          plugins={[brandAxisLogoPlugin]}
+                          key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
+                          data={{
                         labels: selectedPriceSegment === "all"
                           ? (analytics.chart_data?.prices_by_category || []).map(d => d.category)
                           : (analytics.chart_data?.prices_by_segment_breakdown?.[selectedPriceSegment] || []).map(d => d.brand),
@@ -1051,7 +1061,9 @@ export default function Dashboard() {
                         },
                       }}
                     />
-                  )}
+                    </div>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1071,7 +1083,7 @@ export default function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
-              <div className="h-[320px]">
+              <div className="h-[320px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
                   {mounted && (() => {
                      const data = analytics.chart_data?.models_by_principal || [];
                      const brands = Array.from(new Set(data.map(d => d.brand))).sort();
@@ -1315,16 +1327,19 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Line
-                      ref={null}
-                      key={`line-brand-${chartKey}`}
-                      plugins={[brandAxisLogoPlugin]}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.prices_by_brand || []
-                        ).map((d) => d.brand),
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                    const brandData = analytics.chart_data?.prices_by_brand || [];
+                    const minWidth = Math.max(100, brandData.length * 60) + 'px';
+                    
+                    return (
+                      <div style={{ width: brandData.length > 10 ? minWidth : '100%', height: '100%' }}>
+                        <Line
+                          ref={null}
+                          key={`line-brand-${chartKey}`}
+                          plugins={[brandAxisLogoPlugin]}
+                          data={{
+                            labels: brandData.map((d) => d.brand),
                         datasets: [
                           {
                             label: "Precio Promedio",
@@ -1385,7 +1400,9 @@ export default function Dashboard() {
                         },
                       }}
                     />
-                  )}
+                    </div>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1478,16 +1495,19 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Line
-                      ref={null}
-                      key={`area-variation-${chartKey}`}
-                      plugins={[brandAxisLogoPlugin]}
-                      data={{
-                        labels: (
-                          analytics.chart_data?.brand_variations || []
-                        ).map((d) => d.brand),
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                    const variationData = analytics.chart_data?.brand_variations || [];
+                    const minWidth = Math.max(100, variationData.length * 60) + 'px';
+                    
+                    return (
+                      <div style={{ width: variationData.length > 10 ? minWidth : '100%', height: '100%' }}>
+                        <Line
+                          ref={null}
+                          key={`area-variation-${chartKey}`}
+                          plugins={[brandAxisLogoPlugin]}
+                          data={{
+                            labels: variationData.map((d) => d.brand),
                         datasets: [
                           {
                             label: (() => {
@@ -1563,7 +1583,9 @@ export default function Dashboard() {
                         },
                       }}
                     />
-                  )}
+                    </div>
+                    );
+                  })()}
                 </div>
                 
 
@@ -1675,18 +1697,23 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-2">
-                <div className="h-[280px]">
-                  {mounted && (
-                    <Bar
-                      ref={null}
-                      key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrands.join(',')}`}
-                      data={{
-                        // Collect all unique dates from all series to ensure x-axis alignment
-                        labels: Array.from(new Set(
-                          (analytics.chart_data?.volatility_timeseries || [])
-                            .flatMap(s => s.data.map(d => d.date))
-                        )).sort(),
-                        datasets: (analytics.chart_data?.volatility_timeseries || []).map((series, idx) => ({
+                <div className="h-[280px] overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
+                  {mounted && (() => {
+                    const timeseriesData = analytics.chart_data?.volatility_timeseries || [];
+                    const uniqueDates = Array.from(new Set(
+                      timeseriesData.flatMap(s => s.data.map(d => d.date))
+                    )).sort();
+                    const minWidth = Math.max(100, uniqueDates.length * 50) + 'px';
+                    
+                    return (
+                      <div style={{ width: uniqueDates.length > 10 ? minWidth : '100%', height: '100%' }}>
+                        <Bar
+                          ref={null}
+                          key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrands.join(',')}`}
+                          data={{
+                            // Collect all unique dates from all series to ensure x-axis alignment
+                            labels: uniqueDates,
+                            datasets: timeseriesData.map((series, idx) => ({
                           label: series.entity,
                           backgroundColor: COLORS_BG[idx % COLORS_BG.length], // Valid HSL with alpha
                           borderColor: COLORS[idx % COLORS.length],
@@ -1749,7 +1776,9 @@ export default function Dashboard() {
                         },
                       }}
                     />
-                  )}
+                    </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Custom Legend with Logos (or Text for Models) */}
