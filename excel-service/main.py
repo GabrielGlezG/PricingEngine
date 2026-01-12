@@ -111,6 +111,11 @@ def generate_excel():
         currency_symbol = data.get('currencySymbol', '$')
         timezone_offset = data.get('timezoneOffset', -3)  # Default to Chile (UTC-3)
         
+        # Generic export parameters
+        title = data.get('title', 'REPORTE DE DASHBOARD')
+        subtitle = data.get('subtitle', '')
+        filters_data = data.get('filters', {})
+        
         # Calculate local time with offset
         from datetime import timedelta
         local_time = datetime.utcnow() + timedelta(hours=timezone_offset)
@@ -121,12 +126,12 @@ def generate_excel():
         # Remove default sheet
         default_sheet = wb.active
         
-        # 1. Create Summary Sheet if provided
+        # 1. Create Summary Sheet if provided (Dashboard style)
         if summary:
             ws = wb.create_sheet("Resumen Ejecutivo", 0)
             
             # Title
-            ws['A1'] = "REPORTE DE DASHBOARD"
+            ws['A1'] = title
             ws['A1'].font = Font(bold=True, size=16)
             ws['A2'] = f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}"
             ws['A2'].font = Font(italic=True, color="666666")
@@ -172,6 +177,34 @@ def generate_excel():
             
             ws.column_dimensions['A'].width = 25
             ws.column_dimensions['B'].width = 30
+        
+        # 1b. Create info sheet for generic exports (Compare, PriceEvolution)
+        elif title and not summary:
+            ws = wb.create_sheet("Información", 0)
+            
+            ws['A1'] = title
+            ws['A1'].font = Font(bold=True, size=16)
+            if subtitle:
+                ws['A2'] = subtitle
+                ws['A2'].font = Font(italic=True, color="666666")
+            ws.cell(row=3 if subtitle else 2, column=1, value=f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}")
+            ws.cell(row=3 if subtitle else 2, column=1).font = Font(italic=True, color="666666")
+            
+            # Filters if provided
+            if filters_data:
+                current_row = 5
+                ws.cell(row=current_row, column=1, value="Filtros Aplicados")
+                ws.cell(row=current_row, column=1).font = Font(bold=True)
+                current_row += 1
+                
+                for filter_name, filter_values in filters_data.items():
+                    if isinstance(filter_values, list) and len(filter_values) > 0:
+                        ws.cell(row=current_row, column=1, value=f"{filter_name}:")
+                        ws.cell(row=current_row, column=2, value=', '.join(filter_values))
+                        current_row += 1
+            
+            ws.column_dimensions['A'].width = 20
+            ws.column_dimensions['B'].width = 40
         
         # 2. Create chart sheets
         for sheet_data in sheets:

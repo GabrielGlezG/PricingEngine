@@ -7,7 +7,8 @@ import { hslVar, cn } from "@/lib/utils"
 import { getScaleOptions } from "@/config/chartColors"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Scale, DollarSign } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Scale, DollarSign, Download } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Line } from 'react-chartjs-2'
 import {
@@ -26,6 +27,7 @@ import { DashboardFilters } from "@/components/DashboardFilters"
 import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters"
 import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 import { CleanEmptyState } from "@/components/CleanEmptyState"
+import { exportCompareData } from "@/lib/exportPages"
 
 
 ChartJS.register(
@@ -215,10 +217,27 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <InstitutionalHeader 
-        title="Comparador de Vehículos" 
-        description="Selecciona y compara las características y precios de diferentes modelos lado a lado."
-      />
+      <div className="flex items-center justify-between">
+        <InstitutionalHeader 
+          title="Comparador de Vehículos" 
+          description="Selecciona y compara las características y precios de diferentes modelos lado a lado."
+        />
+        {comparisonData.length > 0 && (
+          <Button
+            onClick={() => exportCompareData(
+              comparisonData,
+              filters,
+              currency === 'CLP' ? '$' : 'UF',
+              (price) => price // convertPrice not needed as prices are already converted
+            )}
+            variant="outline"
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar Excel
+          </Button>
+        )}
+      </div>
 
       {/* Brand Header when brands are selected */}
       {filters.brand.length > 0 && (
