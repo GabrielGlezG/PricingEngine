@@ -447,7 +447,8 @@ export function PriceEvolutionChart({
                 size="sm"
                 onClick={() => exportPriceEvolutionData(
                   {
-                    labels: evolutionData.labels.map(l => formatDateForDisplay(l, groupBy)),
+                    // Labels are already formatted, use them directly
+                    labels: evolutionData.labels,
                     datasets: evolutionData.datasets.map(ds => ({
                       label: ds.label,
                       data: ds.data
