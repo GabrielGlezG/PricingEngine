@@ -1410,12 +1410,12 @@ export default function Dashboard() {
             <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="card-title flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" />
-                  Índice de Volatilidad Histórica
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Tendencia de Precios Global
                 </CardTitle>
                 <CardDescription className="subtitle">
                    <div className="flex flex-col gap-3">
-                       <p>Variación porcentual histórica de precios por marca.</p>
+                       <p>Evolución acumulada de precios (% de cambio neto) por marca.</p>
                        {/* Period Buttons */}
                        <div className="flex gap-2">
                            {(['total', 'month'] as const).map((mode) => (
@@ -1599,7 +1599,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between gap-4">
                     <CardTitle className="card-title flex items-center gap-2 whitespace-nowrap">
                       <Activity className="h-5 w-5 text-primary" />
-                      Volatilidad: {volatilityBrands.length === 1 || filters.brand?.length === 1 ? 'Modelos' : 'Marcas'}
+                      Volatilidad de Mercado: {volatilityBrands.length === 1 || filters.brand?.length === 1 ? 'Modelos' : 'Marcas'}
                     </CardTitle>
                     
                      <div className="w-full max-w-[200px]">
@@ -1616,7 +1616,7 @@ export default function Dashboard() {
 
                 <CardDescription className="subtitle">
                     <div className="flex flex-col gap-3 pt-2">
-                       <p>Fluctuaciones porcentuales de precios en el periodo seleccionado.</p>
+                       <p>Intensidad de fluctuación (cambios mes a mes) en el periodo seleccionado.</p>
                        
                        {/* Period Buttons */}
                        <div className="flex gap-2">
