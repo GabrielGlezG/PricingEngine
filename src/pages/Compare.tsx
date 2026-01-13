@@ -217,27 +217,10 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <InstitutionalHeader 
-          title="Comparador de Vehículos" 
-          description="Selecciona y compara las características y precios de diferentes modelos lado a lado."
-        />
-        {comparisonData.length > 0 && (
-          <Button
-            onClick={() => exportCompareData(
-              comparisonData,
-              filters,
-              currency === 'CLP' ? '$' : 'UF',
-              (price) => price // convertPrice not needed as prices are already converted
-            )}
-            variant="outline"
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Exportar Excel
-          </Button>
-        )}
-      </div>
+      <InstitutionalHeader 
+        title="Comparador de Vehículos" 
+        description="Selecciona y compara las características y precios de diferentes modelos lado a lado."
+      />
 
       {/* Brand Header when brands are selected */}
       {filters.brand.length > 0 && (
@@ -380,8 +363,26 @@ export default function Compare() {
           {/* Gráfico de Evolución de Precios */}
           <Card>
             <div className="p-6">
-              <h2 className="card-title mb-2">Evolución de Precios</h2>
-              <p className="caption mb-6">Comparación de precios históricos</p>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="card-title mb-2">Evolución de Precios</h2>
+                  <p className="caption">Comparación de precios históricos</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportCompareData(
+                    comparisonData,
+                    filters,
+                    currency === 'CLP' ? '$' : 'UF',
+                    (price) => price
+                  )}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Exportar</span>
+                </Button>
+              </div>
               
               <div className="h-[300px] sm:h-[400px]">
                 {mounted && <Line
