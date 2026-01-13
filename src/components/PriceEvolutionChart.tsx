@@ -34,7 +34,7 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
-import { TrendingUp, Calendar, RefreshCw, Download } from "lucide-react";
+import { TrendingUp, Calendar, Download } from "lucide-react";
 import { exportPriceEvolutionData } from "@/lib/exportPages";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, useMemo } from "react";
@@ -105,8 +105,6 @@ export function PriceEvolutionChart({
   const {
     data: evolutionData,
     isLoading,
-    refetch,
-    isRefetching,
   } = useQuery({
     queryKey: [
       "price-evolution",
@@ -382,7 +380,7 @@ export function PriceEvolutionChart({
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle className="card-title flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -427,27 +425,12 @@ export function PriceEvolutionChart({
               </SelectContent>
             </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              disabled={isRefetching}
-              className="w-full sm:w-auto"
-            >
-              {isRefetching ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
-
             {evolutionData && evolutionData.labels.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => exportPriceEvolutionData(
                   {
-                    // Labels are already formatted, use them directly
                     labels: evolutionData.labels,
                     datasets: evolutionData.datasets.map(ds => ({
                       label: ds.label,
@@ -463,7 +446,7 @@ export function PriceEvolutionChart({
                   currency === 'CLP' ? '$' : 'UF',
                   (price) => price
                 )}
-                className="w-full sm:w-auto gap-2"
+                className="gap-2"
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Exportar</span>
