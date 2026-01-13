@@ -204,20 +204,44 @@ export default function Destacados() {
   // 4. Best Deals & Insights
   const selectedDeals = data.bestDeals.filter(d => selectedBrands.includes(d.products.brand));
   
-  // 5. Price Extremes (Across all selected brands)
-  // We need to look at Top 5/Bottom 5 global lists and filter by our selection
-  const selectedExpensive = analytics.chart_data.top_5_expensive.filter(m => selectedBrands.includes(m.brand));
-  const selectedCheap = analytics.chart_data.bottom_5_cheap.filter(m => selectedBrands.includes(m.brand));
+  // 5. COMPETITIVE INTELLIGENCE - Find most aggressive and rising competitors
+  // Filter brand variations for selected brands
+  const selectedBrandVariations = analytics.chart_data.brand_variations.filter(b => selectedBrands.includes(b.brand));
   
-  // Find absolute max and min among the filtered lists
-  const absoluteTecho = selectedExpensive.length > 0 
-    ? selectedExpensive.reduce((prev, current) => (prev.price > current.price) ? prev : current)
+  // Need at least 2 brands for meaningful comparison
+  const hasMultipleBrands = selectedBrandVariations.length > 1;
+  
+  // Most aggressive: Brand with biggest NEGATIVE variation (lowering prices) - only if actually negative
+  const aggressiveCandidate = selectedBrandVariations.length > 0
+    ? selectedBrandVariations.reduce((prev, curr) => (curr.variation_percent < prev.variation_percent) ? curr : prev)
     : null;
-  const absolutePiso = selectedCheap.length > 0
-    ? selectedCheap.reduce((prev, current) => (prev.price < current.price) ? prev : current)
+  const mostAggressive = (hasMultipleBrands && aggressiveCandidate && aggressiveCandidate.variation_percent < 0) 
+    ? aggressiveCandidate 
     : null;
+  
+  // Rising prices: Brand with biggest POSITIVE variation (raising prices) - only if actually positive
+  const risingCandidate = selectedBrandVariations.length > 0
+    ? selectedBrandVariations.reduce((prev, curr) => (curr.variation_percent > prev.variation_percent) ? curr : prev)
+    : null;
+  const risingPrices = (hasMultipleBrands && risingCandidate && risingCandidate.variation_percent > 0) 
+    ? risingCandidate 
+    : null;
+  
+  // For single brand selection, show that brand's own trend
+  const singleBrandTrend = selectedBrandVariations.length === 1 ? selectedBrandVariations[0] : null;
+  
+  // 6. Market Trend - Overall direction of selected brands
+  const avgMarketTrend = selectedBrandVariations.length > 0
+    ? selectedBrandVariations.reduce((acc, b) => acc + b.variation_percent, 0) / selectedBrandVariations.length
+    : 0;
+  const marketTrendDirection = avgMarketTrend > 1 ? 'subiendo' : avgMarketTrend < -1 ? 'bajando' : 'estable';
+  
+  // 7. Total Scraping Sessions (data coverage indicator)
+  // @ts-ignore - metrics comes from analytics
+  const totalScrapingSessions = analytics.metrics?.total_scraping_sessions || 0;
+  const totalDataPoints = selectedBrandVariations.reduce((acc, b) => acc + b.scraping_sessions, 0);
 
-  // 6. Recent Changes
+  // 8. Recent Changes
   const selectedChanges = data.recentChanges.filter(c => selectedBrands.includes(c.product.brand));
 
 
@@ -348,30 +372,83 @@ export default function Destacados() {
             {/* --- INSIGHTS ROW --- */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 
-                {/* COL 1: PRICE DOMAIN */}
+                {/* COL 1: COMPETITIVE INTELLIGENCE */}
                 <Card className="p-4 md:p-5 border-border/50 shadow-sm bg-card/50 backdrop-blur-sm h-full flex flex-col">
                     <h3 className="text-xs md:text-sm font-bold text-muted-foreground uppercase mb-3 md:mb-4 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" /> Rangos de Precio
+                        <TrendingDown className="h-4 w-4" /> {hasMultipleBrands ? 'Inteligencia Competitiva' : 'Tendencia de Marca'}
                     </h3>
-                    <div className="space-y-4 md:space-y-6 flex-1">
-                         {/* Expensive */}
-                         <div className="flex justify-between items-start gap-4">
-                             <div className="overflow-hidden">
-                                <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-red-200 text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30">Techo Global</Badge>
-                                <p className="font-medium text-xs md:text-sm truncate" title={absoluteTecho?.model}>{absoluteTecho?.model || "N/A"}</p>
-                                <p className="text-[10px] text-muted-foreground">{absoluteTecho?.brand}</p>
+                    <div className="space-y-4 md:space-y-5 flex-1">
+                         {hasMultipleBrands ? (
+                           <>
+                             {/* Most Aggressive Competitor */}
+                             <div className="flex justify-between items-start gap-4">
+                                 <div className="overflow-hidden">
+                                    <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-red-200 text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30">
+                                      Más Agresivo
+                                    </Badge>
+                                    <p className="font-medium text-xs md:text-sm">{mostAggressive?.brand || "Ninguno bajando"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{mostAggressive ? "Bajando precios activamente" : "Sin bajas significativas"}</p>
+                                 </div>
+                                 <span className={`font-bold text-base md:text-lg whitespace-nowrap ${mostAggressive ? 'text-red-600' : 'text-muted-foreground'}`}>
+                                   {mostAggressive ? `${mostAggressive.variation_percent.toFixed(1)}%` : "-"}
+                                 </span>
                              </div>
-                             <span className="font-bold text-base md:text-lg whitespace-nowrap">{absoluteTecho ? formatPrice(absoluteTecho.price) : "-"}</span>
-                         </div>
+                             <div className="w-full h-px bg-border/40" />
+                             {/* Rising Prices Brand */}
+                             <div className="flex justify-between items-start gap-4">
+                                 <div className="overflow-hidden">
+                                    <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-amber-200 text-amber-700 bg-amber-50 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-900/30">
+                                      Subiendo Precios
+                                    </Badge>
+                                    <p className="font-medium text-xs md:text-sm">{risingPrices?.brand || "Ninguno subiendo"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{risingPrices ? "Mayor incremento de precios" : "Sin alzas significativas"}</p>
+                                 </div>
+                                 <span className={`font-bold text-base md:text-lg whitespace-nowrap ${risingPrices ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                   {risingPrices ? `+${risingPrices.variation_percent.toFixed(1)}%` : "-"}
+                                 </span>
+                             </div>
+                           </>
+                         ) : singleBrandTrend ? (
+                           <>
+                             {/* Single Brand Trend Info */}
+                             <div className="flex justify-between items-start gap-4">
+                                 <div className="overflow-hidden">
+                                    <Badge variant="outline" className={`mb-1 md:mb-2 text-[10px] ${singleBrandTrend.variation_percent < 0 
+                                      ? 'border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/10' 
+                                      : singleBrandTrend.variation_percent > 0 
+                                      ? 'border-amber-200 text-amber-700 bg-amber-50 dark:bg-amber-900/10'
+                                      : 'border-blue-200 text-blue-700 bg-blue-50 dark:bg-blue-900/10'
+                                    }`}>
+                                      {singleBrandTrend.variation_percent < 0 ? 'Bajando' : singleBrandTrend.variation_percent > 0 ? 'Subiendo' : 'Estable'}
+                                    </Badge>
+                                    <p className="font-medium text-xs md:text-sm">{singleBrandTrend.brand}</p>
+                                    <p className="text-[10px] text-muted-foreground">Variación en el período</p>
+                                 </div>
+                                 <span className={`font-bold text-base md:text-lg whitespace-nowrap ${
+                                   singleBrandTrend.variation_percent < 0 ? 'text-emerald-600' : 
+                                   singleBrandTrend.variation_percent > 0 ? 'text-amber-600' : 'text-muted-foreground'
+                                 }`}>
+                                   {singleBrandTrend.variation_percent > 0 ? '+' : ''}{singleBrandTrend.variation_percent.toFixed(1)}%
+                                 </span>
+                             </div>
+                             <div className="w-full h-px bg-border/40" />
+                             <p className="text-xs text-muted-foreground text-center py-2">
+                               Selecciona 2+ marcas para comparar competidores
+                             </p>
+                           </>
+                         ) : (
+                           <p className="text-xs text-muted-foreground text-center py-4">Sin datos de variación</p>
+                         )}
                          <div className="w-full h-px bg-border/40" />
-                         {/* Cheap */}
-                         <div className="flex justify-between items-start gap-4">
-                             <div className="overflow-hidden">
-                                <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-900/10 dark:text-emerald-400 dark:border-emerald-900/30">Piso Global</Badge>
-                                <p className="font-medium text-xs md:text-sm truncate" title={absolutePiso?.model}>{absolutePiso?.model || "N/A"}</p>
-                                <p className="text-[10px] text-muted-foreground">{absolutePiso?.brand}</p>
+                         {/* Market Trend & Data Coverage */}
+                         <div className="flex justify-between items-center gap-4">
+                             <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${marketTrendDirection === 'bajando' ? 'bg-red-500' : marketTrendDirection === 'subiendo' ? 'bg-amber-500' : 'bg-emerald-500'} animate-pulse`} />
+                                <span className="text-xs text-muted-foreground">Mercado {marketTrendDirection}</span>
                              </div>
-                             <span className="font-bold text-base md:text-lg whitespace-nowrap">{absolutePiso ? formatPrice(absolutePiso.price) : "-"}</span>
+                             <span className="text-xs font-medium text-muted-foreground">
+                               {totalDataPoints} puntos de datos
+                             </span>
                          </div>
                     </div>
                 </Card>
