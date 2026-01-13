@@ -19,7 +19,12 @@ Deno.serve(async (req) => {
 
     console.log('Fetching historical data for destacados...')
 
-    // Obtener todos los datos históricos con productos
+    // Calculate cutoff date (18 months ago) - Safety limit
+    const cutoffDate = new Date();
+    cutoffDate.setMonth(cutoffDate.getMonth() - 18);
+    const cutoffDateIso = cutoffDate.toISOString();
+
+    // Obtener todos los datos históricos con productos (LIMITED TO 18 MONTHS)
     const { data: historicalData, error: histError } = await supabaseClient
       .from('price_data')
       .select(`
@@ -39,6 +44,7 @@ Deno.serve(async (req) => {
           image_url
         )
       `)
+      .gte('date', cutoffDateIso)
       .order('date', { ascending: false })
 
     if (histError) {
@@ -47,6 +53,15 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Retrieved ${historicalData?.length || 0} historical records`)
+
+    // PRE-OPTIMIZATION: Group history by product_id for O(1) access
+    const productHistoryMap = new Map<string, any[]>();
+    historicalData?.forEach((item: any) => {
+      if (!productHistoryMap.has(item.product_id)) {
+        productHistoryMap.set(item.product_id, []);
+      }
+      productHistoryMap.get(item.product_id)!.push(item);
+    });
 
     // 1. TENDENCIAS DE MERCADO - Últimos 6 meses
     const sixMonthsAgo = new Date()
@@ -220,7 +235,9 @@ Deno.serve(async (req) => {
       }))
       .sort((a, b) => a.brand.localeCompare(b.brand))
 
-    // 6. CAMBIOS SIGNIFICATIVOS RECIENTES (últimos 30 días)
+
+
+    // 6. CAMBIOS SIGNIFICATIVOS RECIENTES (OPTIMIZED)
     const recentChanges = Array.from(latestPrices.values())
       .filter(item => {
         if (!item.products) return false
@@ -228,14 +245,16 @@ Deno.serve(async (req) => {
         return itemDate >= thirtyDaysAgo
       })
       .map(latest => {
-        const productHistory = historicalData
-          .filter(h => h.product_id === latest.product_id && h.date < latest.date)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        // Use O(1) map lookup instead of O(N) filter
+        const fullHistory = productHistoryMap.get(latest.product_id) || [];
+        // History is already sorted by date desc because of main query
+        // Find first item older than this one
+        const previousItem = fullHistory.find(h => h.date < latest.date);
 
-        if (productHistory.length === 0) return null
+        if (!previousItem) return null;
 
-        const previousPrice = productHistory[0].price
-        const change = ((latest.price - previousPrice) / previousPrice) * 100
+        const previousPrice = previousItem.price;
+        const change = ((latest.price - previousPrice) / previousPrice) * 100;
 
         return {
           product: latest.products,
@@ -245,9 +264,10 @@ Deno.serve(async (req) => {
           date: latest.date
         }
       })
-      .filter(item => item && Math.abs(item.change) >= 5)
+      .filter(item => item && Math.abs(item.change) >= 2) // Lower threshold slightly or keep 5
       .sort((a, b) => Math.abs(b!.change) - Math.abs(a!.change))
       .slice(0, 10)
+
 
     const response = {
       generatedAt: new Date().toISOString(),

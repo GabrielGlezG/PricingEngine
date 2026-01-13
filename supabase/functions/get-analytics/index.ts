@@ -508,24 +508,18 @@ Deno.serve(async (req) => {
     const modelMap: Record<string, ModelTimeSeries> = {};
     const allBucketsSet = new Set<string>();
 
-    const volatilityData = filteredData.filter(item => {
-      let valid = true;
-      if (filters.volatilityStartDate && filters.volatilityStartDate !== 'all') {
-        if (item.date < filters.volatilityStartDate) valid = false;
-      }
-      if (filters.volatilityEndDate && filters.volatilityEndDate !== 'all') {
-        if (item.date.split('T')[0] > filters.volatilityEndDate) valid = false;
-      }
-      return valid;
-    });
+    // Use monthlyData (historical) instead of filteredData (snapshot) for Volatility Calculation
+    const volatilityData = monthlyData || [];
 
-    volatilityData.forEach(item => {
+    volatilityData.forEach((item: any) => {
       // Create a unique key for the model
-      const key = `${item.products?.brand}||${item.products?.model}`;
+      const p = item.products as any;
+      const key = `${p.brand}||${p.model}`;
+
       if (!modelMap[key]) {
         modelMap[key] = {
-          brand: item.products?.brand,
-          model: item.products?.model,
+          brand: p.brand,
+          model: p.model,
           buckets: {},
           variations: {}
         };
