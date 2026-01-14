@@ -121,6 +121,7 @@ interface AnalyticsData {
     upper_quartile: number;
     current_scraping_date?: string;
     total_scraping_sessions?: number;
+    avg_discount_pct?: number;
   };
   chart_data: {
     prices_by_brand: Array<{
@@ -755,7 +756,7 @@ export default function Dashboard() {
         />
       )}
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <DataCard
           title="Mercado Total"
           value={
@@ -772,6 +773,14 @@ export default function Dashboard() {
           title="Precio Promedio"
           value={formatPrice(analytics.metrics.avg_price)}
           icon={DollarSign}
+        />
+
+        <DataCard
+          title="Descuento Promedio"
+          value={`${analytics.metrics.avg_discount_pct ? analytics.metrics.avg_discount_pct.toFixed(1) : '0.0'}%`}
+          subValue="Sobre Precio Lista"
+          icon={Award}
+          className="border-green-500/20 bg-green-50/50 dark:bg-green-900/10"
         />
 
         <DataCard
