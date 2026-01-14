@@ -19,12 +19,7 @@ Deno.serve(async (req) => {
 
     console.log('Fetching historical data for destacados...')
 
-    // Calculate cutoff date (18 months ago) - Safety limit
-    const cutoffDate = new Date();
-    cutoffDate.setMonth(cutoffDate.getMonth() - 18);
-    const cutoffDateIso = cutoffDate.toISOString();
-
-    // Obtener todos los datos históricos con productos (LIMITED TO 18 MONTHS)
+    // Obtener todos los datos históricos con productos (FULL HISTORY)
     const { data: historicalData, error: histError } = await supabaseClient
       .from('price_data')
       .select(`
@@ -44,7 +39,6 @@ Deno.serve(async (req) => {
           image_url
         )
       `)
-      .gte('date', cutoffDateIso)
       .order('date', { ascending: false })
 
     if (histError) {
@@ -297,7 +291,8 @@ Deno.serve(async (req) => {
       {
         headers: {
           ...corsHeaders,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60, s-maxage=600, stale-while-revalidate=600',
         }
       }
     )
