@@ -150,6 +150,7 @@ def generate_excel():
                 ("Precio Máximo", summary.get('max_price', 0)),
                 ("Desviación Estándar", summary.get('price_std_dev', 0)),
                 ("Coef. Variación", summary.get('variation_coefficient', 0)),
+                ("Descuento Promedio", summary.get('avg_discount_pct', 0)), # New Metric
             ]
             
             for i, (label, value) in enumerate(metrics):
@@ -158,112 +159,31 @@ def generate_excel():
                 ws.cell(row=row, column=2, value=value)
                 if 2 <= i <= 6:  # Currency values
                     ws.cell(row=row, column=2).number_format = f'"{currency_symbol}" #,##0'
-                elif i == 7:  # Percentage
+                elif i >= 7:  # Percentage (Variation Coeff & Discount)
                     ws.cell(row=row, column=2).number_format = '0.00%'
             
-            style_data_rows(ws, 5, 12, 2)
+            style_data_rows(ws, 5, 13, 2)
             
             # Filters
-            ws['A14'] = "Filtros Aplicados"
-            ws['A14'].font = Font(bold=True)
+            ws['A15'] = "Filtros Aplicados"
+            ws['A15'].font = Font(bold=True)
             
             filters = summary.get('filters', {})
-            ws['A15'] = "Segmento:"
-            ws['B15'] = ', '.join(filters.get('tipoVehiculo', [])) or "Todos"
-            ws['A16'] = "Marca:"
-            ws['B16'] = ', '.join(filters.get('brand', [])) or "Todas"
-            ws['A17'] = "Modelo:"
-            ws['B17'] = ', '.join(filters.get('model', [])) or "Todos"
-            
-            ws.column_dimensions['A'].width = 25
-            ws.column_dimensions['B'].width = 30
-        
-        # 1b. Create info sheet for generic exports (Compare, PriceEvolution)
-        elif title and not summary:
-            ws = wb.create_sheet("Información", 0)
-            
-            ws['A1'] = title
-            ws['A1'].font = Font(bold=True, size=16)
-            if subtitle:
-                ws['A2'] = subtitle
-                ws['A2'].font = Font(italic=True, color="666666")
-            ws.cell(row=3 if subtitle else 2, column=1, value=f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}")
-            ws.cell(row=3 if subtitle else 2, column=1).font = Font(italic=True, color="666666")
-            
-            # Filters if provided
-            if filters_data:
-                current_row = 5
-                ws.cell(row=current_row, column=1, value="Filtros Aplicados")
-                ws.cell(row=current_row, column=1).font = Font(bold=True)
-                current_row += 1
-                
-                for filter_name, filter_values in filters_data.items():
-                    if isinstance(filter_values, list) and len(filter_values) > 0:
-                        ws.cell(row=current_row, column=1, value=f"{filter_name}:")
-                        ws.cell(row=current_row, column=2, value=', '.join(filter_values))
-                        current_row += 1
-            
-            ws.column_dimensions['A'].width = 20
-            ws.column_dimensions['B'].width = 40
-        
-        # 2. Create chart sheets
-        for sheet_data in sheets:
-            sheet_name = sheet_data.get('name', 'Sheet')[:31]  # Excel limit
-            chart_type = sheet_data.get('chart_type', 'bar')
-            chart_title = sheet_data.get('chart_title', sheet_name)
-            rows = sheet_data.get('data', [])
-            
-            if not rows:
-                continue
-            
-            ws = wb.create_sheet(sheet_name)
-            
-            # Get headers from first row keys
-            headers = list(rows[0].keys())
-            num_cols = len(headers)
-            
-            # Write headers
-            for col, header in enumerate(headers, 1):
-                ws.cell(row=1, column=col, value=header)
-            style_header_row(ws, 1, num_cols)
-            
-            # Write data
-            for row_idx, row_data in enumerate(rows, 2):
-                for col_idx, header in enumerate(headers, 1):
-                    value = row_data.get(header, '')
-                    cell = ws.cell(row=row_idx, column=col_idx, value=value)
-                    # Apply currency format to numeric columns (not the label column)
-                    if col_idx > 1 and isinstance(value, (int, float)):
-                        if 'variacion' in header.lower() or '%' in header:
-                            cell.number_format = '0.00%'
-                        else:
-                            cell.number_format = f'"{currency_symbol}" #,##0'
-            
-            end_row = len(rows) + 1
-            style_data_rows(ws, 2, end_row, num_cols)
-            
-            # Set column widths
-            for col in range(1, num_cols + 1):
-                ws.column_dimensions[get_column_letter(col)].width = 18
-            
-            # Create chart based on type
-            num_series = num_cols - 1  # Exclude label column
-            
-            if chart_type == 'line':
-                chart = create_line_chart(ws, chart_title, end_row, 1, 1, num_series)
-            else:  # Default to bar
-                chart = create_bar_chart(ws, chart_title, end_row, 1, 1, num_series)
-            
-            # Position chart next to data
-            chart_position = f"{get_column_letter(num_cols + 2)}2"
-            ws.add_chart(chart, chart_position)
-        
+            ws['A16'] = "Segmento:"
+            ws['B16'] = ', '.join(filters.get('tipoVehiculo', [])) or "Todos"
+            ws['A17'] = "Marca:"
+            ws['B17'] = ', '.join(filters.get('brand', [])) or "Todas"
+            ws['A18'] = "Modelo:"
+            ws['B18'] = ', '.join(filters.get('model', [])) or "Todos"
+
+// ... (skipping unchanged code block for sheets loop if needed, but I need to target Models section below) ...
+
         # 3. Create Models sheet if provided
         if models and len(models) > 0:
             ws = wb.create_sheet("Modelos")
             
             headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", 
-                      "Precio c/Bono", "Precio Lista", "Bono", "Dif. vs Lista"]
+                      "Precio c/Bono", "Precio Lista", "Bono", "% Descuento"]
             
             for col, header in enumerate(headers, 1):
                 ws.cell(row=1, column=col, value=header)
@@ -279,7 +199,12 @@ def generate_excel():
                 precio_bono = model.get('precio_con_bono', 0)
                 precio_lista = model.get('precio_lista', 0)
                 bono = model.get('bono', 0)
-                diff = ((precio_bono - precio_lista) / precio_lista) if precio_lista else 0
+                
+                # Calculate Discount % (Bono / Lista)
+                if precio_lista and precio_lista > 0:
+                    diff = (bono / precio_lista)
+                else:
+                    diff = 0
                 
                 ws.cell(row=row_idx, column=6, value=precio_bono).number_format = f'"{currency_symbol}" #,##0'
                 ws.cell(row=row_idx, column=7, value=precio_lista).number_format = f'"{currency_symbol}" #,##0'
