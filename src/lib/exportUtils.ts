@@ -292,14 +292,15 @@ async function exportLocalExcel(
         // Modelos
         if (modelsData && modelsData.length > 0) {
             const ws = workbook.addSheet("Modelos");
-            const headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "Dif. vs Lista"];
+            const headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", "Precio c/Bono", "Precio Lista", "Bono", "% Descuento"];
             headers.forEach((h, i) => ws.cell(1, i + 1).value(h));
             styleHeader(ws, 1, headers.length);
 
             modelsData.forEach((m, rowIdx) => {
                 const row = rowIdx + 2;
-                const diff = (m.precio_con_bono && m.precio_lista && m.precio_lista !== 0)
-                    ? ((m.precio_con_bono - m.precio_lista) / m.precio_lista) : 0;
+                // Calculate Discount %
+                const discountPct = (m.bono && m.precio_lista && m.precio_lista > 0)
+                    ? (m.bono / m.precio_lista) : 0;
 
                 ws.cell(row, 1).value(m.brand);
                 ws.cell(row, 2).value(m.model);
@@ -309,7 +310,7 @@ async function exportLocalExcel(
                 ws.cell(row, 6).value(convertPrice(m.precio_con_bono || 0)).style("numberFormat", currencyFmt);
                 ws.cell(row, 7).value(convertPrice(m.precio_lista || 0)).style("numberFormat", currencyFmt);
                 ws.cell(row, 8).value(convertPrice(m.bono || 0)).style("numberFormat", currencyFmt);
-                ws.cell(row, 9).value(diff).style("numberFormat", "0.0%");
+                ws.cell(row, 9).value(discountPct).style("numberFormat", "0.0%");
             });
             styleDataRows(ws, 2, modelsData.length + 1, headers.length);
         }
