@@ -67,7 +67,6 @@ Deno.serve(async (req) => {
 
     console.log('Received filters:', filters);
 
-    // Get latest price data for each product with related product information
     const { data: priceData, error: priceError } = await supabaseClient
       .from('price_data')
       .select(`
@@ -188,7 +187,26 @@ Deno.serve(async (req) => {
       lower_quartile: lowerQuartile,
       upper_quartile: upperQuartile,
       current_scraping_date: filteredData.length > 0 ? filteredData[0].date : null,
-      total_scraping_sessions: 0 // Will be updated below
+      total_scraping_sessions: 0, // Will be updated below
+
+      // New: Global Average Discount Percent
+      avg_discount_pct: (() => {
+        const discountItems = filteredData.filter(item => {
+          const list = Number((item as any).precio_lista_num);
+          const bonus = Number((item as any).bono_num);
+          return !Number.isNaN(list) && list > 0 && !Number.isNaN(bonus) && bonus > 0;
+        });
+
+        if (discountItems.length === 0) return 0;
+
+        const totalPct = discountItems.reduce((acc, item) => {
+          const list = Number((item as any).precio_lista_num);
+          const bonus = Number((item as any).bono_num);
+          return acc + ((bonus / list) * 100);
+        }, 0);
+
+        return totalPct / discountItems.length;
+      })()
     };
 
     // Get total scraping sessions count (distinct dates)
@@ -284,13 +302,50 @@ Deno.serve(async (req) => {
       const modelPrices = modelData.map(item => parseFloat(item.price));
       const brand = modelData.length > 0 ? (modelData[0].products as any).brand : 'Unknown';
 
+      // --- New: Discount Analysis Calculation ---
+      const listPrices = modelData
+        .map(item => Number((item as any).precio_lista_num))
+        .filter(p => !Number.isNaN(p) && p > 0);
+
+      const bonuses = modelData
+        .map(item => Number((item as any).bono_num))
+        .filter(b => !Number.isNaN(b)); // Include 0 bonuses
+
+      const avgListPrice = listPrices.length > 0
+        ? listPrices.reduce((a, b) => a + b, 0) / listPrices.length
+        : 0;
+
+      const avgBonus = bonuses.length > 0
+        ? bonuses.reduce((a, b) => a + b, 0) / bonuses.length
+        : 0;
+
+      // Calculate Avg Discount Pct (Row Level for accuracy)
+      const discounts = modelData.map(item => {
+        const list = Number((item as any).precio_lista_num);
+        const bonus = Number((item as any).bono_num);
+
+        if (list > 0 && bonus > 0) {
+          return (bonus / list) * 100;
+        }
+        return 0; // No discount if list is missing or bonus is 0
+      });
+
+      const avgDiscountPct = discounts.length > 0
+        ? discounts.reduce((a, b) => a + b, 0) / discounts.length
+        : 0;
+      // ------------------------------------------
+
       return {
         brand,
         model_principal: modelPrincipal,
         count: modelData.length,
         avg_price: modelPrices.reduce((a, b) => a + b, 0) / modelPrices.length,
         min_price: Math.min(...modelPrices),
-        max_price: Math.max(...modelPrices)
+        max_price: Math.max(...modelPrices),
+        // New Metrics
+        avg_list_price: avgListPrice,
+        avg_bonus: avgBonus,
+        avg_discount_pct: avgDiscountPct
       };
     });
 
@@ -312,16 +367,29 @@ Deno.serve(async (req) => {
     if (filters.brand && filters.brand.length > 0) {
       monthlyQuery = monthlyQuery.in('products.brand', filters.brand);
     }
+    if (filters.tipoVehiculo && filters.tipoVehiculo.length > 0) {
+      monthlyQuery = monthlyQuery.in('products.tipo_vehiculo', filters.tipoVehiculo);
+    }
     if (filters.model && filters.model.length > 0) {
       monthlyQuery = monthlyQuery.in('products.model', filters.model);
     }
     if (filters.submodel && filters.submodel.length > 0) {
       monthlyQuery = monthlyQuery.in('products.submodel', filters.submodel);
     }
-    if (filters.dateFrom) {
+
+    // Apply Volatility Specific Date Filters if present, otherwise fallback to global
+    if (filters.volatilityStartDate && filters.volatilityStartDate !== 'all') {
+      monthlyQuery = monthlyQuery.gte('date', filters.volatilityStartDate);
+    } else if (filters.dateFrom) {
       monthlyQuery = monthlyQuery.gte('date', filters.dateFrom);
     }
-    if (filters.dateTo) {
+
+    if (filters.volatilityEndDate && filters.volatilityEndDate !== 'all') {
+      // Ensure we include the end date fully by appending time if needed or simply using LTE
+      // If passing just YYYY-MM-DD, LTE works fine for ISO 8601 usually if exact match desired
+      // But safe to append T23:59:59
+      monthlyQuery = monthlyQuery.lte('date', filters.volatilityEndDate + 'T23:59:59');
+    } else if (filters.dateTo) {
       monthlyQuery = monthlyQuery.lte('date', filters.dateTo);
     }
 
@@ -809,7 +877,11 @@ Deno.serve(async (req) => {
         generated_at: new Date().toISOString()
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=60, s-maxage=600, stale-while-revalidate=600',
+        },
       }
     );
 
