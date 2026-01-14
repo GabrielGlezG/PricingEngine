@@ -96,12 +96,16 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
                 <TableHead className="text-right">Precio c/Bono</TableHead>
                 <TableHead className="text-right">Precio Lista</TableHead>
                 <TableHead className="text-right">Bono</TableHead>
-                <TableHead className="text-right">vs. Lista</TableHead>
+                <TableHead className="text-right">% Desc.</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedData?.map((model, index) => {
-                const vsList = calculateVsList(model.precio_con_bono, model.precio_lista);
+                // Calculate Discount % (Bono / Precio Lista)
+                const discountPct = (model.bono && model.precio_lista && model.precio_lista > 0)
+                  ? (model.bono / model.precio_lista) * 100
+                  : 0;
+                
                 const isNuevo = model.estado?.toLowerCase() === 'nuevo';
                 
                 return (
@@ -122,8 +126,8 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
                     <TableCell className="text-right">{formatPrice(model.precio_lista || 0)}</TableCell>
                     <TableCell className="text-right">{formatPrice(model.bono || 0)}</TableCell>
                     <TableCell className="text-right">
-                      <span className={vsList < 0 ? 'text-red-500' : vsList > 0 ? 'text-green-500' : ''}>
-                        {vsList.toFixed(1)}%
+                      <span className={discountPct > 0 ? 'text-green-600 font-bold' : 'text-muted-foreground'}>
+                        {discountPct > 0 ? `${discountPct.toFixed(1)}%` : '-'}
                       </span>
                     </TableCell>
                   </TableRow>
