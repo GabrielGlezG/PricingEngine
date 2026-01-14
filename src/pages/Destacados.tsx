@@ -384,10 +384,10 @@ export default function Destacados() {
                              <div className="flex justify-between items-start gap-4">
                                  <div className="overflow-hidden">
                                     <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-red-200 text-red-700 bg-red-50 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30">
-                                      Más Agresivo
+                                      Mayor Reducción
                                     </Badge>
                                     <p className="font-medium text-xs md:text-sm">{mostAggressive?.brand || "Ninguno bajando"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{mostAggressive ? "Bajando precios activamente" : "Sin bajas significativas"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{mostAggressive ? "Mayor variación negativa acumulada" : "Sin bajas significativas"}</p>
                                  </div>
                                  <span className={`font-bold text-base md:text-lg whitespace-nowrap ${mostAggressive ? 'text-red-600' : 'text-muted-foreground'}`}>
                                    {mostAggressive ? `${mostAggressive.variation_percent.toFixed(1)}%` : "-"}
@@ -398,10 +398,10 @@ export default function Destacados() {
                              <div className="flex justify-between items-start gap-4">
                                  <div className="overflow-hidden">
                                     <Badge variant="outline" className="mb-1 md:mb-2 text-[10px] border-amber-200 text-amber-700 bg-amber-50 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-900/30">
-                                      Subiendo Precios
+                                      Mayor Aumento
                                     </Badge>
                                     <p className="font-medium text-xs md:text-sm">{risingPrices?.brand || "Ninguno subiendo"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{risingPrices ? "Mayor incremento de precios" : "Sin alzas significativas"}</p>
+                                    <p className="text-[10px] text-muted-foreground">{risingPrices ? "Mayor variación positiva acumulada" : "Sin alzas significativas"}</p>
                                  </div>
                                  <span className={`font-bold text-base md:text-lg whitespace-nowrap ${risingPrices ? 'text-amber-600' : 'text-muted-foreground'}`}>
                                    {risingPrices ? `+${risingPrices.variation_percent.toFixed(1)}%` : "-"}
