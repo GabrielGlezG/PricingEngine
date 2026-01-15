@@ -21,6 +21,7 @@ interface Metric {
     price_std_dev: number;
     variation_coefficient: number;
     generated_at?: string;
+    avg_discount_pct?: number; // New Field
 }
 
 interface AnalyticsData {
@@ -89,6 +90,7 @@ export const exportDashboardToExcel = async (
                 max_price: convertPrice(data.metrics.max_price),
                 price_std_dev: convertPrice(data.metrics.price_std_dev),
                 variation_coefficient: data.metrics.variation_coefficient / 100, // Convert to decimal
+                avg_discount_pct: (data.metrics.avg_discount_pct || 0) / 100, // New Metric
                 filters: context.filters
             },
             sheets: [
