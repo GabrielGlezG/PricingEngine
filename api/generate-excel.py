@@ -115,6 +115,7 @@ def generate_excel(data):
             ("Precio Máximo", summary.get('max_price', 0)),
             ("Desviación Estándar", summary.get('price_std_dev', 0)),
             ("Coef. Variación", summary.get('variation_coefficient', 0)),
+            ("Descuento Promedio", summary.get('avg_discount_pct', 0)), # New Metric
         ]
         
         for i, (label, value) in enumerate(metrics):
@@ -123,10 +124,10 @@ def generate_excel(data):
             ws.cell(row=row, column=2, value=value)
             if 2 <= i <= 6:
                 ws.cell(row=row, column=2).number_format = f'"{currency_symbol}" #,##0'
-            elif i == 7:
+            elif i >= 7: # Percentage (Variation & Discount)
                 ws.cell(row=row, column=2).number_format = '0.00%'
         
-        style_data_rows(ws, 5, 12, 2)
+        style_data_rows(ws, 5, 13, 2)
         
         ws['A14'] = "Filtros Aplicados"
         ws['A14'].font = Font(bold=True)
@@ -212,7 +213,7 @@ def generate_excel(data):
     if models and len(models) > 0:
         ws = wb.create_sheet("Modelos")
         headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", 
-                  "Precio c/Bono", "Precio Lista", "Bono", "Dif. vs Lista"]
+                  "Precio c/Bono", "Precio Lista", "Bono", "% Descuento"]
         
         for col, header in enumerate(headers, 1):
             ws.cell(row=1, column=col, value=header)
@@ -228,7 +229,12 @@ def generate_excel(data):
             precio_bono = model.get('precio_con_bono', 0)
             precio_lista = model.get('precio_lista', 0)
             bono = model.get('bono', 0)
-            diff = ((precio_bono - precio_lista) / precio_lista) if precio_lista else 0
+            
+            # Calculate Discount % (Bono / Lista)
+            if precio_lista and precio_lista > 0:
+                diff = (bono / precio_lista)
+            else:
+                diff = 0
             
             ws.cell(row=row_idx, column=6, value=precio_bono).number_format = f'"{currency_symbol}" #,##0'
             ws.cell(row=row_idx, column=7, value=precio_lista).number_format = f'"{currency_symbol}" #,##0'
