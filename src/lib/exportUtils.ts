@@ -104,32 +104,21 @@ export const exportDashboardToExcel = async (
                             Segmento: segment,
                             Marca: b.brand,
                             Versiones: b.count || 0,
-                            "Precio Promedio": b.avg_price // RAW NUMBER
+                            "Precio Promedio": convertPrice(b.avg_price)
                         }))
                     ).sort((a, b) => b.Versiones - a.Versiones)
                 } : null,
 
-                // 2. Estructura de Precios por Segmento (Chart #2 - Avg Price Comparison)
+                // 2 & 4. Precios por Segmento (Chart #2 & #4)
                 data.chart_data.prices_by_category?.length ? {
-                    name: "Estructura Precios",
-                    chart_type: "bar",
-                    chart_title: "Estructura de Precios por Segmento (Promedio)",
-                    data: data.chart_data.prices_by_category.map(d => ({
-                        Segmento: d.category,
-                        "Precio Promedio": d.avg_price // RAW NUMBER
-                    })).sort((a, b) => b["Precio Promedio"] - a["Precio Promedio"])
-                } : null,
-
-                // 4. Precios por Segmento (Chart #4 - Min/Avg/Max Boxplot Proxy)
-                data.chart_data.prices_by_category?.length ? {
-                    name: "Distribución Precios",
-                    chart_type: "bar",
+                    name: "Precios por Segmento",
+                    chart_type: "bar", // Boxplot proxy
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
-                        Mínimo: d.min_price, // RAW NUMBER
-                        Promedio: d.avg_price, // RAW NUMBER
-                        Máximo: d.max_price, // RAW NUMBER
+                        Mínimo: convertPrice(d.min_price),
+                        Promedio: convertPrice(d.avg_price),
+                        Máximo: convertPrice(d.max_price),
                         "Cant. Versiones": d.count
                     }))
                 } : null,
@@ -137,15 +126,16 @@ export const exportDashboardToExcel = async (
                 // 3. Matriz Posicionamiento (Chart #3)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bubble", // UPDATED to bubble
+                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
                     chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal.map(d => ({
-                        _Label: d.model_principal, // Special key for Bubble labels if supported
                         Marca: d.brand,
-                        "Precio Promedio": d.avg_price, // RAW NUMBER
+                        "Modelo Principal": d.model_principal,
                         "Volumen": d.count,
-                        "Size": d.count
-                    })).sort((a, b) => a.Marca.localeCompare(b.Marca))
+                        "Precio Promedio": convertPrice(d.avg_price),
+                        "Precio Mínimo": convertPrice(d.min_price),
+                        "Precio Máximo": convertPrice(d.max_price)
+                    })).sort((a, b) => b.Volumen - a.Volumen)
                 } : null,
 
                 // 5. Benchmarking (Chart #5)
@@ -157,9 +147,9 @@ export const exportDashboardToExcel = async (
                         .sort((a, b) => b.avg_price - a.avg_price)
                         .map(d => ({
                             Marca: d.brand,
-                            "Precio Promedio": d.avg_price, // RAW NUMBER
-                            "Precio Mínimo": d.min_price, // RAW NUMBER
-                            "Precio Máximo": d.max_price, // RAW NUMBER
+                            "Precio Promedio": convertPrice(d.avg_price),
+                            "Precio Mínimo": convertPrice(d.min_price),
+                            "Precio Máximo": convertPrice(d.max_price),
                             "Versiones": d.count
                         }))
                 } : null,
