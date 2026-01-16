@@ -104,7 +104,7 @@ export const exportDashboardToExcel = async (
                             Segmento: segment,
                             Marca: b.brand,
                             Versiones: b.count || 0,
-                            "Precio Promedio": convertPrice(b.avg_price)
+                            "Precio Promedio": b.avg_price // RAW NUMBER
                         }))
                     ).sort((a, b) => b.Versiones - a.Versiones)
                 } : null,
@@ -116,7 +116,7 @@ export const exportDashboardToExcel = async (
                     chart_title: "Estructura de Precios por Segmento (Promedio)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
-                        "Precio Promedio": convertPrice(d.avg_price)
+                        "Precio Promedio": d.avg_price // RAW NUMBER
                     })).sort((a, b) => b["Precio Promedio"] - a["Precio Promedio"])
                 } : null,
 
@@ -127,9 +127,9 @@ export const exportDashboardToExcel = async (
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
-                        Mínimo: convertPrice(d.min_price),
-                        Promedio: convertPrice(d.avg_price),
-                        Máximo: convertPrice(d.max_price),
+                        Mínimo: d.min_price, // RAW NUMBER
+                        Promedio: d.avg_price, // RAW NUMBER
+                        Máximo: d.max_price, // RAW NUMBER
                         "Cant. Versiones": d.count
                     }))
                 } : null,
@@ -142,8 +142,9 @@ export const exportDashboardToExcel = async (
                     data: data.chart_data.models_by_principal.map(d => ({
                         _Label: d.model_principal, // Special key for Bubble labels if supported
                         Marca: d.brand,
+                        "Precio Promedio": d.avg_price, // RAW NUMBER
                         "Volumen": d.count,
-                        "Size": d.count // Bubble size
+                        "Size": d.count
                     })).sort((a, b) => a.Marca.localeCompare(b.Marca))
                 } : null,
 
@@ -156,9 +157,9 @@ export const exportDashboardToExcel = async (
                         .sort((a, b) => b.avg_price - a.avg_price)
                         .map(d => ({
                             Marca: d.brand,
-                            "Precio Promedio": convertPrice(d.avg_price),
-                            "Precio Mínimo": convertPrice(d.min_price),
-                            "Precio Máximo": convertPrice(d.max_price),
+                            "Precio Promedio": d.avg_price, // RAW NUMBER
+                            "Precio Mínimo": d.min_price, // RAW NUMBER
+                            "Precio Máximo": d.max_price, // RAW NUMBER
                             "Versiones": d.count
                         }))
                 } : null,
