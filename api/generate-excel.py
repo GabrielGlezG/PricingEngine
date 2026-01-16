@@ -8,60 +8,39 @@ from datetime import datetime, timedelta
 
 # openpyxl imports
 from openpyxl import Workbook
-from openpyxl.chart import BarChart, LineChart, Reference
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
-import base64
+from openpyxl.chart import BarChart, LineChart, ScatterChart, Reference, Series
 
+# ... imports ...
 
-# Styling constants
-HEADER_FILL = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
-HEADER_FONT = Font(color="FFFFFF", bold=True, size=11)
-ALT_ROW_FILL = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
-THIN_BORDER = Border(
-    left=Side(style='thin', color='E2E8F0'),
-    right=Side(style='thin', color='E2E8F0'),
-    top=Side(style='thin', color='E2E8F0'),
-    bottom=Side(style='thin', color='E2E8F0')
-)
-
-
-def style_header_row(ws, row, num_cols):
-    for col in range(1, num_cols + 1):
-        cell = ws.cell(row=row, column=col)
-        cell.fill = HEADER_FILL
-        cell.font = HEADER_FONT
-        cell.alignment = Alignment(horizontal='center', vertical='center')
-        cell.border = THIN_BORDER
-
-
-def style_data_rows(ws, start_row, end_row, num_cols):
-    for row in range(start_row, end_row + 1):
-        for col in range(1, num_cols + 1):
-            cell = ws.cell(row=row, column=col)
-            if (row - start_row) % 2 == 1:
-                cell.fill = ALT_ROW_FILL
-            cell.border = THIN_BORDER
-
-
-def create_bar_chart(ws, title, data_range, start_row, num_series):
-    chart = BarChart()
-    chart.type = "col"
-    chart.grouping = "clustered"
+def create_scatter_chart(ws, title, data_range, start_row, num_series):
+    chart = ScatterChart()
     chart.title = title
-    chart.style = 10
-    chart.y_axis.title = "Valor"
+    chart.style = 13
+    chart.y_axis.title = "Precio"
+    chart.x_axis.title = "Volumen"
     
-    data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
-    cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
+    # Assuming standard Layout for Scatter:
+    # Col 1: Label (Not used for X or Y, but maybe for labeling if supported manually, hard in openpyxl auto)
+    # Col 2: X Values (Volumen)
+    # Col 3: Y Values (Precio)
     
-    chart.add_data(data, titles_from_data=True)
-    chart.set_categories(cats)
+    # X Values (Column 2)
+    xvalues = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)
+    
+    # Y Values (Column 3)
+    yvalues = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
+    
+    series = Series(yvalues, xvalues, title_from_data=False)
+    series.marker.symbol = "circle"
+    series.marker.graphicalProperties.solidFill = "4F46E5" # Primary Color
+    series.marker.graphicalProperties.line.noFill = True
+    
+    chart.series.append(series)
+    
     chart.width = 15
     chart.height = 10
     
     return chart
-
 
 def create_line_chart(ws, title, data_range, start_row, num_series):
     chart = LineChart()
@@ -224,6 +203,8 @@ def generate_excel(data):
         num_series = num_cols - 1
         if chart_type == 'line':
             chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
+        elif chart_type == 'scatter':
+            chart = create_scatter_chart(ws, chart_title, end_row, 1, num_series)
         else:
             chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
         
