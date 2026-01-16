@@ -83,13 +83,12 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
       };
 
       await exportDashboardToExcel(exportData, {
-        filters: {
-          tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo || 'Todos'],
-          brand: Array.isArray(filters.brand) ? filters.brand : [filters.brand || 'Todas'],
-          model: Array.isArray(filters.model) ? filters.model : [filters.model || 'Todos'],
-          submodel: Array.isArray(filters.submodel) ? filters.submodel : [filters.submodel || 'Todos'],
-        }
-      }, '$', (p) => p, modelsData);
+        dateFrom: 'Catalogo',
+        dateTo: 'Combinado',
+        tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo || 'Todos'],
+        brand: Array.isArray(filters.brand) ? filters.brand : [filters.brand || 'Todas'],
+        model: Array.isArray(filters.model) ? filters.model : [filters.model || 'Todos'],
+      }, modelsData);
 
     } catch (error) {
       console.error("Export failed:", error);
