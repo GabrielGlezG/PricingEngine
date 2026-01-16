@@ -72,8 +72,8 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
           total_brands: new Set(modelsData.map(m => m.brand)).size,
           avg_price: avgPrice,
           median_price: 0, 
-          min_price: Math.min(...prices),
-          max_price: Math.max(...prices),
+          min_price: prices.length > 0 ? Math.min(...prices) : 0,
+          max_price: prices.length > 0 ? Math.max(...prices) : 0,
           price_std_dev: 0,
           variation_coefficient: 0,
           avg_discount_pct: 0 
@@ -82,13 +82,24 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
         generated_at: new Date().toISOString()
       };
 
-      await exportDashboardToExcel(exportData, {
-        dateFrom: 'Catalogo',
-        dateTo: 'Combinado',
-        tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo || 'Todos'],
-        brand: Array.isArray(filters.brand) ? filters.brand : [filters.brand || 'Todas'],
-        model: Array.isArray(filters.model) ? filters.model : [filters.model || 'Todos'],
-      }, modelsData);
+      // Build correct context shape
+      const context = {
+        filters: {
+          tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : (filters.tipoVehiculo ? [filters.tipoVehiculo] : []),
+          brand: Array.isArray(filters.brand) ? filters.brand : (filters.brand ? [filters.brand] : []),
+          model: Array.isArray(filters.model) ? filters.model : (filters.model ? [filters.model] : []),
+          submodel: Array.isArray(filters.submodel) ? filters.submodel : (filters.submodel ? [filters.submodel] : []),
+        }
+      };
+
+      // Call with correct signature: (data, context, currencySymbol, convertPrice, modelsData)
+      await exportDashboardToExcel(
+        exportData, 
+        context,
+        "$",  // Default currency symbol for now
+        (p) => p, // No conversion
+        modelsData
+      );
 
     } catch (error) {
       console.error("Export failed:", error);
