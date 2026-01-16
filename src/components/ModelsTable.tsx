@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchModelsData } from "@/lib/fetchModelsData";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { exportDashboardToExcel } from "@/lib/exportUtils"; // Added import
 import {
   Table,
   TableBody,
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Badge } from "@/components/custom/Badge";
-import { Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, ChevronLeft, ChevronRight, Download } from "lucide-react"; // Added Download
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
@@ -43,6 +44,7 @@ interface ModelData {
 export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTableProps) {
   const { formatPrice } = useCurrency();
   const [currentPage, setCurrentPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false); // Added state
   const itemsPerPage = 5;
 
   const { data: modelsData, isLoading } = useQuery({
@@ -52,6 +54,48 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
     },
     staleTime: 30000,
   });
+
+  const handleExport = async () => {
+    if (!modelsData || modelsData.length === 0) return;
+    
+    setIsExporting(true);
+    try {
+      // Calculate summary stats from current data
+      const totalModels = modelsData.length;
+      const prices = modelsData.map(m => m.precio_lista || 0).filter(p => p > 0);
+      const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+      
+      // Construct minimal AnalyticsData for export
+      const exportData: any = {
+        metrics: {
+          total_models: totalModels,
+          total_brands: new Set(modelsData.map(m => m.brand)).size,
+          avg_price: avgPrice,
+          median_price: 0, 
+          min_price: Math.min(...prices),
+          max_price: Math.max(...prices),
+          price_std_dev: 0,
+          variation_coefficient: 0,
+          avg_discount_pct: 0 
+        },
+        chart_data: {}, 
+        generated_at: new Date().toISOString()
+      };
+
+      await exportDashboardToExcel(exportData, {
+        dateFrom: 'Catalogo',
+        dateTo: 'Combinado',
+        tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo || 'Todos'],
+        brand: Array.isArray(filters.brand) ? filters.brand : [filters.brand || 'Todas'],
+        model: Array.isArray(filters.model) ? filters.model : [filters.model || 'Todos'],
+      }, modelsData);
+
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const calculateVsList = (precioConBono: number | null, precioLista: number | null) => {
     if (!precioConBono || !precioLista || precioLista === 0) return 0;
@@ -78,10 +122,22 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
   return (
     <Card className="border-border/50 shadow-md hover:shadow-lg transition-shadow">
       <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="card-title flex items-center gap-2">
-          <Package className="h-5 w-5 text-primary" />
-          {statusFilter === 'active' ? 'Modelos Activos' : 'Modelos Inactivos'}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+            <CardTitle className="card-title flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              {statusFilter === 'active' ? 'Modelos Activos' : 'Modelos Inactivos'}
+            </CardTitle>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExport} 
+                disabled={isExporting || !modelsData || modelsData.length === 0}
+                className="gap-2"
+            >
+                {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                Exportar Excel
+            </Button>
+        </div>
         <CardDescription className="subtitle">
           Desglose detallado de precios por modelo
         </CardDescription>
