@@ -101,28 +101,25 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
 
 
 def create_scatter_chart(ws, title, data_range, start_row, num_series):
-    """Create a scatter/dispersion chart for Matriz Posicionamiento"""
-    from openpyxl.chart import ScatterChart, Series
-    from openpyxl.chart.shapes import GraphicalProperties
-    from openpyxl.drawing.line import LineProperties
+    """Create a bubble chart for Matriz Posicionamiento where size = volume"""
+    from openpyxl.chart import BubbleChart, Series, Reference
     
-    chart = ScatterChart()
+    chart = BubbleChart()
     chart.title = title
     chart.style = 10
-    chart.x_axis.title = "Volumen"
+    chart.x_axis.title = "Índice"
     chart.y_axis.title = "Precio"
     
     # For Matriz Posicionamiento: Columns are [Marca-Modelo, Volumen, Precio Promedio]
-    # X = Volumen (col 2), Y = Precio Promedio (col 3)
-    x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)
-    y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
+    # We need: X = index (implicit), Y = Precio (col 3), Size = Volumen (col 2)
+    # BubbleChart uses: xvalues, yvalues, zvalues (size)
     
-    series = Series(y_values, xvalues=x_values, title="Modelos")
+    # X values: Use Volumen column as X position (or create index)
+    x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as X
+    y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)  # Precio as Y  
+    z_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as size
     
-    # Remove lines, show only markers
-    series.graphicalProperties = GraphicalProperties()
-    series.graphicalProperties.line = LineProperties(noFill=True)
-    
+    series = Series(values=y_values, xvalues=x_values, zvalues=z_values, title="Modelos")
     chart.series.append(series)
     
     chart.width = 15
