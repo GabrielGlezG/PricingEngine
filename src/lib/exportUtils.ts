@@ -195,7 +195,7 @@ export const exportDashboardToExcel = async (
                         }))
                 } : null,
 
-                // 7. Volatilidad Temporal (Grouped Bar by Date)
+                // 7. Volatilidad Temporal (Line chart by Date)
                 data.chart_data.volatility_timeseries?.length ? {
                     name: "Volatilidad Temporal",
                     chart_type: "line",
@@ -209,8 +209,8 @@ export const exportDashboardToExcel = async (
                             const row: any = { Fecha: date };
                             series.forEach(s => {
                                 const point = s.data.find(d => d.date === date);
-                                // Keep as percentage (e.g. 5.2 for 5.2%), backend will format as 0.052
-                                row[s.entity] = point ? point.variation : 0;
+                                // Divide by 100 for Excel % format (5.2 -> 0.052 -> displays as 5.20%)
+                                row[s.entity] = point ? (point.variation / 100) : 0;
                             });
                             return row;
                         });
