@@ -107,6 +107,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     chart = ScatterChart()
     chart.title = title
     chart.style = 10
+    chart.scatterStyle = 'marker'  # Show only dots, no lines
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     
