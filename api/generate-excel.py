@@ -44,47 +44,39 @@ def style_data_rows(ws, start_row, end_row, num_cols):
             cell.border = THIN_BORDER
 
 
-def create_bubble_chart(ws, title, data_range, start_row, num_series):
-    from openpyxl.chart import BubbleChart, Series
-    chart = BubbleChart()
+def create_bar_chart(ws, title, data_range, start_row, num_series):
+    chart = BarChart()
+    chart.type = "col"
+    chart.grouping = "clustered"
     chart.title = title
     chart.style = 10
-    chart.y_axis.title = "Precio Promedio"
-    chart.x_axis.title = "Volumen"
+    chart.y_axis.title = "Valor"
     
-    # Bubble Chart expects: X, Y, Size (Bubble)
-    # Our data structure for Bubble in exportUtils must be: Label, X (Vol), Y (Price), Size (Vol/derived)
-    # But currently exportUtils sends: Marca, Model, Vol, Price, Min, Max.
-    # We need to adapt the data organization or the chart creation.
-    # Let's assume the sheet data is organized as: Label, X_Value, Y_Value, Size_Value
+    data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
+    cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
     
-    # Check data organization in generate_excel first. 
-    # If generic logic iterates columns, we might need specific handling.
-    
-    # For now, let's genericize. 
-    # data = Reference(ws, min_col=2, min_row=start_row, max_col=num_series+1, max_row=data_range)
-    # Bubble charts are tricky with automatic References.
-    # Let's assume for 'Matriz Posicionamiento':
-    # Col A: Label (Model)
-    # Col B: Volume (X)
-    # Col C: Price (Y) -- we need to swap/arrange columns?
-    # Col D: Size (Volume/Scaled)
-    
-    # Given the complexity, let's try a Scatter chart first if Bubble is too hard to genericize
-    # BUT user asked for "como en dashboard" which is Bubble.
-    
-    # Let's stick to the request.
-    # We will assume the data columns are: [Label, X, Y, Size]
-    
-    x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)
-    y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
-    size = Reference(ws, min_col=4, min_row=start_row + 1, max_row=data_range)
-    
-    series = Series(values=y_values, xvalues=x_values, zvalues=size, title=title)
-    chart.series.append(series)
-    
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(cats)
     chart.width = 15
     chart.height = 10
+    
+    return chart
+
+
+def create_line_chart(ws, title, data_range, start_row, num_series):
+    chart = LineChart()
+    chart.title = title
+    chart.style = 10
+    chart.y_axis.title = "Valor"
+    
+    data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
+    cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
+    
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(cats)
+    chart.width = 15
+    chart.height = 10
+    
     return chart
 
 
@@ -123,7 +115,7 @@ def generate_excel(data):
             ("Precio Máximo", summary.get('max_price', 0)),
             ("Desviación Estándar", summary.get('price_std_dev', 0)),
             ("Coef. Variación", summary.get('variation_coefficient', 0)),
-            ("Descuento Promedio", summary.get('avg_discount_pct', 0)), 
+            ("Descuento Promedio", summary.get('avg_discount_pct', 0)), # New Metric
         ]
         
         for i, (label, value) in enumerate(metrics):
@@ -132,7 +124,7 @@ def generate_excel(data):
             ws.cell(row=row, column=2, value=value)
             if 2 <= i <= 6:
                 ws.cell(row=row, column=2).number_format = f'"{currency_symbol}" #,##0'
-            elif i >= 7: 
+            elif i >= 7: # Percentage (Variation & Discount)
                 ws.cell(row=row, column=2).number_format = '0.00%'
         
         style_data_rows(ws, 5, 13, 2)
@@ -151,6 +143,7 @@ def generate_excel(data):
         ws.column_dimensions['A'].width = 25
         ws.column_dimensions['B'].width = 30
     
+    # Info sheet for generic exports
     elif title and not summary:
         ws = wb.create_sheet("Información", 0)
         ws['A1'] = title
@@ -179,9 +172,7 @@ def generate_excel(data):
         chart_type = sheet_data.get('chart_type', 'bar')
         chart_title = sheet_data.get('chart_title', sheet_name)
         rows = sheet_data.get('data', [])
-        formats = sheet_data.get('formats', {}) # Optional: { 'ColumnName': 'format' }
-        sheet_default_format = sheet_data.get('default_format', None) # 'percent', 'currency', 'number'
-
+        
         if not rows:
             continue
         
@@ -197,36 +188,12 @@ def generate_excel(data):
             for col_idx, header in enumerate(headers, 1):
                 value = row_data.get(header, '')
                 cell = ws.cell(row=row_idx, column=col_idx, value=value)
-                
                 if col_idx > 1 and isinstance(value, (int, float)):
-                    # Determine Format Priority:
-                    # 1. Explicit Column Format
-                    # 2. Sheet Default Format
-                    # 3. Header Keyword Match
-                    # 4. Default Check
-                    
-                    fmt_type = formats.get(header, None)
-                    
-                    if not fmt_type and sheet_default_format:
-                        fmt_type = sheet_default_format
-
-                    if fmt_type == 'percent':
+                    if 'variacion' in header.lower() or '%' in header:
                         cell.number_format = '0.00%'
-                    elif fmt_type == 'number':
-                         cell.number_format = '#,##0'
-                    elif fmt_type == 'currency':
-                         cell.number_format = f'"{currency_symbol}" #,##0'
                     else:
-                        # Auto-detection fallback
-                        header_lower = header.lower()
-                        if any(x in header_lower for x in ['variacion', '%', 'percent']):
-                            cell.number_format = '0.00%'
-                        elif any(x in header_lower for x in ['versiones', 'cantidad', 'volumen', 'stock', 'count']):
-                            cell.number_format = '#,##0'
-                        else:
-                            # Default numeric assumption is currency for pricing engine
-                            cell.number_format = f'"{currency_symbol}" #,##0'
-
+                        cell.number_format = f'"{currency_symbol}" #,##0'
+        
         end_row = len(rows) + 1
         style_data_rows(ws, 2, end_row, num_cols)
         
@@ -234,27 +201,13 @@ def generate_excel(data):
             ws.column_dimensions[get_column_letter(col)].width = 18
         
         num_series = num_cols - 1
-        
-        # Determine chart position
-        chart_position = f"{get_column_letter(num_cols + 2)}2"
-
         if chart_type == 'line':
             chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
-            ws.add_chart(chart, chart_position)
-        elif chart_type == 'bubble':
-            # Bubble chart needs specific columns. 
-            # We assume ExportUtils sends: Label, X, Y, Size in first 4 cols?
-            # Or we try to be smart.
-            try:
-                chart = create_bubble_chart(ws, chart_title, end_row, 1, num_series)
-                ws.add_chart(chart, chart_position)
-            except Exception as e:
-                # Fallback to bar if bubble fails
-                print(f"Bubble chart error: {e}")
-                pass
         else:
             chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
-            ws.add_chart(chart, chart_position)
+        
+        chart_position = f"{get_column_letter(num_cols + 2)}2"
+        ws.add_chart(chart, chart_position)
     
     # Models sheet
     if models and len(models) > 0:

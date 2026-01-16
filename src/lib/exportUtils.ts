@@ -99,7 +99,6 @@ export const exportDashboardToExcel = async (
                     name: "Composición Mercado",
                     chart_type: "bar",
                     chart_title: "Composición de Versiones por Segmento",
-                    formats: { 'Versiones': 'number' },
                     data: Object.entries(data.chart_data.prices_by_segment_breakdown).flatMap(([segment, brands]) =>
                         brands.map(b => ({
                             Segmento: segment,
@@ -115,7 +114,6 @@ export const exportDashboardToExcel = async (
                     name: "Precios por Segmento",
                     chart_type: "bar", // Boxplot proxy
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
-                    formats: { 'Cant. Versiones': 'number' },
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
                         Mínimo: convertPrice(d.min_price),
@@ -128,9 +126,8 @@ export const exportDashboardToExcel = async (
                 // 3. Matriz Posicionamiento (Chart #3)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bubble", // Bubble proxy (Scatter not supported yet)
+                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
                     chart_title: "Matriz Precio vs Volumen",
-                    formats: { 'Volumen': 'number' },
                     data: data.chart_data.models_by_principal.map(d => ({
                         Marca: d.brand,
                         "Modelo Principal": d.model_principal,
@@ -146,7 +143,6 @@ export const exportDashboardToExcel = async (
                     name: "Benchmarking",
                     chart_type: "line",
                     chart_title: "Benchmarking de Precios por Marca",
-                    formats: { 'Versiones': 'number' },
                     data: [...data.chart_data.prices_by_brand]
                         .sort((a, b) => b.avg_price - a.avg_price)
                         .map(d => ({
@@ -163,7 +159,6 @@ export const exportDashboardToExcel = async (
                     name: "Tendencia Global",
                     chart_type: "bar",
                     chart_title: "Tendencia de Precios Global (% Acumulado)",
-                    default_format: 'percent',
                     data: [...data.chart_data.brand_variations]
                         .sort((a, b) => b.variation_percent - a.variation_percent)
                         .map(d => ({
@@ -179,7 +174,6 @@ export const exportDashboardToExcel = async (
                     name: "Volatilidad Temporal",
                     chart_type: "line",
                     chart_title: "Evolución de Volatilidad en el Tiempo",
-                    default_format: 'percent',
                     data: (() => {
                         // Pivot Data: Rows = Dates, Cols = Entities
                         const series = data.chart_data.volatility_timeseries;
