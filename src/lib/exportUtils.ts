@@ -94,25 +94,32 @@ export const exportDashboardToExcel = async (
                 filters: context.filters
             },
             sheets: [
-                // 1. Composición de Versiones (Chart #1)
+                // 1. Composición de Versiones (Chart #1) - Pivoted (Rows=Segment, Cols=Brands)
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Composición Mercado",
                     chart_type: "bar",
                     chart_title: "Composición de Versiones por Segmento",
-                    data: Object.entries(data.chart_data.prices_by_segment_breakdown).flatMap(([segment, brands]) =>
-                        brands.map(b => ({
-                            Segmento: segment,
-                            Marca: b.brand,
-                            Versiones: b.count || 0,
-                            "Precio Promedio": convertPrice(b.avg_price)
-                        }))
-                    ).sort((a, b) => b.Versiones - a.Versiones)
+                    data: (() => {
+                        const breakdown = data.chart_data.prices_by_segment_breakdown;
+                        const allBrands = Array.from(new Set(
+                            Object.values(breakdown).flatMap(list => list.map(i => i.brand))
+                        )).sort();
+
+                        return Object.keys(breakdown).sort().map(segment => {
+                            const row: any = { Segmento: segment };
+                            allBrands.forEach(brand => {
+                                const item = breakdown[segment]?.find(i => i.brand === brand);
+                                row[brand] = item ? (item.count || 0) : 0;
+                            });
+                            return row;
+                        });
+                    })()
                 } : null,
 
-                // 2 & 4. Precios por Segmento (Chart #2 & #4)
+                // 2. Precios por Segmento (Chart #2 & #4)
                 data.chart_data.prices_by_category?.length ? {
                     name: "Precios por Segmento",
-                    chart_type: "bar", // Boxplot proxy
+                    chart_type: "bar",
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
@@ -123,22 +130,20 @@ export const exportDashboardToExcel = async (
                     }))
                 } : null,
 
-                // 3. Matriz Posicionamiento (Chart #3)
+                // 3. Matriz Posicionamiento (Chart #3) - Flattened Label
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
+                    chart_type: "bar",
                     chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal.map(d => ({
-                        Marca: d.brand,
-                        "Modelo Principal": d.model_principal,
+                        "Modelo": `${d.brand} ${d.model_principal}`, // Combined Label
                         "Volumen": d.count,
                         "Precio Promedio": convertPrice(d.avg_price),
-                        "Precio Mínimo": convertPrice(d.min_price),
-                        "Precio Máximo": convertPrice(d.max_price)
+                        // Only numeric cols allowed after Col 1
                     })).sort((a, b) => b.Volumen - a.Volumen)
                 } : null,
 
-                // 5. Benchmarking (Chart #5)
+                // 4. Benchmarking (Chart #5)
                 data.chart_data.prices_by_brand?.length ? {
                     name: "Benchmarking",
                     chart_type: "line",
@@ -148,13 +153,12 @@ export const exportDashboardToExcel = async (
                         .map(d => ({
                             Marca: d.brand,
                             "Precio Promedio": convertPrice(d.avg_price),
-                            "Precio Mínimo": convertPrice(d.min_price),
-                            "Precio Máximo": convertPrice(d.max_price),
-                            "Versiones": d.count
+                            "Precio Mínimo": convertPrice(d.min_price), // Numeric
+                            "Precio Máximo": convertPrice(d.max_price)  // Numeric
                         }))
                 } : null,
 
-                // 6. Volatilidad Global (Chart #6)
+                // 5. Tendencia Global (Chart #6) - Numeric Only
                 data.chart_data.brand_variations?.length ? {
                     name: "Tendencia Global",
                     chart_type: "bar",
@@ -163,19 +167,17 @@ export const exportDashboardToExcel = async (
                         .sort((a, b) => b.variation_percent - a.variation_percent)
                         .map(d => ({
                             Marca: d.brand,
-                            "Variación %": d.variation_percent / 100,
-                            "Inicio": d.startDate || "-",
-                            "Fin": d.endDate || "-"
+                            "Variación %": d.variation_percent / 100
+                            // Removed String columns "Inicio"/"Fin" to prevent chart errors
                         }))
                 } : null,
 
-                // 7. Volatilidad Temporal (Chart #7)
+                // 6. Volatilidad Temporal (Chart #7) - Already Pivoted
                 data.chart_data.volatility_timeseries?.length ? {
                     name: "Volatilidad Temporal",
                     chart_type: "line",
                     chart_title: "Evolución de Volatilidad en el Tiempo",
                     data: (() => {
-                        // Pivot Data: Rows = Dates, Cols = Entities
                         const series = data.chart_data.volatility_timeseries;
                         const allDates = Array.from(new Set(series.flatMap(s => s.data.map(d => d.date)))).sort();
 
