@@ -149,19 +149,19 @@ export const exportDashboardToExcel = async (
                         .sort((a, b) => a["Segmento - Marca"].localeCompare(b["Segmento - Marca"]))
                 } : null,
 
-                // 4. Matriz Posicionamiento (Bar chart sorted by Volume)
+                // 4. Matriz Posicionamiento (Scatter/Dispersion chart)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bar",  // Changed from bubble to bar
-                    chart_title: "Modelos por Volumen y Precio",
+                    chart_type: "scatter",  // Scatter/Dispersion chart
+                    chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal
                         .map(d => ({
-                            // Combine for label
+                            // Label for tooltip reference
                             "Marca - Modelo": `${d.brand} ${d.model_principal}`,
-                            "Volumen": d.count,
-                            "Precio Promedio": convertPrice(d.avg_price)
+                            "Volumen": d.count,  // X axis
+                            "Precio Promedio": convertPrice(d.avg_price)  // Y axis
                         }))
-                        .sort((a, b) => b.Volumen - a.Volumen)  // Sorted by volume desc
+                        .sort((a, b) => b.Volumen - a.Volumen)
                 } : null,
 
                 // 5. Benchmarking (Line Chart)
