@@ -82,7 +82,7 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
 
 def create_bubble_chart(ws, title, data_range, start_row, num_series):
     """Create a scatter chart as proxy for bubble (openpyxl bubble support is limited)"""
-    from openpyxl.chart import ScatterChart
+    from openpyxl.chart import ScatterChart, Series
     
     chart = ScatterChart()
     chart.title = title
@@ -90,14 +90,12 @@ def create_bubble_chart(ws, title, data_range, start_row, num_series):
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     
-    # For bubble, we use X=Volumen, Y=Precio columns
-    # Assumes data has columns: Label, Volumen, Precio, ...
-    x_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)  # Volumen
-    y_values = Reference(ws, min_col=4, min_row=start_row + 1, max_row=data_range)  # Precio Promedio
+    # For Matriz Posicionamiento: Columns are Marca, Modelo, Volumen, Precio Promedio, ...
+    # X = Volumen (col 3), Y = Precio Promedio (col 4)
+    x_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
+    y_values = Reference(ws, min_col=4, min_row=start_row + 1, max_row=data_range)
     
-    from openpyxl.chart.series import XYSeries
-    series = XYSeries(xVal=x_values, yVal=y_values)
-    series.title = "Modelos"
+    series = Series(y_values, xvalues=x_values, title="Modelos")
     chart.series.append(series)
     
     chart.width = 15
