@@ -103,11 +103,12 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
 def create_scatter_chart(ws, title, data_range, start_row, num_series):
     """Create a scatter/dispersion chart for Matriz Posicionamiento"""
     from openpyxl.chart import ScatterChart, Series
+    from openpyxl.chart.shapes import GraphicalProperties
+    from openpyxl.drawing.line import LineProperties
     
     chart = ScatterChart()
     chart.title = title
     chart.style = 10
-    chart.scatterStyle = 'marker'  # Show only dots, no lines
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     
@@ -117,6 +118,11 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
     
     series = Series(y_values, xvalues=x_values, title="Modelos")
+    
+    # Remove lines, show only markers
+    series.graphicalProperties = GraphicalProperties()
+    series.graphicalProperties.line = LineProperties(noFill=True)
+    
     chart.series.append(series)
     
     chart.width = 15
