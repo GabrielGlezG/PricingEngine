@@ -94,18 +94,28 @@ export const exportDashboardToExcel = async (
                 filters: context.filters
             },
             sheets: [
-                // 1. Composición de Versiones (Chart #1) - NO Precio Promedio
+                // 1. Composición de Versiones (Stacked Bar) - PIVOTED
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Composición Mercado",
                     chart_type: "bar",
                     chart_title: "Composición de Versiones por Segmento",
-                    data: Object.entries(data.chart_data.prices_by_segment_breakdown).flatMap(([segment, brands]) =>
-                        brands.map(b => ({
-                            Segmento: segment,
-                            Marca: b.brand,
-                            Versiones: b.count || 0
-                        }))
-                    ).sort((a, b) => b.Versiones - a.Versiones)
+                    data: (() => {
+                        // Pivot: Rows = Segments, Columns = Brands
+                        const breakdown = data.chart_data.prices_by_segment_breakdown;
+                        const segments = Object.keys(breakdown).sort();
+                        const allBrands = Array.from(new Set(
+                            Object.values(breakdown).flatMap(stats => stats.map(s => s.brand))
+                        )).sort();
+
+                        return segments.map(segment => {
+                            const row: any = { Segmento: segment };
+                            allBrands.forEach(brand => {
+                                const stat = breakdown[segment]?.find(s => s.brand === brand);
+                                row[brand] = stat?.count || 0;
+                            });
+                            return row;
+                        });
+                    })()
                 } : null,
 
                 // 2. Precios por Segmento (Boxplot) - General View
@@ -122,7 +132,7 @@ export const exportDashboardToExcel = async (
                     }))
                 } : null,
 
-                // 3. Estructura Precios por Marca (NEW - Chart #2 drill-down)
+                // 3. Estructura Precios por Marca (Drill-down)
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Estructura Precios Marcas",
                     chart_type: "bar",
@@ -137,7 +147,7 @@ export const exportDashboardToExcel = async (
                     ).sort((a, b) => a.Segmento.localeCompare(b.Segmento) || b["Precio Promedio"] - a["Precio Promedio"])
                 } : null,
 
-                // 4. Matriz Posicionamiento (Chart #3) - Bubble Chart
+                // 4. Matriz Posicionamiento (Bubble Chart)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
                     chart_type: "bubble",
@@ -152,7 +162,7 @@ export const exportDashboardToExcel = async (
                     })).sort((a, b) => b.Volumen - a.Volumen)
                 } : null,
 
-                // 5. Benchmarking (Chart #5)
+                // 5. Benchmarking (Line Chart)
                 data.chart_data.prices_by_brand?.length ? {
                     name: "Benchmarking",
                     chart_type: "line",
@@ -168,7 +178,7 @@ export const exportDashboardToExcel = async (
                         }))
                 } : null,
 
-                // 6. Volatilidad Global (Chart #6)
+                // 6. Tendencia Global (Area Chart)
                 data.chart_data.brand_variations?.length ? {
                     name: "Tendencia Global",
                     chart_type: "bar",
@@ -183,7 +193,7 @@ export const exportDashboardToExcel = async (
                         }))
                 } : null,
 
-                // 7. Volatilidad Temporal (Chart #7)
+                // 7. Volatilidad Temporal (Grouped Bar by Date)
                 data.chart_data.volatility_timeseries?.length ? {
                     name: "Volatilidad Temporal",
                     chart_type: "line",
@@ -197,7 +207,8 @@ export const exportDashboardToExcel = async (
                             const row: any = { Fecha: date };
                             series.forEach(s => {
                                 const point = s.data.find(d => d.date === date);
-                                row[s.entity] = point ? (point.variation / 100) : 0;
+                                // Keep as percentage (e.g. 5.2 for 5.2%), backend will format as 0.052
+                                row[s.entity] = point ? point.variation : 0;
                             });
                             return row;
                         });
