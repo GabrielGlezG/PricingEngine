@@ -23,18 +23,14 @@ Deno.serve(async (req) => {
     const { data: historicalData, error: histError } = await supabaseClient
       .from('price_data')
       .select(`
-        id,
         price,
         date,
-        ctx_precio,
-        store,
         product_id,
         products (
           id,
           name,
           brand,
           model,
-          submodel,
           category,
           image_url
         )
@@ -47,6 +43,21 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Retrieved ${historicalData?.length || 0} historical records`)
+
+    // Helper to safely extract numeric price
+    const getPrice = (item: any) => {
+      // Try numeric fields first if available (though query currently only selects 'price')
+      const primary = Number((item as any).precio_num ?? (item as any).precio_lista_num);
+      if (!Number.isNaN(primary) && primary > 0) return primary;
+
+      // Fallback to cleaning string price
+      const raw = (item as any).price;
+      if (typeof raw === 'number') return raw;
+
+      const cleaned = String(raw ?? '').replace(/[^0-9.-]/g, '');
+      const parsed = Number(cleaned);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
 
     // PRE-OPTIMIZATION: Group history by product_id for O(1) access
     const productHistoryMap = new Map<string, any[]>();
@@ -68,11 +79,14 @@ Deno.serve(async (req) => {
     // Calcular tendencia general del mercado
     const monthlyAvg: { [key: string]: { total: number; count: number } } = {}
     recentData.forEach(item => {
+      const price = getPrice(item);
+      if (price <= 0) return;
+
       const month = new Date(item.date).toISOString().substring(0, 7)
       if (!monthlyAvg[month]) {
         monthlyAvg[month] = { total: 0, count: 0 }
       }
-      monthlyAvg[month].total += item.price
+      monthlyAvg[month].total += price
       monthlyAvg[month].count += 1
     })
 
@@ -98,28 +112,36 @@ Deno.serve(async (req) => {
     const productHistoricalAvg = new Map()
     historicalData.forEach(item => {
       if (!item.products) return
+      const price = getPrice(item);
+      if (price <= 0) return;
+
       if (!productHistoricalAvg.has(item.product_id)) {
         productHistoricalAvg.set(item.product_id, { total: 0, count: 0 })
       }
       const data = productHistoricalAvg.get(item.product_id)
-      data.total += item.price
+      data.total += price
       data.count += 1
     })
 
     const bestDeals = Array.from(latestPrices.values())
       .filter(item => item.products && productHistoricalAvg.has(item.product_id))
       .map(item => {
+        const itemPrice = getPrice(item);
         const avgData = productHistoricalAvg.get(item.product_id)
         const historicalAvg = avgData.total / avgData.count
-        const discount = ((historicalAvg - item.price) / historicalAvg) * 100
+        // Avoid division by zero if historicalAvg is somehow 0
+        if (historicalAvg <= 0 || itemPrice <= 0) return null;
+
+        const discount = ((historicalAvg - itemPrice) / historicalAvg) * 100
         return {
           ...item,
+          price: itemPrice, // Normalize price in response
           historicalAvg: Math.round(historicalAvg),
           discount: Math.round(discount * 10) / 10
         }
       })
-      .filter(item => item.discount > 5)
-      .sort((a, b) => b.discount - a.discount)
+      .filter(item => item && item.discount > 5)
+      .sort((a, b) => b!.discount - a!.discount)
       .slice(0, 8)
 
     // 3. MODELOS MÁS MONITOREADOS
@@ -136,6 +158,7 @@ Deno.serve(async (req) => {
       .filter(item => item.products)
       .map(item => ({
         ...item,
+        price: getPrice(item), // Normalize
         dataPoints: productDataCount.get(item.product_id) || 0
       }))
       .sort((a, b) => b.dataPoints - a.dataPoints)
@@ -153,7 +176,9 @@ Deno.serve(async (req) => {
     } = {}
 
     recentData.forEach(item => {
-      if (!item.products) return
+      const price = getPrice(item);
+      if (!item.products || price <= 0) return
+
       const product = item.products as unknown as { category: string; brand: string }
       const cat = product.category
       if (!categoryStats[cat]) {
@@ -166,9 +191,9 @@ Deno.serve(async (req) => {
         }
       }
       categoryStats[cat].count += 1
-      categoryStats[cat].totalPrice += item.price
-      categoryStats[cat].minPrice = Math.min(categoryStats[cat].minPrice, item.price)
-      categoryStats[cat].maxPrice = Math.max(categoryStats[cat].maxPrice, item.price)
+      categoryStats[cat].totalPrice += price
+      categoryStats[cat].minPrice = Math.min(categoryStats[cat].minPrice, price)
+      categoryStats[cat].maxPrice = Math.max(categoryStats[cat].maxPrice, price)
       categoryStats[cat].products.add(item.product_id)
     })
 
@@ -183,18 +208,21 @@ Deno.serve(async (req) => {
       }))
       .sort((a, b) => b.dataPoints - a.dataPoints)
 
-    // 5. MARCAS MÁS ACTIVAS
+    // 5. MARCAS MÁS ACTIVAS (Usando catálogo completo actual)
     const brandStats: {
       [key: string]: {
         products: Set<string>
         models: Set<string>
-        dataPoints: number
+        dataPoints: number // count of products in this context
         totalPrice: number
       }
     } = {}
 
-    recentData.forEach(item => {
-      if (!item.products) return
+    // Use latestPrices to ensure we count ALL unique products currently in catalog
+    latestPrices.forEach(item => {
+      const price = getPrice(item);
+      if (!item.products || price <= 0) return
+
       const product = item.products as unknown as { brand: string; model: string }
       const brand = product.brand
       if (!brandStats[brand]) {
@@ -208,7 +236,7 @@ Deno.serve(async (req) => {
       brandStats[brand].products.add(item.product_id)
       brandStats[brand].models.add(product.model)
       brandStats[brand].dataPoints += 1
-      brandStats[brand].totalPrice += item.price
+      brandStats[brand].totalPrice += price
     })
 
     const topBrands = Object.entries(brandStats)
@@ -247,12 +275,16 @@ Deno.serve(async (req) => {
 
         if (!previousItem) return null;
 
-        const previousPrice = previousItem.price;
-        const change = ((latest.price - previousPrice) / previousPrice) * 100;
+        const currentPrice = getPrice(latest);
+        const previousPrice = getPrice(previousItem);
+
+        if (currentPrice <= 0 || previousPrice <= 0) return null;
+
+        const change = ((currentPrice - previousPrice) / previousPrice) * 100;
 
         return {
           product: latest.products,
-          currentPrice: latest.price,
+          currentPrice,
           previousPrice,
           change: Math.round(change * 10) / 10,
           date: latest.date

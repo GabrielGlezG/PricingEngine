@@ -67,7 +67,10 @@ Deno.serve(async (req) => {
 
     console.log('Received filters:', filters);
 
-    const { data: priceData, error: priceError } = await supabaseClient
+    console.log('Received filters:', filters);
+
+    // Start building the query
+    let query = supabaseClient
       .from('price_data')
       .select(`
         id,
@@ -91,6 +94,36 @@ Deno.serve(async (req) => {
       `)
       .order('date', { ascending: false });
 
+    // Apply DB-level filters
+    // Note: We use 'products.field' because of the !inner join
+    if (filters.tipoVehiculo && filters.tipoVehiculo.length > 0) {
+      query = query.in('products.tipo_vehiculo', filters.tipoVehiculo);
+    }
+    if (filters.brand && filters.brand.length > 0) {
+      query = query.in('products.brand', filters.brand);
+    }
+    if (filters.category) {
+      query = query.eq('products.category', filters.category);
+    }
+    if (filters.model && filters.model.length > 0) {
+      query = query.in('products.model', filters.model);
+    }
+    if (filters.submodel && filters.submodel.length > 0) {
+      query = query.in('products.submodel', filters.submodel);
+    }
+    if (filters.ctx_precio) {
+      query = query.eq('ctx_precio', filters.ctx_precio);
+    }
+    // Date filtering (if enabled in UI)
+    if (filters.dateFrom) {
+      query = query.gte('date', filters.dateFrom);
+    }
+    if (filters.dateTo) {
+      query = query.lte('date', filters.dateTo);
+    }
+
+    const { data: priceData, error: priceError } = await query;
+
     if (priceError) {
       console.error('Error fetching price data:', priceError);
       throw priceError;
@@ -107,23 +140,13 @@ Deno.serve(async (req) => {
       }
     });
 
-    let filteredData = Array.from(latestPrices.values());
+    const filteredData = Array.from(latestPrices.values());
 
-    // Apply filters (tipoVehiculo, brand, model, submodel)
-    if (filters.tipoVehiculo && filters.tipoVehiculo.length > 0) {
-      filteredData = filteredData.filter(item => filters.tipoVehiculo.includes(item.products?.tipo_vehiculo));
-    }
-    if (filters.brand && filters.brand.length > 0) {
-      filteredData = filteredData.filter(item => filters.brand.includes(item.products?.brand));
-    }
-    if (filters.model && filters.model.length > 0) {
-      filteredData = filteredData.filter(item => filters.model.includes(item.products?.model));
-    }
-    if (filters.submodel && filters.submodel.length > 0) {
-      filteredData = filteredData.filter(item => filters.submodel.includes(item.products?.submodel));
-    }
+    // JS filtering removed as it is now done in DB
+    // Only 'priceRange' needs manual filtering if passing complex strings, 
+    // but basic filtering is now DB-side.
 
-    console.log('Filtered data count:', filteredData.length);
+    console.log('Filtered data count (after latest per product):', filteredData.length);
 
     // Calculate comprehensive metrics
     const getPrice = (item: any) => {

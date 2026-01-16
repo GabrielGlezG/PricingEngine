@@ -65,6 +65,12 @@ interface DestacadosData {
 }
 
 interface AnalyticsData {
+  metrics: {
+    avg_price: number
+    avg_discount_pct?: number
+    total_products?: number
+    total_scraping_sessions?: number
+  }
   chart_data: {
     top_5_expensive: Array<{ brand: string; model: string; price: number }>
     bottom_5_cheap: Array<{ brand: string; model: string; price: number }>
@@ -110,6 +116,7 @@ export default function Destacados() {
   const [loading, setLoading] = useState(true)
   const { formatPrice, currency } = useCurrency()
   const { theme } = useTheme()
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   
   // ✅ Key única para forzar re-render de gráficos cuando cambia el tema
   const [chartKey, setChartKey] = useState(0)
@@ -133,33 +140,52 @@ export default function Destacados() {
   }, [theme, currency])
 
   useEffect(() => {
-    fetchData()
+    fetchAnalytics(selectedBrands)
+  }, [selectedBrands])
+
+  const fetchAnalytics = async (brands: string[] = []) => {
+    try {
+      const searchParams = new URLSearchParams()
+      if (brands.length > 0) {
+        // Append each brand individually to support multiple values
+        brands.forEach(brand => searchParams.append('brand', brand))
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-analytics', {
+        body: { params: searchParams.toString() }
+      })
+
+      if (error) throw error
+      setAnalytics(data)
+    } catch (error) {
+      console.error('Error fetching analytics:', error)
+    }
+  }
+
+  useEffect(() => {
+    // Initial fetch for static data
+    fetchDestacadosAndInsights()
   }, [])
 
-  const fetchData = async () => {
+  const fetchDestacadosAndInsights = async () => {
     try {
       setLoading(true)
-      const [destacadosRes, insightsRes, analyticsRes] = await Promise.all([
+      const [destacadosRes, insightsRes] = await Promise.all([
         supabase.functions.invoke('get-destacados'),
-        supabase.functions.invoke('get-insights'),
-        supabase.functions.invoke('get-analytics')
+        supabase.functions.invoke('get-insights')
       ])
       
       if (destacadosRes.error) throw destacadosRes.error
       if (insightsRes.error) throw insightsRes.error
-      if (analyticsRes.error) throw analyticsRes.error
       
       setData(destacadosRes.data)
       setInsights(insightsRes.data)
-      setAnalytics(analyticsRes.data)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching initial data:', error)
     } finally {
       setLoading(false)
     }
   }
-
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   
   if (loading) {
     return <LoadingSpinner fullScreen size="lg" text="Cargando destacados..." />
@@ -360,12 +386,12 @@ export default function Destacados() {
                  icon={Package}
                />
 
+               {/* Discount Card - Moved to last position */}
                <DataCard
-                 title="Volatilidad"
-                 value={selectedVolatileModels.length > 0 ? "Alta" : "Baja"}
-                 subValue={`${selectedVolatileModels.length} inestables`}
-                 icon={BarChart3}
-                 className={selectedVolatileModels.length > 0 ? "border-destructive/20" : ""}
+                 title="Descuento Promedio"
+                 value={analytics.metrics.avg_discount_pct ? `${analytics.metrics.avg_discount_pct.toFixed(1)}%` : "-"}
+                 icon={Tag} 
+                 className="col-span-2 sm:col-span-1 border-l-4 border-l-green-500/50"
                />
             </div>
 
