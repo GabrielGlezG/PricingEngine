@@ -100,8 +100,8 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     return chart
 
 
-def create_bubble_chart(ws, title, data_range, start_row, num_series):
-    """Create a scatter chart as proxy for bubble (openpyxl bubble support is limited)"""
+def create_scatter_chart(ws, title, data_range, start_row, num_series):
+    """Create a scatter/dispersion chart for Matriz Posicionamiento"""
     from openpyxl.chart import ScatterChart, Series
     
     chart = ScatterChart()
@@ -110,10 +110,10 @@ def create_bubble_chart(ws, title, data_range, start_row, num_series):
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     
-    # For Matriz Posicionamiento: Columns are Marca, Modelo, Volumen, Precio Promedio, ...
-    # X = Volumen (col 3), Y = Precio Promedio (col 4)
-    x_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
-    y_values = Reference(ws, min_col=4, min_row=start_row + 1, max_row=data_range)
+    # For Matriz Posicionamiento: Columns are [Marca-Modelo, Volumen, Precio Promedio]
+    # X = Volumen (col 2), Y = Precio Promedio (col 3)
+    x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)
+    y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)
     
     series = Series(y_values, xvalues=x_values, title="Modelos")
     chart.series.append(series)
@@ -245,13 +245,15 @@ def generate_excel(data):
                     ):
                         cell.number_format = '0.00%'
                     
-                    # 2. Integer/Count Rules
+                    # 2. Integer/Count Rules (Including Composición sheet which has all counts)
                     elif (
                         'cantidad' in header_lower or 
                         'volumen' in header_lower or 
                         'versiones' in header_lower or
                         'count' in header_lower or
-                        'numero' in header_lower 
+                        'numero' in header_lower or
+                        'composición' in sheet_name_lower or
+                        'composicion' in sheet_name_lower  # Without accent
                     ):
                         cell.number_format = '#,##0'
                     
@@ -270,6 +272,8 @@ def generate_excel(data):
             chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
         elif chart_type == 'stacked':
             chart = create_stacked_chart(ws, chart_title, end_row, 1, num_series)
+        elif chart_type == 'scatter':
+            chart = create_scatter_chart(ws, chart_title, end_row, 1, num_series)
         else:
             chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
         
