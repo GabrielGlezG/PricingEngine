@@ -189,8 +189,29 @@ def generate_excel(data):
                 value = row_data.get(header, '')
                 cell = ws.cell(row=row_idx, column=col_idx, value=value)
                 if col_idx > 1 and isinstance(value, (int, float)):
-                    if 'variacion' in header.lower() or '%' in header:
+                    header_lower = header.lower()
+                    sheet_name_lower = sheet_name.lower()
+                    
+                    # 1. Percentage Rules
+                    if (
+                        'variacion' in header_lower or 
+                        '%' in header_lower or 
+                        'volatilidad' in sheet_name_lower or
+                        'tendencia' in sheet_name_lower
+                    ):
                         cell.number_format = '0.00%'
+                    
+                    # 2. Integer/Count Rules
+                    elif (
+                        'cantidad' in header_lower or 
+                        'volumen' in header_lower or 
+                        'versiones' in header_lower or
+                        'count' in header_lower or
+                        'numero' in header_lower 
+                    ):
+                        cell.number_format = '#,##0'
+                    
+                    # 3. Currency Rules (Default for other numbers, mainly prices)
                     else:
                         cell.number_format = f'"{currency_symbol}" #,##0'
         
