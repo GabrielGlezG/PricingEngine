@@ -94,7 +94,7 @@ export const exportDashboardToExcel = async (
                 filters: context.filters
             },
             sheets: [
-                // 1. Composición de Versiones (Chart #1)
+                // 1. Composición de Versiones (Chart #1) - NO Precio Promedio
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Composición Mercado",
                     chart_type: "bar",
@@ -103,16 +103,15 @@ export const exportDashboardToExcel = async (
                         brands.map(b => ({
                             Segmento: segment,
                             Marca: b.brand,
-                            Versiones: b.count || 0,
-                            "Precio Promedio": convertPrice(b.avg_price)
+                            Versiones: b.count || 0
                         }))
                     ).sort((a, b) => b.Versiones - a.Versiones)
                 } : null,
 
-                // 2 & 4. Precios por Segmento (Chart #2 & #4)
+                // 2. Precios por Segmento (Boxplot) - General View
                 data.chart_data.prices_by_category?.length ? {
                     name: "Precios por Segmento",
-                    chart_type: "bar", // Boxplot proxy
+                    chart_type: "bar",
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
@@ -123,10 +122,25 @@ export const exportDashboardToExcel = async (
                     }))
                 } : null,
 
-                // 3. Matriz Posicionamiento (Chart #3)
+                // 3. Estructura Precios por Marca (NEW - Chart #2 drill-down)
+                data.chart_data.prices_by_segment_breakdown ? {
+                    name: "Estructura Precios Marcas",
+                    chart_type: "bar",
+                    chart_title: "Estructura de Precios por Segmento y Marca",
+                    data: Object.entries(data.chart_data.prices_by_segment_breakdown).flatMap(([segment, brands]) =>
+                        brands.map(b => ({
+                            Segmento: segment,
+                            Marca: b.brand,
+                            "Precio Promedio": convertPrice(b.avg_price),
+                            Versiones: b.count || 0
+                        }))
+                    ).sort((a, b) => a.Segmento.localeCompare(b.Segmento) || b["Precio Promedio"] - a["Precio Promedio"])
+                } : null,
+
+                // 4. Matriz Posicionamiento (Chart #3) - Bubble Chart
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
+                    chart_type: "bubble",
                     chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal.map(d => ({
                         Marca: d.brand,

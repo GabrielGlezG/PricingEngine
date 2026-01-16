@@ -80,6 +80,32 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     return chart
 
 
+def create_bubble_chart(ws, title, data_range, start_row, num_series):
+    """Create a scatter chart as proxy for bubble (openpyxl bubble support is limited)"""
+    from openpyxl.chart import ScatterChart
+    
+    chart = ScatterChart()
+    chart.title = title
+    chart.style = 10
+    chart.x_axis.title = "Volumen"
+    chart.y_axis.title = "Precio"
+    
+    # For bubble, we use X=Volumen, Y=Precio columns
+    # Assumes data has columns: Label, Volumen, Precio, ...
+    x_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)  # Volumen
+    y_values = Reference(ws, min_col=4, min_row=start_row + 1, max_row=data_range)  # Precio Promedio
+    
+    from openpyxl.chart.series import XYSeries
+    series = XYSeries(xVal=x_values, yVal=y_values)
+    series.title = "Modelos"
+    chart.series.append(series)
+    
+    chart.width = 15
+    chart.height = 10
+    
+    return chart
+
+
 def generate_excel(data):
     sheets = data.get('sheets', [])
     summary = data.get('summary', None)
@@ -224,6 +250,8 @@ def generate_excel(data):
         num_series = num_cols - 1
         if chart_type == 'line':
             chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
+        elif chart_type == 'bubble':
+            chart = create_bubble_chart(ws, chart_title, end_row, 1, num_series)
         else:
             chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
         
