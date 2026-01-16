@@ -126,13 +126,16 @@ export const exportDashboardToExcel = async (
                 // 3. Matriz Posicionamiento (Chart #3)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "scatter",
+                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
                     chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal.map(d => ({
-                        "Modelo": `${d.brand} ${d.model_principal}`,
+                        Marca: d.brand,
+                        "Modelo Principal": d.model_principal,
                         "Volumen": d.count,
-                        "Precio Promedio": convertPrice(d.avg_price)
-                    })).sort((a, b) => (b["Volumen"] || 0) - (a["Volumen"] || 0))
+                        "Precio Promedio": convertPrice(d.avg_price),
+                        "Precio Mínimo": convertPrice(d.min_price),
+                        "Precio Máximo": convertPrice(d.max_price)
+                    })).sort((a, b) => b.Volumen - a.Volumen)
                 } : null,
 
                 // 5. Benchmarking (Chart #5)
