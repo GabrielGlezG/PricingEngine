@@ -80,6 +80,7 @@ export function PriceEvolutionChart({
   const { formatPrice, currency } = useCurrency();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const chartColors = useMemo(() => 
     lineChartColors.lines.map(fn => fn())
   , [theme]);
@@ -429,27 +430,35 @@ export function PriceEvolutionChart({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => exportPriceEvolutionData(
-                  {
-                    labels: evolutionData.labels,
-                    datasets: evolutionData.datasets.map(ds => ({
-                      label: ds.label,
-                      data: ds.data
-                    }))
-                  },
-                  {
-                    tipoVehiculo: tipoVehiculoFilters,
-                    brand: brandFilters,
-                    model: modelFilters,
-                    submodel: submodelFilters
-                  },
-                  currency === 'CLP' ? '$' : 'UF',
-                  (price) => price
-                )}
+                disabled={isExporting}
+                onClick={async () => {
+                  setIsExporting(true);
+                  try {
+                    await exportPriceEvolutionData(
+                      {
+                        labels: evolutionData.labels,
+                        datasets: evolutionData.datasets.map(ds => ({
+                          label: ds.label,
+                          data: ds.data
+                        }))
+                      },
+                      {
+                        tipoVehiculo: tipoVehiculoFilters,
+                        brand: brandFilters,
+                        model: modelFilters,
+                        submodel: submodelFilters
+                      },
+                      currency === 'CLP' ? '$' : 'UF',
+                      (price) => price
+                    );
+                  } finally {
+                    setIsExporting(false);
+                  }
+                }}
                 className="gap-2"
               >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Exportar</span>
+                {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                Exportar Excel
               </Button>
             )}
           </div>

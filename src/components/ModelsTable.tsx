@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchModelsData } from "@/lib/fetchModelsData";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { exportDashboardToExcel } from "@/lib/exportUtils"; // Added import
 import {
   Table,
   TableBody,
@@ -60,47 +59,8 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
     
     setIsExporting(true);
     try {
-      // Calculate summary stats from current data
-      const totalModels = modelsData.length;
-      const prices = modelsData.map(m => m.precio_lista || 0).filter(p => p > 0);
-      const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
-      
-      // Construct minimal AnalyticsData for export
-      const exportData: any = {
-        metrics: {
-          total_models: totalModels,
-          total_brands: new Set(modelsData.map(m => m.brand)).size,
-          avg_price: avgPrice,
-          median_price: 0, 
-          min_price: prices.length > 0 ? Math.min(...prices) : 0,
-          max_price: prices.length > 0 ? Math.max(...prices) : 0,
-          price_std_dev: 0,
-          variation_coefficient: 0,
-          avg_discount_pct: 0 
-        },
-        chart_data: {}, 
-        generated_at: new Date().toISOString()
-      };
-
-      // Build correct context shape
-      const context = {
-        filters: {
-          tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : (filters.tipoVehiculo ? [filters.tipoVehiculo] : []),
-          brand: Array.isArray(filters.brand) ? filters.brand : (filters.brand ? [filters.brand] : []),
-          model: Array.isArray(filters.model) ? filters.model : (filters.model ? [filters.model] : []),
-          submodel: Array.isArray(filters.submodel) ? filters.submodel : (filters.submodel ? [filters.submodel] : []),
-        }
-      };
-
-      // Call with correct signature: (data, context, currencySymbol, convertPrice, modelsData)
-      await exportDashboardToExcel(
-        exportData, 
-        context,
-        "$",  // Default currency symbol for now
-        (p) => p, // No conversion
-        modelsData
-      );
-
+      const { exportModelsToExcel } = await import('@/lib/exportUtils');
+      await exportModelsToExcel(modelsData, "$", (p) => p);
     } catch (error) {
       console.error("Export failed:", error);
     } finally {

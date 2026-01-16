@@ -107,14 +107,14 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     chart = BubbleChart()
     chart.title = title
     chart.style = 10
-    chart.x_axis.title = "Índice"
+    chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
+    chart.bubbleScale = 30  # Scale bubbles to 30% (smaller)
     
     # For Matriz Posicionamiento: Columns are [Marca-Modelo, Volumen, Precio Promedio]
-    # We need: X = index (implicit), Y = Precio (col 3), Size = Volumen (col 2)
+    # We need: X = Volumen (col 2), Y = Precio (col 3), Size = Volumen (col 2)
     # BubbleChart uses: xvalues, yvalues, zvalues (size)
     
-    # X values: Use Volumen column as X position (or create index)
     x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as X
     y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)  # Precio as Y  
     z_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as size

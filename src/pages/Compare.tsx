@@ -27,6 +27,7 @@ import { DashboardFilters } from "@/components/DashboardFilters"
 import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters"
 import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 import { CleanEmptyState } from "@/components/CleanEmptyState"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { exportCompareData } from "@/lib/exportPages"
 
 
@@ -68,6 +69,7 @@ export default function Compare() {
   const [mounted, setMounted] = useState(false)
   const [chartKey, setChartKey] = useState(0)
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [isExporting, setIsExporting] = useState(false)
 
   
   const [filters, setFilters] = useState({
@@ -371,16 +373,24 @@ export default function Compare() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => exportCompareData(
-                    comparisonData,
-                    filters,
-                    currency === 'CLP' ? '$' : 'UF',
-                    (price) => price
-                  )}
+                  disabled={isExporting}
+                  onClick={async () => {
+                    setIsExporting(true);
+                    try {
+                      await exportCompareData(
+                        comparisonData,
+                        filters,
+                        currency === 'CLP' ? '$' : 'UF',
+                        (price) => price
+                      );
+                    } finally {
+                      setIsExporting(false);
+                    }
+                  }}
                   className="gap-2"
                 >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Exportar</span>
+                  {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                  Exportar Excel
                 </Button>
               </div>
               
