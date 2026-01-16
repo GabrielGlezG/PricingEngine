@@ -94,13 +94,13 @@ export const exportDashboardToExcel = async (
                 filters: context.filters
             },
             sheets: [
-                // 1. Composición de Versiones (Stacked Bar) - PIVOTED
+                // 1. Composición de Versiones (Stacked Bar)
+                // Rows = Segments, Columns = Brands (each brand is a series)
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Composición Mercado",
-                    chart_type: "bar",
+                    chart_type: "stacked",  // NEW: stacked bar chart
                     chart_title: "Composición de Versiones por Segmento",
                     data: (() => {
-                        // Pivot: Rows = Segments, Columns = Brands
                         const breakdown = data.chart_data.prices_by_segment_breakdown;
                         const segments = Object.keys(breakdown).sort();
                         const allBrands = Array.from(new Set(
@@ -118,7 +118,7 @@ export const exportDashboardToExcel = async (
                     })()
                 } : null,
 
-                // 2. Precios por Segmento (Boxplot) - General View
+                // 2. Precios por Segmento (Boxplot Summary)
                 data.chart_data.prices_by_category?.length ? {
                     name: "Precios por Segmento",
                     chart_type: "bar",
@@ -132,34 +132,36 @@ export const exportDashboardToExcel = async (
                     }))
                 } : null,
 
-                // 3. Estructura Precios por Marca (Drill-down)
+                // 3. Estructura Precios por Marca (Grouped by Segment-Brand)
                 data.chart_data.prices_by_segment_breakdown ? {
                     name: "Estructura Precios Marcas",
                     chart_type: "bar",
                     chart_title: "Estructura de Precios por Segmento y Marca",
-                    data: Object.entries(data.chart_data.prices_by_segment_breakdown).flatMap(([segment, brands]) =>
-                        brands.map(b => ({
-                            Segmento: segment,
-                            Marca: b.brand,
-                            "Precio Promedio": convertPrice(b.avg_price),
-                            Versiones: b.count || 0
-                        }))
-                    ).sort((a, b) => a.Segmento.localeCompare(b.Segmento) || b["Precio Promedio"] - a["Precio Promedio"])
+                    data: Object.entries(data.chart_data.prices_by_segment_breakdown)
+                        .flatMap(([segment, brands]) =>
+                            brands.map(b => ({
+                                // Combine Segment + Brand as label for clear grouping
+                                "Segmento - Marca": `${segment} - ${b.brand}`,
+                                "Precio Promedio": convertPrice(b.avg_price),
+                                Versiones: b.count || 0
+                            }))
+                        )
+                        .sort((a, b) => a["Segmento - Marca"].localeCompare(b["Segmento - Marca"]))
                 } : null,
 
-                // 4. Matriz Posicionamiento (Bubble Chart)
+                // 4. Matriz Posicionamiento (Bar chart sorted by Volume)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bubble",
-                    chart_title: "Matriz Precio vs Volumen",
-                    data: data.chart_data.models_by_principal.map(d => ({
-                        Marca: d.brand,
-                        "Modelo Principal": d.model_principal,
-                        "Volumen": d.count,
-                        "Precio Promedio": convertPrice(d.avg_price),
-                        "Precio Mínimo": convertPrice(d.min_price),
-                        "Precio Máximo": convertPrice(d.max_price)
-                    })).sort((a, b) => b.Volumen - a.Volumen)
+                    chart_type: "bar",  // Changed from bubble to bar
+                    chart_title: "Modelos por Volumen y Precio",
+                    data: data.chart_data.models_by_principal
+                        .map(d => ({
+                            // Combine for label
+                            "Marca - Modelo": `${d.brand} ${d.model_principal}`,
+                            "Volumen": d.count,
+                            "Precio Promedio": convertPrice(d.avg_price)
+                        }))
+                        .sort((a, b) => b.Volumen - a.Volumen)  // Sorted by volume desc
                 } : null,
 
                 // 5. Benchmarking (Line Chart)

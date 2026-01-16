@@ -63,6 +63,26 @@ def create_bar_chart(ws, title, data_range, start_row, num_series):
     return chart
 
 
+def create_stacked_chart(ws, title, data_range, start_row, num_series):
+    """Stacked bar chart for composition/breakdown data"""
+    chart = BarChart()
+    chart.type = "col"
+    chart.grouping = "stacked"  # STACKED instead of clustered
+    chart.title = title
+    chart.style = 10
+    chart.y_axis.title = "Total"
+    
+    data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
+    cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
+    
+    chart.add_data(data, titles_from_data=True)
+    chart.set_categories(cats)
+    chart.width = 15
+    chart.height = 10
+    
+    return chart
+
+
 def create_line_chart(ws, title, data_range, start_row, num_series):
     chart = LineChart()
     chart.title = title
@@ -248,8 +268,8 @@ def generate_excel(data):
         num_series = num_cols - 1
         if chart_type == 'line':
             chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
-        elif chart_type == 'bubble':
-            chart = create_bubble_chart(ws, chart_title, end_row, 1, num_series)
+        elif chart_type == 'stacked':
+            chart = create_stacked_chart(ws, chart_title, end_row, 1, num_series)
         else:
             chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
         
