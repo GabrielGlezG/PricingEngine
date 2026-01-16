@@ -109,10 +109,21 @@ export const exportDashboardToExcel = async (
                     ).sort((a, b) => b.Versiones - a.Versiones)
                 } : null,
 
-                // 2 & 4. Precios por Segmento (Chart #2 & #4)
+                // 2. Estructura de Precios por Segmento (Chart #2 - Avg Price Comparison)
                 data.chart_data.prices_by_category?.length ? {
-                    name: "Precios por Segmento",
-                    chart_type: "bar", // Boxplot proxy
+                    name: "Estructura Precios",
+                    chart_type: "bar",
+                    chart_title: "Estructura de Precios por Segmento (Promedio)",
+                    data: data.chart_data.prices_by_category.map(d => ({
+                        Segmento: d.category,
+                        "Precio Promedio": convertPrice(d.avg_price)
+                    })).sort((a, b) => b["Precio Promedio"] - a["Precio Promedio"])
+                } : null,
+
+                // 4. Precios por Segmento (Chart #4 - Min/Avg/Max Boxplot Proxy)
+                data.chart_data.prices_by_category?.length ? {
+                    name: "Distribución Precios",
+                    chart_type: "bar",
                     chart_title: "Precios por Segmento (Min/Prom/Max)",
                     data: data.chart_data.prices_by_category.map(d => ({
                         Segmento: d.category,
@@ -126,16 +137,14 @@ export const exportDashboardToExcel = async (
                 // 3. Matriz Posicionamiento (Chart #3)
                 data.chart_data.models_by_principal?.length ? {
                     name: "Matriz Posicionamiento",
-                    chart_type: "bar", // Bubble proxy (Scatter not supported yet)
+                    chart_type: "bubble", // UPDATED to bubble
                     chart_title: "Matriz Precio vs Volumen",
                     data: data.chart_data.models_by_principal.map(d => ({
+                        _Label: d.model_principal, // Special key for Bubble labels if supported
                         Marca: d.brand,
-                        "Modelo Principal": d.model_principal,
                         "Volumen": d.count,
-                        "Precio Promedio": convertPrice(d.avg_price),
-                        "Precio Mínimo": convertPrice(d.min_price),
-                        "Precio Máximo": convertPrice(d.max_price)
-                    })).sort((a, b) => b.Volumen - a.Volumen)
+                        "Size": d.count // Bubble size
+                    })).sort((a, b) => a.Marca.localeCompare(b.Marca))
                 } : null,
 
                 // 5. Benchmarking (Chart #5)

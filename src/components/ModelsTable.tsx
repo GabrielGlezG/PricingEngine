@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchModelsData } from "@/lib/fetchModelsData";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { exportDashboardToExcel } from "@/lib/exportUtils"; // Added import
+import { exportModelsTableToExcel } from "@/lib/exportModelsUtils"; // Updated import
 import {
   Table,
   TableBody,
@@ -60,35 +60,11 @@ export function ModelsTable({ filters, statusFilter = 'active' }: ModelsTablePro
     
     setIsExporting(true);
     try {
-      // Calculate summary stats from current data
-      const totalModels = modelsData.length;
-      const prices = modelsData.map(m => m.precio_lista || 0).filter(p => p > 0);
-      const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
-      
-      // Construct minimal AnalyticsData for export
-      const exportData: any = {
-        metrics: {
-          total_models: totalModels,
-          total_brands: new Set(modelsData.map(m => m.brand)).size,
-          avg_price: avgPrice,
-          median_price: 0, 
-          min_price: Math.min(...prices),
-          max_price: Math.max(...prices),
-          price_std_dev: 0,
-          variation_coefficient: 0,
-          avg_discount_pct: 0 
-        },
-        chart_data: {}, 
-        generated_at: new Date().toISOString()
-      };
-
-      await exportDashboardToExcel(exportData, {
-        dateFrom: 'Catalogo',
-        dateTo: 'Combinado',
+      await exportModelsTableToExcel(modelsData, {
         tipoVehiculo: Array.isArray(filters.tipoVehiculo) ? filters.tipoVehiculo : [filters.tipoVehiculo || 'Todos'],
         brand: Array.isArray(filters.brand) ? filters.brand : [filters.brand || 'Todas'],
         model: Array.isArray(filters.model) ? filters.model : [filters.model || 'Todos'],
-      }, modelsData);
+      }, '$'); // Defaulting to $ for now, ideally pass currency symbol
 
     } catch (error) {
       console.error("Export failed:", error);
