@@ -97,52 +97,55 @@ Deno.serve(async (req) => {
         avgPrice: Math.round(data.total / data.count)
       }))
 
-    // 2. MEJORES OFERTAS ACTUALES
+    // 2. MEJORES OFERTAS ACTUALES (Oportunidades Comerciales)
+    // Query active products with bono > 0
+    const { data: commercialDeals, error: dealsError } = await supabaseClient
+      .from('products')
+      .select('id, brand, model, submodel, name, category, image_url, precio_lista, bono, precio_con_bono')
+      .eq('status', 'active')
+      .gt('bono', 0)
+      .gt('precio_lista', 0)
+      .order('bono', { ascending: false });
+
+    if (dealsError) {
+      console.error("Error fetching commercial deals:", dealsError);
+    }
+
+    const bestDeals = (commercialDeals || [])
+      .map(item => {
+        const listPrice = Number(item.precio_lista);
+        const bonus = Number(item.bono);
+
+        if (!listPrice || listPrice <= 0) return null;
+
+        const discountPct = (bonus / listPrice) * 100;
+
+        return {
+          ...item,
+          product_id: item.id,
+          products: item, // Maintain structure for frontend compat
+          price: Number(item.precio_con_bono) || (listPrice - bonus),
+          historicalAvg: listPrice, // Use List Price as reference
+          discount: Math.round(discountPct * 10) / 10
+        };
+      })
+      .filter(item => item && item.discount >= 2) // Minimum 2% discount to show
+      .sort((a, b) => b!.discount - a!.discount)
+      .slice(0, 10); // Top 10 opportunities
+
+    // --- RESTORED DEFINITIONS FOR SECTIONS 3, 5, 6 ---
+    // These were previously part of Section 2 but are needed globally
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const latestPrices = new Map()
-    historicalData.forEach(item => {
+    historicalData.forEach((item: any) => {
       if (item.products && (!latestPrices.has(item.product_id) ||
         new Date(item.date) > new Date(latestPrices.get(item.product_id).date))) {
         latestPrices.set(item.product_id, item)
       }
     })
-
-    const productHistoricalAvg = new Map()
-    historicalData.forEach(item => {
-      if (!item.products) return
-      const price = getPrice(item);
-      if (price <= 0) return;
-
-      if (!productHistoricalAvg.has(item.product_id)) {
-        productHistoricalAvg.set(item.product_id, { total: 0, count: 0 })
-      }
-      const data = productHistoricalAvg.get(item.product_id)
-      data.total += price
-      data.count += 1
-    })
-
-    const bestDeals = Array.from(latestPrices.values())
-      .filter(item => item.products && productHistoricalAvg.has(item.product_id))
-      .map(item => {
-        const itemPrice = getPrice(item);
-        const avgData = productHistoricalAvg.get(item.product_id)
-        const historicalAvg = avgData.total / avgData.count
-        // Avoid division by zero if historicalAvg is somehow 0
-        if (historicalAvg <= 0 || itemPrice <= 0) return null;
-
-        const discount = ((historicalAvg - itemPrice) / historicalAvg) * 100
-        return {
-          ...item,
-          price: itemPrice, // Normalize price in response
-          historicalAvg: Math.round(historicalAvg),
-          discount: Math.round(discount * 10) / 10
-        }
-      })
-      .filter(item => item && item.discount > 5)
-      .sort((a, b) => b!.discount - a!.discount)
-      .slice(0, 8)
+    // ------------------------------------------------
 
     // 3. MODELOS MÁS MONITOREADOS
     const productDataCount = new Map()
