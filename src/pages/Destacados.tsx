@@ -486,14 +486,22 @@ export default function Destacados() {
                     </h3>
                     <div className="space-y-2 md:space-y-3 flex-1 overflow-y-auto max-h-[150px] custom-scrollbar pr-2">
                         {selectedDeals.length > 0 ? selectedDeals.slice(0, 5).map((d, i) => (
-                            <div key={i} className="flex justify-between items-center text-sm p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
-                                <div className="overflow-hidden">
-                                  <span className="truncate font-medium text-emerald-900 dark:text-emerald-100 block text-xs">{d.products.brand}</span>
-                                  <span className="truncate text-xs text-muted-foreground ml-1">{d.products.submodel}</span>
+                            <div key={i} className="flex flex-col gap-1 p-2 rounded bg-emerald-500/10 border border-emerald-500/20">
+                                <div className="flex justify-between items-center">
+                                    <div className="overflow-hidden">
+                                      <span className="truncate font-medium text-emerald-900 dark:text-emerald-100 block text-xs">{d.products.brand}</span>
+                                      <span className="truncate text-xs text-muted-foreground ml-1">{d.products.submodel}</span>
+                                    </div>
+                                    <span className="font-bold text-emerald-600 dark:text-emerald-400 mr-1 text-sm">-{d.discount}%</span>
                                 </div>
-                                <span className="font-bold text-emerald-600 mr-1">-{d.discount}%</span>
+                                <div className="flex justify-between items-center px-1">
+                                    <span className="text-[10px] text-muted-foreground">vs Media Segmento</span>
+                                    <span className="text-[10px] font-medium text-emerald-700/70 dark:text-emerald-300/70">
+                                        {formatPrice(d.price)}
+                                    </span>
+                                </div>
                             </div>
-                        )) : <p className="text-xs text-muted-foreground italic">Sin ofertas destacadas en la selección.</p>}
+                        )) : <p className="text-xs text-muted-foreground italic">Sin datos suficientes para comparar.</p>}
                     </div>
                     
                     <h3 className="text-xs md:text-sm font-bold text-muted-foreground uppercase mt-4 md:mt-6 mb-3 md:mb-4 flex items-center gap-2">

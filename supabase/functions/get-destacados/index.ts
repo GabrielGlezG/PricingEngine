@@ -97,41 +97,65 @@ Deno.serve(async (req) => {
         avgPrice: Math.round(data.total / data.count)
       }))
 
-    // 2. MEJORES OFERTAS ACTUALES (Oportunidades Comerciales)
-    // Query active products with bono > 0
-    const { data: commercialDeals, error: dealsError } = await supabaseClient
+    // 2. MEJORES OFERTAS (Líderes de Precio vs Segmento)
+    // Estrategia: "Price Index". Comparar precio de cada auto vs Promedio de su Categoría.
+
+    // Paso A: Obtener todos los productos activos con precio válido
+    const { data: activeProducts, error: prodError } = await supabaseClient
       .from('products')
-      .select('id, brand, model, submodel, name, category, image_url, precio_lista, bono, precio_con_bono')
+      .select('id, brand, model, submodel, name, category, image_url, precio, precio_lista, bono, precio_con_bono')
       .eq('status', 'active')
-      .gt('bono', 0)
-      .gt('precio_lista', 0)
-      .order('bono', { ascending: false });
+      .gt('precio', 0);
 
-    if (dealsError) {
-      console.error("Error fetching commercial deals:", dealsError);
-    }
+    if (prodError) console.error("Error fetching products for Price Index:", prodError);
 
-    const bestDeals = (commercialDeals || [])
+    const validProducts = activeProducts || [];
+
+    // Paso B: Calcular Precio Promedio por Categoría (Segmento)
+    const segmentStats: Record<string, { total: number; count: number; avg: number }> = {};
+
+    validProducts.forEach(p => {
+      const price = Number(p.precio_con_bono) || Number(p.precio) || Number(p.precio_lista);
+      if (!p.category || price <= 0) return;
+
+      if (!segmentStats[p.category]) {
+        segmentStats[p.category] = { total: 0, count: 0, avg: 0 };
+      }
+      segmentStats[p.category].total += price;
+      segmentStats[p.category].count += 1;
+    });
+
+    // Finalizar promedios
+    Object.keys(segmentStats).forEach(cat => {
+      segmentStats[cat].avg = segmentStats[cat].total / segmentStats[cat].count;
+    });
+
+    // Paso C: Encontrar los "Rompe-Mercado" (Mayor distancia bajo el promedio)
+    const bestDeals = validProducts
       .map(item => {
-        const listPrice = Number(item.precio_lista);
-        const bonus = Number(item.bono);
+        const price = Number(item.precio_con_bono) || Number(item.precio) || Number(item.precio_lista);
+        const catStats = segmentStats[item.category];
 
-        if (!listPrice || listPrice <= 0) return null;
+        if (!catStats || !price || price <= 0) return null;
 
-        const discountPct = (bonus / listPrice) * 100;
+        // Gap: Qué porcentaje más barato es este auto vs el promedio de su segmento
+        const gap = ((price - catStats.avg) / catStats.avg) * 100;
 
         return {
           ...item,
           product_id: item.id,
-          products: item, // Maintain structure for frontend compat
-          price: Number(item.precio_con_bono) || (listPrice - bonus),
-          historicalAvg: listPrice, // Use List Price as reference
-          discount: Math.round(discountPct * 10) / 10
+          products: item,
+          price: price,
+          historicalAvg: Math.round(catStats.avg), // Usamos promedio de categoría como referencia visual
+          // Enviamos gap como 'discount' positivo para compatibilidad frontend (verde)
+          discount: Math.round(Math.abs(gap) * 10) / 10,
+          gap: Math.round(gap * 10) / 10,
+          categoryAvg: Math.round(catStats.avg)
         };
       })
-      .filter(item => item && item.discount >= 2) // Minimum 2% discount to show
-      .sort((a, b) => b!.discount - a!.discount)
-      .slice(0, 10); // Top 10 opportunities
+      .filter(item => item && item.gap <= -10) // Solo mostrar los que estén al menos 10% bajo el promedio
+      .sort((a, b) => a!.gap - b!.gap) // Ordenar ascendente (los más negativos primero)
+      .slice(0, 10);
 
     // --- RESTORED DEFINITIONS FOR SECTIONS 3, 5, 6 ---
     // These were previously part of Section 2 but are needed globally
