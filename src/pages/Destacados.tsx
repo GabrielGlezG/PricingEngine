@@ -378,12 +378,13 @@ export default function Destacados() {
                  title="CATÁLOGO"
                  value={
                    <div className="flex items-baseline gap-2">
-                     <span className="text-4xl font-bold tracking-tight text-foreground">{totalModels}</span>
-                     <span className="text-lg font-medium text-muted-foreground">Modelos</span>
+                     <span className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{totalModels}</span>
+                     <span className="text-base sm:text-lg font-medium text-muted-foreground">Modelos</span>
                    </div>
                  }
                  subValue={`${totalVersions} versiones`}
                  icon={Package}
+                 className="col-span-2 sm:col-span-1"
                />
 
                {/* Discount Card - Moved to last position */}
