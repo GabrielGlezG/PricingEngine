@@ -97,52 +97,79 @@ Deno.serve(async (req) => {
         avgPrice: Math.round(data.total / data.count)
       }))
 
-    // 2. MEJORES OFERTAS ACTUALES
+    // 2. MEJORES OFERTAS (Líderes de Precio vs Segmento)
+    // Estrategia: "Price Index". Comparar precio de cada auto vs Promedio de su Categoría.
+
+    // Paso A: Obtener todos los productos activos con precio válido
+    const { data: activeProducts, error: prodError } = await supabaseClient
+      .from('products')
+      .select('id, brand, model, submodel, name, category, image_url, precio, precio_lista, bono, precio_con_bono')
+      .eq('status', 'active')
+      .gt('precio', 0);
+
+    if (prodError) console.error("Error fetching products for Price Index:", prodError);
+
+    const validProducts = activeProducts || [];
+
+    // Paso B: Calcular Precio Promedio por Categoría (Segmento)
+    const segmentStats: Record<string, { total: number; count: number; avg: number }> = {};
+
+    validProducts.forEach(p => {
+      const price = Number(p.precio_con_bono) || Number(p.precio) || Number(p.precio_lista);
+      if (!p.category || price <= 0) return;
+
+      if (!segmentStats[p.category]) {
+        segmentStats[p.category] = { total: 0, count: 0, avg: 0 };
+      }
+      segmentStats[p.category].total += price;
+      segmentStats[p.category].count += 1;
+    });
+
+    // Finalizar promedios
+    Object.keys(segmentStats).forEach(cat => {
+      segmentStats[cat].avg = segmentStats[cat].total / segmentStats[cat].count;
+    });
+
+    // Paso C: Encontrar los "Rompe-Mercado" (Mayor distancia bajo el promedio)
+    const bestDeals = validProducts
+      .map(item => {
+        const price = Number(item.precio_con_bono) || Number(item.precio) || Number(item.precio_lista);
+        const catStats = segmentStats[item.category];
+
+        if (!catStats || !price || price <= 0) return null;
+
+        // Gap: Qué porcentaje más barato es este auto vs el promedio de su segmento
+        const gap = ((price - catStats.avg) / catStats.avg) * 100;
+
+        return {
+          ...item,
+          product_id: item.id,
+          products: item,
+          price: price,
+          historicalAvg: Math.round(catStats.avg), // Usamos promedio de categoría como referencia visual
+          // Enviamos gap como 'discount' positivo para compatibilidad frontend (verde)
+          discount: Math.round(Math.abs(gap) * 10) / 10,
+          gap: Math.round(gap * 10) / 10,
+          categoryAvg: Math.round(catStats.avg)
+        };
+      })
+      .filter(item => item && item.gap <= -10) // Solo mostrar los que estén al menos 10% bajo el promedio
+      .sort((a, b) => a!.gap - b!.gap) // Ordenar ascendente (los más negativos primero)
+      .slice(0, 10);
+
+    // --- RESTORED DEFINITIONS FOR SECTIONS 3, 5, 6 ---
+    // These were previously part of Section 2 but are needed globally
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
     const latestPrices = new Map()
-    historicalData.forEach(item => {
+    historicalData.forEach((item: any) => {
       if (item.products && (!latestPrices.has(item.product_id) ||
         new Date(item.date) > new Date(latestPrices.get(item.product_id).date))) {
         latestPrices.set(item.product_id, item)
       }
     })
-
-    const productHistoricalAvg = new Map()
-    historicalData.forEach(item => {
-      if (!item.products) return
-      const price = getPrice(item);
-      if (price <= 0) return;
-
-      if (!productHistoricalAvg.has(item.product_id)) {
-        productHistoricalAvg.set(item.product_id, { total: 0, count: 0 })
-      }
-      const data = productHistoricalAvg.get(item.product_id)
-      data.total += price
-      data.count += 1
-    })
-
-    const bestDeals = Array.from(latestPrices.values())
-      .filter(item => item.products && productHistoricalAvg.has(item.product_id))
-      .map(item => {
-        const itemPrice = getPrice(item);
-        const avgData = productHistoricalAvg.get(item.product_id)
-        const historicalAvg = avgData.total / avgData.count
-        // Avoid division by zero if historicalAvg is somehow 0
-        if (historicalAvg <= 0 || itemPrice <= 0) return null;
-
-        const discount = ((historicalAvg - itemPrice) / historicalAvg) * 100
-        return {
-          ...item,
-          price: itemPrice, // Normalize price in response
-          historicalAvg: Math.round(historicalAvg),
-          discount: Math.round(discount * 10) / 10
-        }
-      })
-      .filter(item => item && item.discount > 5)
-      .sort((a, b) => b!.discount - a!.discount)
-      .slice(0, 8)
+    // ------------------------------------------------
 
     // 3. MODELOS MÁS MONITOREADOS
     const productDataCount = new Map()
