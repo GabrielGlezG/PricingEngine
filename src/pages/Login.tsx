@@ -145,19 +145,21 @@ export default function Login() {
         {/* CONTENT CONTAINER: Full Height Flex Column */}
         <div className="relative z-10 flex flex-col h-full p-12 justify-between">
             
-            {/* Main Content Group - Centered vertically in remaining space */}
-            <div className="flex flex-col justify-center flex-1 max-w-xl">
-               <div className="transition-transform duration-500 hover:scale-105 origin-left mb-12">
+            {/* Main Content Group - Centered vertically in remaining space but pushed up visually */}
+            {/* Animation: Slide Up Fade In on load */}
+            <div className="flex flex-col justify-center flex-1 max-w-xl pb-24 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-forwards">
+               <div className="transition-transform duration-500 hover:scale-105 origin-left mb-8">
                  <img src={logo} alt="PricingEngine" className="w-48 sm:w-64 h-auto object-contain drop-shadow-2xl -ml-10" />
                </div>
 
                <div className="space-y-8">
                  <div className="space-y-3">
-                   <h1 className="text-6xl font-bold tracking-tighter text-white font-heading drop-shadow-lg">
+                   {/* Gradient Text for depth */}
+                   <h1 className="text-6xl font-bold tracking-tighter font-heading drop-shadow-lg bg-clip-text text-transparent bg-gradient-to-b from-white to-blue-200">
                      DDS
                    </h1>
                    <p className="text-xl font-medium tracking-widest text-blue-200/90 uppercase flex items-center gap-4">
-                     Data <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Decisions <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Solutions
+                     Data <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Decisions <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse delay-75" /> Solutions
                    </p>
                  </div>
                  
