@@ -31,7 +31,7 @@ export function DataCard({
       <div className="absolute inset-0 bg-gradient-to-br from-transparent via-primary/5 to-secondary/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-transparent relative z-10 gap-4">
-        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-widest truncate min-w-0" title={title}>
+        <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-wrap leading-tight" title={title}>
           {title}
         </CardTitle>
         {Icon && (
@@ -49,7 +49,7 @@ export function DataCard({
           style={{ containerType: 'inline-size' }}
         >
           <div 
-            className="font-bold text-foreground font-heading tracking-tight mb-2 whitespace-nowrap"
+            className="font-bold text-foreground font-heading tracking-tight mb-2"
             style={{ 
               /**
                * AJUSTE DE TAMAÑO:
@@ -77,7 +77,7 @@ export function DataCard({
               </span>
             )}
             {subValue && (
-              <p className="text-muted-foreground font-medium truncate min-w-0">
+              <p className="text-muted-foreground font-medium text-wrap">
                 {subValue}
               </p>
             )}
