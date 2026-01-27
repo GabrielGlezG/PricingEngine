@@ -8,7 +8,13 @@ import { getScaleOptions } from "@/config/chartColors"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Scale, DollarSign, Download } from "lucide-react"
+import { Scale, DollarSign, Download, FileSpreadsheet, Presentation } from "lucide-react"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 import { Slider } from "@/components/ui/slider"
 import { Line } from 'react-chartjs-2'
 import {
@@ -28,7 +34,7 @@ import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters"
 import { InstitutionalHeader } from "@/components/InstitutionalHeader"
 import { CleanEmptyState } from "@/components/CleanEmptyState"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
-import { exportCompareData } from "@/lib/exportPages"
+import { exportCompareData, exportCompareDataPPT } from "@/lib/exportPages"
 
 
 ChartJS.register(
@@ -370,28 +376,56 @@ export default function Compare() {
                   <h2 className="card-title mb-2">Evolución de Precios</h2>
                   <p className="caption">Comparación de precios históricos</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isExporting}
-                  onClick={async () => {
-                    setIsExporting(true);
-                    try {
-                      await exportCompareData(
-                        comparisonData,
-                        filters,
-                        currency === 'CLP' ? '$' : 'UF',
-                        (price) => price
-                      );
-                    } finally {
-                      setIsExporting(false);
-                    }
-                  }}
-                  className="gap-2"
-                >
-                  {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
-                  Exportar Excel
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                        disabled={isExporting}
+                        variant="outline" 
+                        className="gap-2"
+                    >
+                        {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                        Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        setIsExporting(true);
+                        try {
+                          await exportCompareData(
+                            comparisonData,
+                            filters,
+                            currency === 'CLP' ? '$' : 'UF',
+                            (price) => price
+                          );
+                        } finally {
+                          setIsExporting(false);
+                        }
+                      }}
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      <span>Exportar Excel (.xlsx)</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={async () => {
+                        setIsExporting(true);
+                        try {
+                          await exportCompareDataPPT(
+                            comparisonData,
+                            filters,
+                            currency === 'CLP' ? '$' : 'UF',
+                            (price) => price
+                          );
+                        } finally {
+                          setIsExporting(false);
+                        }
+                      }}
+                    >
+                      <Presentation className="mr-2 h-4 w-4" />
+                      <span>Exportar PowerPoint (.pptx)</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               <div className="h-[300px] sm:h-[400px]">

@@ -18,6 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,8 +40,8 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
-import { TrendingUp, Calendar, Download } from "lucide-react";
-import { exportPriceEvolutionData } from "@/lib/exportPages";
+import { TrendingUp, Calendar, Download, FileSpreadsheet, Presentation } from "lucide-react";
+import { exportPriceEvolutionData, exportPriceEvolutionDataPPT } from "@/lib/exportPages";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, useMemo } from "react";
 
@@ -427,39 +433,79 @@ export function PriceEvolutionChart({
             </Select>
 
             {evolutionData && evolutionData.labels.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isExporting}
-                onClick={async () => {
-                  setIsExporting(true);
-                  try {
-                    await exportPriceEvolutionData(
-                      {
-                        labels: evolutionData.labels,
-                        datasets: evolutionData.datasets.map(ds => ({
-                          label: ds.label,
-                          data: ds.data
-                        }))
-                      },
-                      {
-                        tipoVehiculo: tipoVehiculoFilters,
-                        brand: brandFilters,
-                        model: modelFilters,
-                        submodel: submodelFilters
-                      },
-                      currency === 'CLP' ? '$' : 'UF',
-                      (price) => price
-                    );
-                  } finally {
-                    setIsExporting(false);
-                  }
-                }}
-                className="gap-2"
-              >
-                {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
-                Exportar Excel
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isExporting}
+                    className="gap-2"
+                  >
+                    {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      setIsExporting(true);
+                      try {
+                        await exportPriceEvolutionData(
+                          {
+                            labels: evolutionData.labels,
+                            datasets: evolutionData.datasets.map(ds => ({
+                              label: ds.label,
+                              data: ds.data
+                            }))
+                          },
+                          {
+                            tipoVehiculo: tipoVehiculoFilters,
+                            brand: brandFilters,
+                            model: modelFilters,
+                            submodel: submodelFilters
+                          },
+                          currency === 'CLP' ? '$' : 'UF',
+                          (price) => price
+                        );
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    <span>Exportar Excel (.xlsx)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      setIsExporting(true);
+                      try {
+                        await exportPriceEvolutionDataPPT(
+                          {
+                            labels: evolutionData.labels,
+                            datasets: evolutionData.datasets.map(ds => ({
+                              label: ds.label,
+                              data: ds.data
+                            }))
+                          },
+                          {
+                            tipoVehiculo: tipoVehiculoFilters,
+                            brand: brandFilters,
+                            model: modelFilters,
+                            submodel: submodelFilters
+                          },
+                          currency === 'CLP' ? '$' : 'UF',
+                          (price) => price
+                        );
+                      } finally {
+                        setIsExporting(false);
+                      }
+                    }}
+                  >
+                    <Presentation className="mr-2 h-4 w-4" />
+                    <span>Exportar PowerPoint (.pptx)</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>

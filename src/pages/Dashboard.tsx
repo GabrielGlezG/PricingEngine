@@ -12,6 +12,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { InstitutionalHeader } from "@/components/InstitutionalHeader";
 import { DataCard } from "@/components/DataCard";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +51,9 @@ import {
   Filter,
   Check,
   ChevronDown,
-  Download
+  Download,
+  FileSpreadsheet,
+  Presentation
 } from "lucide-react";
 import { Bar, Line, Doughnut, Pie, Bubble } from "react-chartjs-2";
 import {
@@ -84,7 +92,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { useInterconnectedFilters } from "@/hooks/useInterconnectedFilters";
-import { exportDashboardToExcel } from "@/lib/exportUtils";
+import { exportDashboardToExcel, exportDashboardToPPT } from "@/lib/exportUtils";
 import { MultiSelectSearch } from "@/components/ui/multi-select-search";
 
 // Register ChartJS components
@@ -699,7 +707,7 @@ export default function Dashboard() {
   }
 
 
-  const handleExport = async () => {
+  const handleExportExcel = async () => {
     if (analytics) {
       // Fetch details for Models tab (Active + Inactive)
       const modelsData = await fetchModelsData({ filters, statusFilter: 'all' });
@@ -713,10 +721,29 @@ export default function Dashboard() {
           },
           CURRENCY_SYMBOLS[currency], 
           convertPrice,
-          modelsData // Pass new data
+          modelsData
       );
     }
   };
+
+  const handleExportPPT = async () => {
+      if (analytics) {
+        // Fetch details for Models tab (Active + Inactive)
+        const modelsData = await fetchModelsData({ filters, statusFilter: 'all' });
+  
+        await exportDashboardToPPT(
+            analytics, 
+            {
+                filters: filters,
+                volatilityBrands: volatilityBrands,
+                volatilityPeriod: volatilityPeriod
+            },
+            CURRENCY_SYMBOLS[currency], 
+            convertPrice,
+            modelsData
+        );
+      }
+    };
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
@@ -724,15 +751,28 @@ export default function Dashboard() {
           title="Información General"
           description="Visión general de métricas clave y situación del mercado."
           action={
-            <Button 
-              onClick={handleExport}
-              disabled={!analytics}
-              variant="outline" 
-              className="gap-2 border-primary/20 hover:bg-primary/5 text-primary hover:text-primary"
-            >
-              <Download className="h-4 w-4" />
-              Exportar Excel
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                    disabled={!analytics}
+                    variant="outline" 
+                    className="gap-2 border-primary/20 hover:bg-primary/5 text-primary hover:text-primary"
+                >
+                    <Download className="h-4 w-4" />
+                    Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  <span>Exportar Excel (.xlsx)</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPPT}>
+                  <Presentation className="mr-2 h-4 w-4" />
+                  <span>Exportar PowerPoint (.pptx)</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           }
         />
 
