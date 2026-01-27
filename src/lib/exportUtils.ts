@@ -51,12 +51,209 @@ export interface ExportContext {
 }
 
 // Color palette for Excel styling (fallback)
+// Color palette for Excel styling (fallback)
 const COLORS = {
     primary: "4F46E5",
     header: "1E293B",
     headerText: "FFFFFF",
     altRow: "F1F5F9",
     border: "E2E8F0"
+};
+
+/**
+ * Common payload generator for both Excel and PowerPoint
+ */
+const generateExportPayload = (
+    data: AnalyticsData,
+    context: ExportContext,
+    currencySymbol: string,
+    convertPrice: (price: number) => number,
+    modelsData?: ModelData[]
+) => {
+    return {
+        filename: `Dashboard_Report_${new Date().toISOString().split('T')[0]}.xlsx`, // Filename will be adjusted by backend for PPT
+        currencySymbol,
+        timezoneOffset: -(new Date().getTimezoneOffset() / 60),
+        summary: {
+            total_models: data.metrics.total_models,
+            total_brands: data.metrics.total_brands,
+            avg_price: convertPrice(data.metrics.avg_price),
+            median_price: convertPrice(data.metrics.median_price),
+            min_price: convertPrice(data.metrics.min_price),
+            max_price: convertPrice(data.metrics.max_price),
+            price_std_dev: convertPrice(data.metrics.price_std_dev),
+            variation_coefficient: data.metrics.variation_coefficient / 100,
+            avg_discount_pct: (data.metrics.avg_discount_pct || 0) / 100,
+            filters: context.filters
+        },
+        sheets: [
+            // 1. Composición de Versiones (Stacked Bar)
+            data.chart_data.prices_by_segment_breakdown ? {
+                name: "Composición Mercado",
+                chart_type: "stacked",
+                chart_title: "Composición de Versiones por Segmento",
+                data: (() => {
+                    const breakdown = data.chart_data.prices_by_segment_breakdown;
+                    const segments = Object.keys(breakdown).sort();
+                    const allBrands = Array.from(new Set(
+                        Object.values(breakdown).flatMap(stats => stats.map(s => s.brand))
+                    )).sort();
+
+                    return segments.map(segment => {
+                        const row: any = { Segmento: segment };
+                        allBrands.forEach(brand => {
+                            const stat = breakdown[segment]?.find(s => s.brand === brand);
+                            row[brand] = stat?.count || 0;
+                        });
+                        return row;
+                    });
+                })()
+            } : null,
+
+            // 2. Precios por Segmento (Boxplot Summary)
+            data.chart_data.prices_by_category?.length ? {
+                name: "Precios por Segmento",
+                chart_type: "bar",
+                chart_title: "Precios por Segmento (Min/Prom/Max)",
+                data: data.chart_data.prices_by_category.map(d => ({
+                    Segmento: d.category,
+                    Mínimo: convertPrice(d.min_price),
+                    Promedio: convertPrice(d.avg_price),
+                    Máximo: convertPrice(d.max_price),
+                    "Cant. Versiones": d.count
+                }))
+            } : null,
+
+            // 3. Estructura Precios por Marca (Grouped by Segment-Brand)
+            data.chart_data.prices_by_segment_breakdown ? {
+                name: "Estructura Precios Marcas",
+                chart_type: "bar",
+                chart_title: "Estructura de Precios por Segmento y Marca",
+                data: Object.entries(data.chart_data.prices_by_segment_breakdown)
+                    .flatMap(([segment, brands]) =>
+                        brands.map(b => ({
+                            "Segmento - Marca": `${segment} - ${b.brand}`,
+                            "Precio Promedio": convertPrice(b.avg_price),
+                            Versiones: b.count || 0
+                        }))
+                    )
+                    .sort((a, b) => a["Segmento - Marca"].localeCompare(b["Segmento - Marca"]))
+            } : null,
+
+            // 4. Matriz Posicionamiento (Scatter/Bubble)
+            data.chart_data.models_by_principal?.length ? {
+                name: "Matriz Posicionamiento",
+                chart_type: "scatter",
+                chart_title: "Matriz Precio vs Volumen",
+                data: data.chart_data.models_by_principal
+                    .map(d => ({
+                        "Marca - Modelo": `${d.brand} ${d.model_principal}`,
+                        "Volumen": d.count,
+                        "Precio Promedio": convertPrice(d.avg_price)
+                    }))
+                    .sort((a, b) => b.Volumen - a.Volumen)
+            } : null,
+
+            // 5. Benchmarking (Line Chart)
+            data.chart_data.prices_by_brand?.length ? {
+                name: "Benchmarking",
+                chart_type: "line",
+                chart_title: "Benchmarking de Precios por Marca",
+                data: [...data.chart_data.prices_by_brand]
+                    .sort((a, b) => b.avg_price - a.avg_price)
+                    .map(d => ({
+                        Marca: d.brand,
+                        "Precio Promedio": convertPrice(d.avg_price),
+                        "Precio Mínimo": convertPrice(d.min_price),
+                        "Precio Máximo": convertPrice(d.max_price),
+                        "Versiones": d.count
+                    }))
+            } : null,
+
+            // 6. Tendencia Global (Area/Bar Chart)
+            data.chart_data.brand_variations?.length ? {
+                name: "Tendencia Global",
+                chart_type: "bar",
+                chart_title: "Tendencia de Precios Global (% Acumulado)",
+                data: [...data.chart_data.brand_variations]
+                    .sort((a, b) => b.variation_percent - a.variation_percent)
+                    .map(d => ({
+                        Marca: d.brand,
+                        "Variación %": d.variation_percent / 100,
+                        "Inicio": d.startDate || "-",
+                        "Fin": d.endDate || "-"
+                    }))
+            } : null,
+
+            // 7. Volatilidad Temporal (Line chart)
+            data.chart_data.volatility_timeseries?.length ? {
+                name: "Volatilidad Temporal",
+                chart_type: "line",
+                chart_title: "Evolución de Volatilidad en el Tiempo",
+                data: (() => {
+                    const series = data.chart_data.volatility_timeseries;
+                    const allDates = Array.from(new Set(series.flatMap(s => s.data.map(d => d.date)))).sort();
+
+                    return allDates.map(date => {
+                        const row: any = { Fecha: date };
+                        series.forEach(s => {
+                            const point = s.data.find(d => d.date === date);
+                            row[s.entity] = point ? (point.variation / 100) : 0;
+                        });
+                        return row;
+                    });
+                })()
+            } : null
+        ].filter(Boolean),
+        models: modelsData?.map(m => ({
+            brand: m.brand,
+            model: m.model,
+            submodel: m.submodel,
+            estado: m.estado,
+            tipo_vehiculo: m.tipo_vehiculo,
+            precio_con_bono: convertPrice(m.precio_con_bono || 0),
+            precio_lista: convertPrice(m.precio_lista || 0),
+            bono: convertPrice(m.bono || 0)
+        }))
+    };
+};
+
+/**
+ * Export Dashboard to PowerPoint
+ */
+export const exportDashboardToPPT = async (
+    data: AnalyticsData,
+    context: ExportContext,
+    currencySymbol: string = "$",
+    convertPrice: (price: number) => number = (p) => p,
+    modelsData?: ModelData[]
+) => {
+    if (!data) return;
+
+    try {
+        console.log("[PPT Export] Generating payload...");
+        const payload = generateExportPayload(data, context, currencySymbol, convertPrice, modelsData);
+
+        console.log("[PPT Export] Calling Vercel Python service...");
+        const response = await fetch('/api/generate-ppt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const dateStr = new Date().toISOString().split('T')[0];
+            saveAs(blob, `Dashboard_Presentation_${dateStr}.pptx`);
+            console.log("[PPT Export] ✓ Completed!");
+        } else {
+            console.error("[PPT Export] Service check failed.");
+            alert("Error al generar PowerPoint. Por favor intente nuevamente.");
+        }
+    } catch (error) {
+        console.error("[PPT Export] Error:", error);
+        alert("Error de conexión al generar PowerPoint.");
+    }
 };
 
 /**
@@ -77,164 +274,14 @@ export const exportDashboardToExcel = async (
     try {
         console.log("[Excel Export] Using Vercel Python function for native charts...");
 
-        const payload = {
-            filename: `Dashboard_Report_${dateStr}.xlsx`,
-            currencySymbol,
-            timezoneOffset: -(new Date().getTimezoneOffset() / 60), // Convert minutes to hours, negate for correct UTC offset
-            summary: {
-                total_models: data.metrics.total_models,
-                total_brands: data.metrics.total_brands,
-                avg_price: convertPrice(data.metrics.avg_price),
-                median_price: convertPrice(data.metrics.median_price),
-                min_price: convertPrice(data.metrics.min_price),
-                max_price: convertPrice(data.metrics.max_price),
-                price_std_dev: convertPrice(data.metrics.price_std_dev),
-                variation_coefficient: data.metrics.variation_coefficient / 100, // Convert to decimal
-                avg_discount_pct: (data.metrics.avg_discount_pct || 0) / 100, // New Metric
-                filters: context.filters
-            },
-            sheets: [
-                // 1. Composición de Versiones (Stacked Bar)
-                // Rows = Segments, Columns = Brands (each brand is a series)
-                data.chart_data.prices_by_segment_breakdown ? {
-                    name: "Composición Mercado",
-                    chart_type: "stacked",  // NEW: stacked bar chart
-                    chart_title: "Composición de Versiones por Segmento",
-                    data: (() => {
-                        const breakdown = data.chart_data.prices_by_segment_breakdown;
-                        const segments = Object.keys(breakdown).sort();
-                        const allBrands = Array.from(new Set(
-                            Object.values(breakdown).flatMap(stats => stats.map(s => s.brand))
-                        )).sort();
-
-                        return segments.map(segment => {
-                            const row: any = { Segmento: segment };
-                            allBrands.forEach(brand => {
-                                const stat = breakdown[segment]?.find(s => s.brand === brand);
-                                row[brand] = stat?.count || 0;
-                            });
-                            return row;
-                        });
-                    })()
-                } : null,
-
-                // 2. Precios por Segmento (Boxplot Summary)
-                data.chart_data.prices_by_category?.length ? {
-                    name: "Precios por Segmento",
-                    chart_type: "bar",
-                    chart_title: "Precios por Segmento (Min/Prom/Max)",
-                    data: data.chart_data.prices_by_category.map(d => ({
-                        Segmento: d.category,
-                        Mínimo: convertPrice(d.min_price),
-                        Promedio: convertPrice(d.avg_price),
-                        Máximo: convertPrice(d.max_price),
-                        "Cant. Versiones": d.count
-                    }))
-                } : null,
-
-                // 3. Estructura Precios por Marca (Grouped by Segment-Brand)
-                data.chart_data.prices_by_segment_breakdown ? {
-                    name: "Estructura Precios Marcas",
-                    chart_type: "bar",
-                    chart_title: "Estructura de Precios por Segmento y Marca",
-                    data: Object.entries(data.chart_data.prices_by_segment_breakdown)
-                        .flatMap(([segment, brands]) =>
-                            brands.map(b => ({
-                                // Combine Segment + Brand as label for clear grouping
-                                "Segmento - Marca": `${segment} - ${b.brand}`,
-                                "Precio Promedio": convertPrice(b.avg_price),
-                                Versiones: b.count || 0
-                            }))
-                        )
-                        .sort((a, b) => a["Segmento - Marca"].localeCompare(b["Segmento - Marca"]))
-                } : null,
-
-                // 4. Matriz Posicionamiento (Scatter/Dispersion chart)
-                data.chart_data.models_by_principal?.length ? {
-                    name: "Matriz Posicionamiento",
-                    chart_type: "scatter",  // Scatter/Dispersion chart
-                    chart_title: "Matriz Precio vs Volumen",
-                    data: data.chart_data.models_by_principal
-                        .map(d => ({
-                            // Label for tooltip reference
-                            "Marca - Modelo": `${d.brand} ${d.model_principal}`,
-                            "Volumen": d.count,  // X axis
-                            "Precio Promedio": convertPrice(d.avg_price)  // Y axis
-                        }))
-                        .sort((a, b) => b.Volumen - a.Volumen)
-                } : null,
-
-                // 5. Benchmarking (Line Chart)
-                data.chart_data.prices_by_brand?.length ? {
-                    name: "Benchmarking",
-                    chart_type: "line",
-                    chart_title: "Benchmarking de Precios por Marca",
-                    data: [...data.chart_data.prices_by_brand]
-                        .sort((a, b) => b.avg_price - a.avg_price)
-                        .map(d => ({
-                            Marca: d.brand,
-                            "Precio Promedio": convertPrice(d.avg_price),
-                            "Precio Mínimo": convertPrice(d.min_price),
-                            "Precio Máximo": convertPrice(d.max_price),
-                            "Versiones": d.count
-                        }))
-                } : null,
-
-                // 6. Tendencia Global (Area Chart)
-                data.chart_data.brand_variations?.length ? {
-                    name: "Tendencia Global",
-                    chart_type: "bar",
-                    chart_title: "Tendencia de Precios Global (% Acumulado)",
-                    data: [...data.chart_data.brand_variations]
-                        .sort((a, b) => b.variation_percent - a.variation_percent)
-                        .map(d => ({
-                            Marca: d.brand,
-                            "Variación %": d.variation_percent / 100,
-                            "Inicio": d.startDate || "-",
-                            "Fin": d.endDate || "-"
-                        }))
-                } : null,
-
-                // 7. Volatilidad Temporal (Line chart by Date)
-                data.chart_data.volatility_timeseries?.length ? {
-                    name: "Volatilidad Temporal",
-                    chart_type: "line",
-                    chart_title: "Evolución de Volatilidad en el Tiempo",
-                    data: (() => {
-                        // Pivot Data: Rows = Dates, Cols = Entities
-                        const series = data.chart_data.volatility_timeseries;
-                        const allDates = Array.from(new Set(series.flatMap(s => s.data.map(d => d.date)))).sort();
-
-                        return allDates.map(date => {
-                            const row: any = { Fecha: date };
-                            series.forEach(s => {
-                                const point = s.data.find(d => d.date === date);
-                                // Divide by 100 for Excel % format (5.2 -> 0.052 -> displays as 5.20%)
-                                row[s.entity] = point ? (point.variation / 100) : 0;
-                            });
-                            return row;
-                        });
-                    })()
-                } : null
-
-            ].filter(Boolean),
-            models: modelsData?.map(m => ({
-                brand: m.brand,
-                model: m.model,
-                submodel: m.submodel,
-                estado: m.estado,
-                tipo_vehiculo: m.tipo_vehiculo,
-                precio_con_bono: convertPrice(m.precio_con_bono || 0),
-                precio_lista: convertPrice(m.precio_lista || 0),
-                bono: convertPrice(m.bono || 0)
-            }))
-        };
+        const payload = generateExportPayload(data, context, currencySymbol, convertPrice, modelsData);
 
         const response = await fetch('/api/generate-excel', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+
 
         if (response.ok) {
             const blob = await response.blob();
