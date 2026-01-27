@@ -60,11 +60,17 @@ def create_summary_slide(prs, summary, currency_symbol):
         row = i + 1
         table.cell(row, 0).text = label
         
-        if fmt == 'currency':
-            table.cell(row, 1).text = f"{currency_symbol} {val:,.0f}".replace(",", ".")
-        elif fmt == 'percent':
-            table.cell(row, 1).text = f"{val:.1%}"
-        else:
+        try:
+            if fmt == 'currency':
+                # Ensure val is a number
+                num_val = float(val) if val is not None else 0
+                table.cell(row, 1).text = f"{currency_symbol} {num_val:,.0f}".replace(",", ".")
+            elif fmt == 'percent':
+                num_val = float(val) if val is not None else 0
+                table.cell(row, 1).text = f"{num_val:.1%}"
+            else:
+                table.cell(row, 1).text = str(val if val is not None else "-")
+        except:
             table.cell(row, 1).text = str(val)
 
 def add_chart_slide(prs, chart_info):
@@ -132,15 +138,35 @@ def generate_ppt(data):
     
     title = data.get('title', 'Reporte Dashboard')
     date_str = datetime.now().strftime("%d/%m/%Y")
-    create_title_slide(prs, title, f"Generado el: {date_str}")
+    
+    try:
+        create_title_slide(prs, title, f"Generado el: {date_str}")
+    except Exception as e:
+        print(f"Error creating title slide: {e}")
     
     summary = data.get('summary')
     if summary:
-        create_summary_slide(prs, summary, data.get('currencySymbol', '$'))
+        try:
+            create_summary_slide(prs, summary, data.get('currencySymbol', '$'))
+        except Exception as e:
+            print(f"Error creating summary slide: {e}")
+            # Create a simple error slide instead
+            slide = prs.slides.add_slide(prs.slide_layouts[1])
+            slide.shapes.title.text = "Resumen Ejecutivo (Error)"
+            slide.placeholders[1].text = f"No se pudo generar el resumen: {str(e)}"
         
     sheets = data.get('sheets', [])
     for sheet in sheets:
-        add_chart_slide(prs, sheet)
+        try:
+            add_chart_slide(prs, sheet)
+        except Exception as e:
+            print(f"Error creating chart slide {sheet.get('name')}: {e}")
+            # Optional: Add error slide for this chart
+            try:
+                slide = prs.slides.add_slide(prs.slide_layouts[5])
+                slide.shapes.title.text = f"{sheet.get('chart_title')} (Data Error)"
+            except:
+                pass
         
     output = io.BytesIO()
     prs.save(output)
