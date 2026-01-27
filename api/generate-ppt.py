@@ -7,11 +7,26 @@ from pptx.util import Inches, Pt
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.chart.data import CategoryChartData, XyChartData
 from pptx.dml.color import RGBColor
+from pptx.enum.text import PP_ALIGN
 
 # Brand Colors (Institutional)
 DARK_BLUE = RGBColor(30, 41, 59)  # Slate 900
 LIGHT_BLUE = RGBColor(71, 85, 105) # Slate 600
 ACCENT_BLUE = RGBColor(59, 130, 246) # Blue 500
+WHITE = RGBColor(255, 255, 255)
+
+def format_value(val, fmt=None, currency='$'):
+    if val is None: return "-"
+    try:
+        if fmt == 'currency':
+            return f"{currency} {float(val):,.0f}".replace(",", ".")
+        elif fmt == 'percent':
+            return f"{float(val):.1%}"
+        elif isinstance(val, (int, float)):
+            return f"{val:,.0f}" if float(val).is_integer() else f"{val:.2f}"
+    except:
+        pass
+    return str(val)
 
 def create_title_slide(prs, title, subtitle):
     slide_layout = prs.slide_layouts[0] # Title Slide
@@ -59,21 +74,56 @@ def create_summary_slide(prs, summary, currency_symbol):
     for i, (label, val, fmt) in enumerate(metrics):
         row = i + 1
         table.cell(row, 0).text = label
-        
-        try:
-            if fmt == 'currency':
-                # Ensure val is a number
-                num_val = float(val) if val is not None else 0
-                table.cell(row, 1).text = f"{currency_symbol} {num_val:,.0f}".replace(",", ".")
-            elif fmt == 'percent':
-                num_val = float(val) if val is not None else 0
-                table.cell(row, 1).text = f"{num_val:.1%}"
-            else:
-                table.cell(row, 1).text = str(val if val is not None else "-")
-        except:
-            table.cell(row, 1).text = str(val)
+        table.cell(row, 1).text = format_value(val, fmt, currency_symbol)
+
+def add_table_slide(prs, title, rows):
+    """
+    Adds a slide with a data table detailed view.
+    """
+    if not rows: return
+
+    slide_layout = prs.slide_layouts[5] # Title Only
+    slide = prs.slides.add_slide(slide_layout)
+    slide.shapes.title.text = f"{title} (Detalle)"
+    
+    # Determine table dimensions
+    headers = list(rows[0].keys())
+    num_rows = min(len(rows) + 1, 15) # Limit rows per slide to fit
+    num_cols = len(headers)
+    
+    left = Inches(0.5)
+    top = Inches(1.5)
+    width = Inches(9)
+    height = Inches(0.4 * num_rows)
+    
+    shape = slide.shapes.add_table(num_rows, num_cols, left, top, width, height)
+    table = shape.table
+    
+    # Style Headers
+    for c, header in enumerate(headers):
+        cell = table.cell(0, c)
+        cell.text = str(header)
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = DARK_BLUE
+        cell.text_frame.paragraphs[0].font.color.rgb = WHITE
+        cell.text_frame.paragraphs[0].font.bold = True
+        cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+
+    # Fill Data
+    for r, row_data in enumerate(rows[:num_rows-1]):
+        for c, header in enumerate(headers):
+            val = row_data.get(header)
+            cell = table.cell(r + 1, c)
+            cell.text = format_value(val)
+            cell.text_frame.paragraphs[0].font.size = Pt(10)
+    
+    # Add footer note if data was truncated
+    if len(rows) > 14:
+        textbox = slide.shapes.add_textbox(Inches(0.5), Inches(7), Inches(9), Inches(0.5))
+        textbox.text = f"* Se muestran los primeros 14 registros de {len(rows)}."
 
 def add_chart_slide(prs, chart_info):
+    # 1. Add Chart Slide
     slide_layout = prs.slide_layouts[5] # Title Only
     slide = prs.slides.add_slide(slide_layout)
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
@@ -97,32 +147,38 @@ def add_chart_slide(prs, chart_info):
          ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
          chart_data = CategoryChartData()
     elif chart_type == 'scatter':
-         ppt_chart_type = XL_CHART_TYPE.BUBBLE # Using Bubble for positioning matrix
+         ppt_chart_type = XL_CHART_TYPE.BUBBLE
          chart_data = XyChartData()
     else:
         ppt_chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
         chart_data = CategoryChartData()
     
     if chart_type == 'scatter':
-        # Special handling for Bubble Chart (Posicionamiento)
-        # Expected Headers: "Marca - Modelo", "Volumen" (X), "Precio Promedio" (Y)
-        # We need to group by Brand? No, just series named "Modelos"
         series = chart_data.add_series('Modelos')
         for r in rows:
-            # Assuming headers[1] is X (Volumen), headers[2] is Y (Precio)
-            x = r.get(headers[1], 0)
-            y = r.get(headers[2], 0)
-            size = r.get(headers[1], 1) / 5 # Arbitrary scaling for bubble size
+            # Safe float conversion
+            try:
+                x = float(r.get(headers[1], 0))
+                y = float(r.get(headers[2], 0))
+                size = float(r.get(headers[1], 1)) / 10 # Scaled bubbles
+            except:
+                continue
             series.add_data_point(x, y, size)
     else:
-        # Standard Category Charts
         chart_data.categories = categories
         for s_name in series_names:
-            values = [r.get(s_name, 0) for r in rows]
+            # Safe float conversion for series values
+            values = []
+            for r in rows:
+                val = r.get(s_name, 0)
+                try:
+                    values.append(float(val) if val is not None else 0.0)
+                except ValueError:
+                    values.append(0.0)
             chart_data.add_series(s_name, values)
 
     # Add Chart to Slide
-    x, y, cx, cy = Inches(0.5), Inches(1.5), Inches(9), Inches(5.5)
+    x, y, cx, cy = Inches(0.5), Inches(1.5), Inches(9), Inches(5.0)
     graphic_frame = slide.shapes.add_chart(
         ppt_chart_type, x, y, cx, cy, chart_data
     )
@@ -131,7 +187,11 @@ def add_chart_slide(prs, chart_info):
     # Basic Styling
     chart.has_legend = True
     chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-    chart.has_title = False # Title is on the slide
+    chart.has_title = False
+
+    # 2. Add Detailed Data Table Slide (requested by user)
+    # We pass the same data rows to generate a detailed table slide
+    add_table_slide(prs, chart_info.get('chart_title', 'Datos'), rows)
 
 def generate_ppt(data):
     prs = Presentation()
@@ -150,7 +210,6 @@ def generate_ppt(data):
             create_summary_slide(prs, summary, data.get('currencySymbol', '$'))
         except Exception as e:
             print(f"Error creating summary slide: {e}")
-            # Create a simple error slide instead
             slide = prs.slides.add_slide(prs.slide_layouts[1])
             slide.shapes.title.text = "Resumen Ejecutivo (Error)"
             slide.placeholders[1].text = f"No se pudo generar el resumen: {str(e)}"
@@ -160,11 +219,11 @@ def generate_ppt(data):
         try:
             add_chart_slide(prs, sheet)
         except Exception as e:
-            print(f"Error creating chart slide {sheet.get('name')}: {e}")
-            # Optional: Add error slide for this chart
+            print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
             try:
                 slide = prs.slides.add_slide(prs.slide_layouts[5])
                 slide.shapes.title.text = f"{sheet.get('chart_title')} (Data Error)"
+                slide.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(1)).text = str(e)
             except:
                 pass
         
