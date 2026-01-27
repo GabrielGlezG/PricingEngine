@@ -76,7 +76,7 @@ def create_summary_slide(prs, summary, currency_symbol):
         table.cell(row, 0).text = label
         table.cell(row, 1).text = format_value(val, fmt, currency_symbol)
 
-def add_table_slide(prs, title, rows):
+def add_table_slide(prs, title, rows, currency_symbol='$'):
     """
     Adds slides with data table detailed view, paginating if necessary.
     """
@@ -123,10 +123,29 @@ def add_table_slide(prs, title, rows):
             for c, header in enumerate(headers):
                 val = row_data.get(header)
                 cell = table.cell(r + 1, c)
-                cell.text = format_value(val)
+                
+                # Heuristic for determining if it is currency
+                is_currency = False
+                header_str = str(header).lower()
+                title_str = str(title).lower()
+
+                # 1. Exclusion keywords (counts, years, percentages) - Strongest rule
+                if any(x in header_str for x in ['cantidad', 'cant.', 'volumen', 'versiones', 'total modelos', 'total marcas', 'fecha', 'date', 'año', 'year', 'mes', 'segmento', 'marca', 'modelo', 'id', 'category']):
+                    is_currency = False
+                # 2. Explicit currency keywords in Header
+                elif any(x in header_str for x in ['precio', 'price', 'monto', 'valor', 'bono', 'lista', 'costo', 'avg', 'min', 'max', 'promedio', 'mínimo', 'máximo']):
+                    is_currency = True
+                # 3. Contextual Rule: If Slide Title implies Pricing (e.g. "Evolución de Precios"), treat valid numbers as currency (unless excluded)
+                elif "precio" in title_str or "price" in title_str:
+                     # If it looks like a number
+                     if isinstance(val, (int, float)):
+                         is_currency = True
+
+                fmt = 'currency' if is_currency else None
+                cell.text = format_value(val, fmt, currency_symbol)
                 cell.text_frame.paragraphs[0].font.size = Pt(10)
 
-def add_chart_slide(prs, chart_info):
+def add_chart_slide(prs, chart_info, currency_symbol='$'):
     # 1. Add Chart Slide
     slide_layout = prs.slide_layouts[5] # Title Only
     slide = prs.slides.add_slide(slide_layout)
@@ -197,12 +216,13 @@ def add_chart_slide(prs, chart_info):
 
     # 2. Add Detailed Data Table Slide (requested by user)
     # We pass the same data rows to generate a detailed table slide
-    add_table_slide(prs, chart_info.get('chart_title', 'Datos'), rows)
+    add_table_slide(prs, chart_info.get('chart_title', 'Datos'), rows, currency_symbol)
 
 def generate_ppt(data):
     prs = Presentation()
     
     title = data.get('title', 'Reporte Dashboard')
+    currency_symbol = data.get('currencySymbol', '$')
     date_str = datetime.now().strftime("%d/%m/%Y")
     
     try:
@@ -213,7 +233,7 @@ def generate_ppt(data):
     summary = data.get('summary')
     if summary:
         try:
-            create_summary_slide(prs, summary, data.get('currencySymbol', '$'))
+            create_summary_slide(prs, summary, currency_symbol)
         except Exception as e:
             print(f"Error creating summary slide: {e}")
             slide = prs.slides.add_slide(prs.slide_layouts[1])
@@ -223,7 +243,7 @@ def generate_ppt(data):
     sheets = data.get('sheets', [])
     for sheet in sheets:
         try:
-            add_chart_slide(prs, sheet)
+            add_chart_slide(prs, sheet, currency_symbol)
         except Exception as e:
             print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
             try:
