@@ -70,7 +70,7 @@ interface ComparisonData {
 }
 
 export default function Compare() {
-  const { formatPrice, currency } = useCurrency()
+  const { formatPrice, currency, convertPrice } = useCurrency()
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [chartKey, setChartKey] = useState(0)
@@ -396,7 +396,7 @@ export default function Compare() {
                             comparisonData,
                             filters,
                             currency === 'CLP' ? '$' : 'UF',
-                            (price) => price
+                            convertPrice
                           );
                         } finally {
                           setIsExporting(false);
@@ -414,7 +414,7 @@ export default function Compare() {
                             comparisonData,
                             filters,
                             currency === 'CLP' ? '$' : 'UF',
-                            (price) => price
+                            convertPrice
                           );
                         } finally {
                           setIsExporting(false);

@@ -83,7 +83,7 @@ export function PriceEvolutionChart({
   submodelFilters = [],
   tipoVehiculoFilters = [],
 }: PriceEvolutionProps) {
-  const { formatPrice, currency } = useCurrency();
+  const { formatPrice, currency, convertPrice } = useCurrency();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -465,7 +465,7 @@ export function PriceEvolutionChart({
                             submodel: submodelFilters
                           },
                           currency === 'CLP' ? '$' : 'UF',
-                          (price) => price
+                          convertPrice
                         );
                       } finally {
                         setIsExporting(false);
@@ -494,7 +494,7 @@ export function PriceEvolutionChart({
                             submodel: submodelFilters
                           },
                           currency === 'CLP' ? '$' : 'UF',
-                          (price) => price
+                          convertPrice
                         );
                       } finally {
                         setIsExporting(false);

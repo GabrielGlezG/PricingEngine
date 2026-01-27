@@ -78,49 +78,53 @@ def create_summary_slide(prs, summary, currency_symbol):
 
 def add_table_slide(prs, title, rows):
     """
-    Adds a slide with a data table detailed view.
+    Adds slides with data table detailed view, paginating if necessary.
     """
     if not rows: return
-
-    slide_layout = prs.slide_layouts[5] # Title Only
-    slide = prs.slides.add_slide(slide_layout)
-    slide.shapes.title.text = f"{title} (Detalle)"
     
-    # Determine table dimensions
-    headers = list(rows[0].keys())
-    num_rows = min(len(rows) + 1, 15) # Limit rows per slide to fit
-    num_cols = len(headers)
+    # Pagination constants
+    MAX_ROWS_PER_SLIDE = 14
     
-    left = Inches(0.5)
-    top = Inches(1.5)
-    width = Inches(9)
-    height = Inches(0.4 * num_rows)
+    # Split rows into chunks
+    chunks = [rows[i:i + MAX_ROWS_PER_SLIDE] for i in range(0, len(rows), MAX_ROWS_PER_SLIDE)]
     
-    shape = slide.shapes.add_table(num_rows, num_cols, left, top, width, height)
-    table = shape.table
-    
-    # Style Headers
-    for c, header in enumerate(headers):
-        cell = table.cell(0, c)
-        cell.text = str(header)
-        cell.fill.solid()
-        cell.fill.fore_color.rgb = DARK_BLUE
-        cell.text_frame.paragraphs[0].font.color.rgb = WHITE
-        cell.text_frame.paragraphs[0].font.bold = True
-        cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-
-    # Fill Data
-    for r, row_data in enumerate(rows[:num_rows-1]):
+    for i, chunk in enumerate(chunks):
+        slide_layout = prs.slide_layouts[5] # Title Only
+        slide = prs.slides.add_slide(slide_layout)
+        
+        # Add (Cont.) to title for subsequent slides
+        slide_title = f"{title} (Detalle)" if i == 0 else f"{title} (Detalle - Cont. {i+1})"
+        slide.shapes.title.text = slide_title
+        
+        headers = list(rows[0].keys())
+        num_rows = len(chunk) + 1
+        num_cols = len(headers)
+        
+        left = Inches(0.5)
+        top = Inches(1.5)
+        width = Inches(9)
+        height = Inches(0.4 * num_rows)
+        
+        shape = slide.shapes.add_table(num_rows, num_cols, left, top, width, height)
+        table = shape.table
+        
+        # Style Headers
         for c, header in enumerate(headers):
-            val = row_data.get(header)
-            cell = table.cell(r + 1, c)
-            cell.text = format_value(val)
-            cell.text_frame.paragraphs[0].font.size = Pt(10)
-    
-    # Add footer note if data was truncated
-    if len(rows) > 14:
-        textbox = slide.shapes.add_textbox(Inches(0.5), Inches(7), Inches(9), Inches(0.5))
-        textbox.text = f"* Se muestran los primeros 14 registros de {len(rows)}."
+            cell = table.cell(0, c)
+            cell.text = str(header)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = DARK_BLUE
+            cell.text_frame.paragraphs[0].font.color.rgb = WHITE
+            cell.text_frame.paragraphs[0].font.bold = True
+            cell.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+
+        # Fill Data
+        for r, row_data in enumerate(chunk):
+            for c, header in enumerate(headers):
+                val = row_data.get(header)
+                cell = table.cell(r + 1, c)
+                cell.text = format_value(val)
+                cell.text_frame.paragraphs[0].font.size = Pt(10)
 
 def add_chart_slide(prs, chart_info):
     # 1. Add Chart Slide
@@ -147,7 +151,8 @@ def add_chart_slide(prs, chart_info):
          ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
          chart_data = CategoryChartData()
     elif chart_type == 'scatter':
-         ppt_chart_type = XL_CHART_TYPE.BUBBLE
+        # CHANGED: Switched from BUBBLE to XY_SCATTER to avoid 'bubble_sizes_ref' crash
+         ppt_chart_type = XL_CHART_TYPE.XY_SCATTER
          chart_data = XyChartData()
     else:
         ppt_chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
@@ -160,11 +165,12 @@ def add_chart_slide(prs, chart_info):
             try:
                 x = float(r.get(headers[1], 0))
                 y = float(r.get(headers[2], 0))
-                size = float(r.get(headers[1], 1)) / 10 # Scaled bubbles
+                # size ignored in XY Scatter
             except:
                 continue
-            series.add_data_point(x, y, size)
+            series.add_data_point(x, y)
     else:
+        # Standard Category Charts
         chart_data.categories = categories
         for s_name in series_names:
             # Safe float conversion for series values
