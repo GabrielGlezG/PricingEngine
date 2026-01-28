@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
-import { useCurrency } from "@/contexts/CurrencyContext"
+import { useCurrency, CURRENCY_SYMBOLS } from "@/contexts/CurrencyContext"
 import { useTheme } from "next-themes"
 import { hslVar, cn } from "@/lib/utils"
 import { getScaleOptions } from "@/config/chartColors"
@@ -395,7 +395,7 @@ export default function Compare() {
                           await exportCompareData(
                             comparisonData,
                             filters,
-                            currency === 'CLP' ? '$' : 'UF',
+                            CURRENCY_SYMBOLS[currency],
                             convertPrice
                           );
                         } finally {
@@ -413,7 +413,7 @@ export default function Compare() {
                           await exportCompareDataPPT(
                             comparisonData,
                             filters,
-                            currency === 'CLP' ? '$' : 'UF',
+                            CURRENCY_SYMBOLS[currency],
                             convertPrice
                           );
                         } finally {

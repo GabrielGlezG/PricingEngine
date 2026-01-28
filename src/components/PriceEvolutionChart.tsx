@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCurrency, CURRENCY_SYMBOLS } from "@/contexts/CurrencyContext";
 import { useTheme } from "next-themes";
 import { hslVar } from "@/lib/utils";
 import { lineChartColors, tooltipColors, getScaleOptions } from "@/config/chartColors";
@@ -464,7 +464,7 @@ export function PriceEvolutionChart({
                             model: modelFilters,
                             submodel: submodelFilters
                           },
-                          currency === 'CLP' ? '$' : 'UF',
+                          CURRENCY_SYMBOLS[currency],
                           convertPrice
                         );
                       } finally {
@@ -493,7 +493,7 @@ export function PriceEvolutionChart({
                             model: modelFilters,
                             submodel: submodelFilters
                           },
-                          currency === 'CLP' ? '$' : 'UF',
+                          CURRENCY_SYMBOLS[currency],
                           convertPrice
                         );
                       } finally {
