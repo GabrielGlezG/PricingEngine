@@ -279,7 +279,7 @@ export default function Destacados() {
       {/* 1. Header & Context */}
       <div className="flex flex-col gap-4">
         <InstitutionalHeader
-             title="Nuestras Marcas"
+             title="Insights"
              description={`Explora el catálogo histórico y actual de las ${data.allBrands?.length || 0} marcas monitoreadas. Selecciona una o más para ver detalles combinados.`} 
         />
         
@@ -391,6 +391,7 @@ export default function Destacados() {
                <DataCard
                  title="Descuento Promedio"
                  value={analytics.metrics.avg_discount_pct ? `${analytics.metrics.avg_discount_pct.toFixed(1)}%` : "-"}
+                 subValue="Sobre Precio Lista"
                  icon={Tag} 
                  className="col-span-2 sm:col-span-1 border-l-4 border-l-green-500/50"
                />
