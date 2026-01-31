@@ -288,7 +288,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 except: values.append(0.0)
             chart_data.add_series(s_name, values)
 
-    x, y, cx, cy = Inches(0.5), Inches(1.5), Inches(9), Inches(5.0)
+    x, y, cx, cy = Inches(0.5), Inches(1.5), Inches(9), Inches(5.8)
     graphic_frame = slide.shapes.add_chart(ppt_chart_type, x, y, cx, cy, chart_data)
     chart = graphic_frame.chart
     
