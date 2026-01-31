@@ -225,18 +225,25 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     series_names = headers[1:] # Assuming rest are series
     
     if chart_type == 'scatter':
-         ppt_chart_type = XL_CHART_TYPE.XY_SCATTER
-         chart_data = XyChartData()
-         # Series per point logic
+         # Use Bubble Chart to match Excel's "Matriz Posicionamiento" logic
+         ppt_chart_type = XL_CHART_TYPE.BUBBLE
+         chart_data = BubbleChartData()
+         
+         # Series per point logic (so each Bubble has a legend name)
          for r in rows:
             label = str(r[headers[0]])
             try:
+                # Heuristics for X, Y, Size
+                # Excel: X=Volumen, Y=Precio, Size=Volumen
                 x_key = next((k for k in headers if 'volumen' in k.lower() or 'cant' in k.lower()), headers[1])
                 y_key = next((k for k in headers if 'precio' in k.lower() or 'price' in k.lower()), headers[2])
+                
                 x_val = float(r.get(x_key, 0))
                 y_val = float(r.get(y_key, 0))
+                size_val = x_val # Size = Volume
+                
                 series = chart_data.add_series(label)
-                series.add_data_point(x_val, y_val)
+                series.add_data_point(x_val, y_val, size_val)
             except:
                 continue
     else:
