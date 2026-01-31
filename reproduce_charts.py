@@ -65,6 +65,17 @@ data = {
                 {"Date": "2023-03", "Volvo": 0.13, "BMW": 0.09}
             ]
         }
+        },
+        # Image New: Benchmarking
+        {
+            "name": "Benchmarks",
+            "chart_title": "Benchmarking de Precios por Marca",
+            "chart_type": "line",
+            "data": [
+                {"Brand": "Toyota", "Min": 10000000, "Max": 20000000},
+                {"Brand": "Kia", "Min": 9000000, "Max": 18000000}
+            ]
+        }
     ]
 }
 

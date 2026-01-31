@@ -368,6 +368,15 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             plot.vary_by_categories = True
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
+            
+            # Data Labels
+            plot.has_data_labels = True
+            data_labels = plot.data_labels
+            data_labels.font.name = "Avenir Medium"
+            data_labels.font.size = Pt(8)
+            data_labels.position = XL_LABEL_POSITION.INSIDE_END
+            data_labels.number_format = '0%'
+            data_labels.font.color.rgb = WHITE # Contrast for colored bars
                 
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:
@@ -379,11 +388,18 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 series.smooth = True
                 
             # Vertical X-Axis Labels (Dates)
-            # Not natively supported in simple API, but we can try setting tick_labels.offset? 
-            # Actually standard python-pptx doesn't expose tick_label.rotation easily.
-            # We will rely on auto-fit or try to access XML if critical.
-            # However, CategoryAxis usually handles date spacing. 
-            pass
+            try:
+                category_axis = chart.category_axis
+                category_axis.tick_labels.font.size = Pt(9)
+                
+                # XML Hack for Rotation (-90 degrees)
+                from pptx.oxml.ns import qn
+                txPr = category_axis._element.get_or_add_txPr()
+                bodyPr = txPr.get_or_add_bodyPr()
+                bodyPr.set('rot', '-5400000')
+                bodyPr.set('vert', 'horz')
+            except Exception as e:
+                print(f"Error formatting volatility axis: {e}")
 
         # 5. "Matriz" (Scatter/Bubble) -> Fix Axes
         elif 'matriz' in name_lower or chart_type == 'scatter':
@@ -413,6 +429,24 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  bubbleScale.val = 60
              except Exception as e:
                  print(f"Error scaling bubbles: {e}")
+
+        # 6. "Benchmarking" -> Line Chart with Currency, Smoothing, Markers
+        elif 'benchmarking' in name_lower:
+             # Y-Axis (Price) -> Currency
+             if chart.value_axis:
+                 chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                 if currency_symbol == '$':
+                     chart.value_axis.major_unit = 5000000
+             
+             # Lines: Smooth + Markers (for single point visibility)
+             try:
+                 from pptx.enum.chart import XL_MARKER_STYLE
+                 for series in chart.series:
+                     series.smooth = True
+                     series.marker.style = XL_MARKER_STYLE.CIRCLE
+                     series.marker.size = 7 # Visible but not huge
+             except Exception as e:
+                 print(f"Error setting markers: {e}")
 
         # Apply Brand Colors (if not varying by category)
         # Apply Brand Colors (if not varying by category)
