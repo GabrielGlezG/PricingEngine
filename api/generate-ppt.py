@@ -318,6 +318,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             # Y-Axis Currency
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '$ #,##0'
+                chart.value_axis.major_unit = 5000000 # 5 million increments as requested
             
             # Data Labels
             plot.has_data_labels = True
