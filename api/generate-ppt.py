@@ -324,12 +324,35 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels = plot.data_labels
             data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
-            # "Vertical Inside": Python-pptx can't easily rotate labels 90deg without XML hacks.
-            # We will approximate with INSIDE_END position which puts them inside the bar at top.
-            # If the user strictly demands vertical rotation, we might need a workaround, 
-            # but INSIDE_END is standard for this look.
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
-            data_labels.font.color.rgb = WHITE # Contrast for inside dark bars
+            data_labels.font.color.rgb = WHITE
+            
+            # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
+            try:
+                # We need to iterate over all points to set the rotation?
+                # Actually, setting it on the DataLabels object might propagate or we need to access the element.
+                # data_labels.element is the c:dLbls element.
+                # We need to ensure that dLbls has a txPr (Text Properties) -> bodyPr -> rot="-5400000"
+                
+                from pptx.oxml.ns import qn
+                
+                # Check if txPr exists, create if not
+                txPr = data_labels._element.get_or_add_txPr()
+                # Check if bodyPr exists
+                bodyPr = txPr.find(qn('a:bodyPr'))
+                if bodyPr is None:
+                     bodyPr = txPr.get_or_add_bodyPr()
+                
+                # Set rotation to -270 degrees (-5400000 EMUs). 
+                # Positive 270 degrees is 16200000, but PowerPoint treats 270 as "Stacked" sometimes or -90.
+                # "Rotate all text 270" corresponds to 'vert270' in standard presets, but custom rot is better.
+                # Let's try rot="-5400000" (which is -90 deg, reading bottom to top)
+                bodyPr.set('rot', '-5400000')
+                bodyPr.set('vert', 'horz') # Ensure it's not trying to be "vertical stacked"
+                
+            except Exception as e:
+                print(f"Error rotating labels: {e}")
+            # ---------------------------------------------
             
         # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
