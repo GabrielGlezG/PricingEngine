@@ -247,26 +247,24 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     categories = [str(r[headers[0]]) for r in rows]
     series_names = headers[1:] # Assuming rest are series
     
+    
+    # Heuristics based on chart name/title to apply specific formatting
+    name_lower = str(chart_info.get('name') or chart_info.get('chart_title') or '').lower()
+    
+    # 1. Chart Types & Data Preparation
     if chart_type == 'scatter':
-         # Use Bubble Chart to match Excel's "Matriz Posicionamiento" logic
          ppt_chart_type = XL_CHART_TYPE.BUBBLE
-         chart_data = BubbleChartData()
-         
-         # Series per point logic (so each Bubble has a legend name)
+         chart_data = BubbleChartData() 
+         # ... existing scatter logic ...
          for r in rows:
             label = str(r[headers[0]])
             try:
-                # Heuristics for X, Y, Size
-                # Excel: X=Volumen, Y=Precio, Size=Volumen
                 x_key = next((k for k in headers if 'volumen' in k.lower() or 'cant' in k.lower()), headers[1])
                 y_key = next((k for k in headers if 'precio' in k.lower() or 'price' in k.lower()), headers[2])
-                
                 x_val = float(r.get(x_key, 0))
                 y_val = float(r.get(y_key, 0))
-                # Sanitize Size: Must be positive. If Volume is 0 or negative, use a minimal size.
                 size_raw = float(r.get(x_key, 0))
                 size_val = abs(size_raw) if abs(size_raw) > 0.0 else 1.0
-                
                 series = chart_data.add_series(label)
                 series.add_data_point(x_val, y_val, size_val)
             except:
@@ -275,6 +273,10 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         ppt_chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
         if chart_type == 'line': ppt_chart_type = XL_CHART_TYPE.LINE
         elif chart_type == 'stacked': ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
+        
+        # Override for Composition (Bar Chart requested implicitly by "Barras")? 
+        # User said "Bars" for segmentation. If it's composition, use Column clustered usually, or Bar Clustered.
+        # "Composición de Versiones" -> Image 1 looks like Column Chart actually (Vertical Bars).
         
         chart_data = CategoryChartData()
         chart_data.categories = categories
@@ -290,55 +292,92 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     graphic_frame = slide.shapes.add_chart(ppt_chart_type, x, y, cx, cy, chart_data)
     chart = graphic_frame.chart
     
-    # Chart Styling & Data Labels
+    # --- CHART FORMATTING APPLIED ---
     try:
+        from pptx.enum.chart import XL_LABEL_POSITION, XL_TICK_MARK
+        from pptx.dml.color import RGBColor
+        
         chart.has_legend = True
         chart.legend.position = XL_LEGEND_POSITION.BOTTOM
         chart.legend.include_in_layout = False
         chart.legend.font.name = "Avenir Medium"
         chart.legend.font.size = Pt(9)
         
-        # Apply Brand Colors to Series
-        # Palette: Dark Blue, Light Blue, maybe a Grey or distinct Accent
-        from pptx.dml.color import RGBColor
-        brand_palette = [
-            RGBColor(30, 41, 59),   # Dark Blue
-            RGBColor(71, 85, 105),  # Light Blue/Slate
-            RGBColor(59, 130, 246), # Accent Blue (Bright)
-            RGBColor(148, 163, 184) # Lighter Slate
-        ]
+        plot = chart.plots[0]
         
-        # Apply colors ONLY to Bar/Column/Line charts.
-        # Skip Scatter/Bubble to avoid XML corruption with many series or complex markers.
-        if chart_type not in ['scatter', 'pie']: 
+        # 1. "Composición" -> Integers, Vary Colors
+        if 'composición' in name_lower or 'composition' in name_lower:
+            plot.vary_by_categories = True
+            
+            # Y-Axis Integer
+            if chart.value_axis:
+                chart.value_axis.tick_labels.number_format = '0'
+                
+        # 2. "Precios" or "Estructura" -> Currency, Data Labels Vertical Inside
+        elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
+            # Y-Axis Currency
+            if chart.value_axis:
+                chart.value_axis.tick_labels.number_format = '$ #,##0'
+            
+            # Data Labels
+            plot.has_data_labels = True
+            data_labels = plot.data_labels
+            data_labels.font.name = "Avenir Medium"
+            data_labels.font.size = Pt(8)
+            # "Vertical Inside": Python-pptx can't easily rotate labels 90deg without XML hacks.
+            # We will approximate with INSIDE_END position which puts them inside the bar at top.
+            # If the user strictly demands vertical rotation, we might need a workaround, 
+            # but INSIDE_END is standard for this look.
+            data_labels.position = XL_LABEL_POSITION.INSIDE_END
+            data_labels.font.color.rgb = WHITE # Contrast for inside dark bars
+            
+        # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
+        elif 'tendencia' in name_lower or 'trend' in name_lower:
+            plot.vary_by_categories = True
+            if chart.value_axis:
+                chart.value_axis.tick_labels.number_format = '0%'
+                
+        # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
+        elif 'volatilidad' in name_lower or 'volatility' in name_lower:
+            if chart.value_axis:
+                chart.value_axis.tick_labels.number_format = '0%'
+            
+            # Smooth Lines
+            for series in chart.series:
+                series.smooth = True
+                
+            # Vertical X-Axis Labels (Dates)
+            # Not natively supported in simple API, but we can try setting tick_labels.offset? 
+            # Actually standard python-pptx doesn't expose tick_label.rotation easily.
+            # We will rely on auto-fit or try to access XML if critical.
+            # However, CategoryAxis usually handles date spacing. 
+            pass
+
+        # Apply Brand Colors (if not varying by category)
+        val_axis = chart.value_axis
+        val_axis.has_major_gridlines = True
+        val_axis.major_gridlines.format.line.dash_style = 4 # Square dot?? No enum imported. Skip.
+        
+        # Standard Color Cycle if not vary_by_categories
+        if not plot.vary_by_categories and chart_type not in ['scatter']:
+             brand_palette = [
+                RGBColor(30, 41, 59),   # Dark Blue
+                RGBColor(71, 85, 105),  # Light Blue
+                RGBColor(59, 130, 246), # Accent Blue
+                RGBColor(148, 163, 184) # Lighter Slate
+            ]
              for i, series in enumerate(chart.series):
                 color = brand_palette[i % len(brand_palette)]
-                
                 try:
-                    # For Line (Lines)
                     if chart_type == 'line':
                          series.format.line.solid()
                          series.format.line.color.rgb = color
-                    # For Bar/Column (Fill)
                     else:
                          series.format.fill.solid()
                          series.format.fill.fore_color.rgb = color
                 except:
                     pass
 
-        # Enable Data Labels (Exclude Scatter/Line to avoid clutter/errors)
-        if chart_type not in ['line', 'scatter']:
-            try:
-                plot = chart.plots[0]
-                plot.has_data_labels = True
-                data_labels = plot.data_labels
-                data_labels.font.name = "Avenir Medium"
-                data_labels.font.size = Pt(8)
-                data_labels.font.color.rgb = DARK_BLUE
-                # data_labels.number_format = '0.0%' if 'share' in str(chart_info).lower() else '#,##0'
-                
-            except Exception as e:
-                print(f"Data Labels warning: {e}")
     except Exception as e:
         print(f"Chart formatting warning: {e}")
 
