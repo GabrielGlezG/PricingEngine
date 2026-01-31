@@ -337,13 +337,13 @@ def generate_ppt(data):
         else:
             create_title_slide(prs, "Pricing Engine", date_str)
     
-        # 2. Slide 2: Data Intro
+        # 2. Slide 2: Intro
         if os.path.exists(bg_path):
             create_intro_slide(prs, title, date_str, bg_path)
         else:
             create_title_slide(prs, title, date_str)
         
-        # 3. Summary Slide
+        # 3. Summary Slide (Same as Excel Summary Sheet)
         summary = data.get('summary')
         if summary:
             try:
@@ -351,21 +351,46 @@ def generate_ppt(data):
             except Exception as e:
                 print(f"Summary slide error: {e}")
             
-        # 4. Data/Charts Slides
+        # 4. Sheets (Charts + Data Tables) = Same as Excel Chart Sheets
         sheets = data.get('sheets', [])
         for sheet in sheets:
             try:
                 add_chart_slide(prs, sheet, currency_symbol)
             except Exception as e:
                 print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
-                try:
-                     # Add error placeholder slide
-                    slide = prs.slides.add_slide(prs.slide_layouts[5])
-                    slide.shapes.title.text = f"Error in {sheet.get('name')}"
-                    slide.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(1)).text = str(e)
-                except: pass
                 
-        # 5. Last Slide: Logo Cover
+        # 5. Models Data (Raw Table) = Same as Excel "Modelos" Sheet
+        # This can be very long, so we might need multiple slides or just a sample.
+        # For now, let's treat it as a paginated table slide.
+        models = data.get('models', [])
+        if models:
+            # Prepare rows for the table function
+            model_rows = []
+            # Normalize keys to match add_table_slide expectations
+            for m in models:
+                 # Calculate Discount
+                 p_lista = float(m.get('precio_lista', 0) or 0)
+                 bono = float(m.get('bono', 0) or 0)
+                 dsc = (bono / p_lista) if p_lista > 0 else 0
+                 
+                 model_rows.append({
+                     "Marca": m.get('brand'),
+                     "Modelo": m.get('model'),
+                     "Versión": m.get('submodel', '-'),
+                     "Estado": m.get('estado', 'N/A'),
+                     "Precio Lista": m.get('precio_lista', 0),
+                     "Bono": m.get('bono', 0),
+                     "Precio Final": m.get('precio_con_bono', 0),
+                     "% Desc.": dsc
+                 })
+            
+            # Add table slides for models (paginated)
+            try:
+                add_table_slide(prs, "Detalle de Modelos", model_rows, currency_symbol)
+            except Exception as e:
+                print(f"Error adding models table: {e}")
+
+        # 6. Last Slide: Logo Cover
         if os.path.exists(logo_path):
             create_logo_slide(prs, logo_path)
             
