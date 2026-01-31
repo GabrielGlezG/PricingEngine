@@ -415,9 +415,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  print(f"Error scaling bubbles: {e}")
 
         # Apply Brand Colors (if not varying by category)
+        # Apply Brand Colors (if not varying by category)
         val_axis = chart.value_axis
-        val_axis.has_major_gridlines = True
-        val_axis.major_gridlines.format.line.dash_style = 4 # Square dot?? No enum imported. Skip.
+        val_axis.has_major_gridlines = False # Clean Layout (No Grid)
         
         # Standard Color Cycle if not vary_by_categories
         if not plot.vary_by_categories and chart_type not in ['scatter']:
