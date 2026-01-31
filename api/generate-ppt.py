@@ -381,7 +381,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:
             if chart.value_axis:
-                chart.value_axis.tick_labels.number_format = '0%'
+                chart.value_axis.tick_labels.number_format = '0.0%'
             
             # Smooth Lines
             for series in chart.series:
@@ -389,8 +389,10 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 
             # Vertical X-Axis Labels (Dates)
             try:
+                from pptx.enum.chart import XL_TICK_LABEL_POSITION
                 category_axis = chart.category_axis
                 category_axis.tick_labels.font.size = Pt(9)
+                category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
                 
                 # XML Hack for Rotation (-90 degrees)
                 from pptx.oxml.ns import qn
