@@ -321,7 +321,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
             # Y-Axis Currency
             if chart.value_axis:
-                chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                 # Only apply 5M steps if currency is CLP ($)
                 if currency_symbol == '$':
                     chart.value_axis.major_unit = 5000000 
@@ -335,7 +335,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.font.size = Pt(8)
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.font.color.rgb = WHITE
-            data_labels.number_format = f'{currency_symbol} #,##0' # Force Integer with Currency
+            data_labels.number_format = f'"{currency_symbol}" #,##0' # Force Integer with Currency
             
             # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
             try:
@@ -412,7 +412,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif 'matriz' in name_lower or chart_type == 'scatter':
              # Y-Axis (Price) -> Currency
              if chart.value_axis:
-                 chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                 chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  chart.value_axis.minimum_scale = 0 # Force 0 start to avoid negative values
                  if currency_symbol == '$':
                      chart.value_axis.major_unit = 5000000
@@ -442,7 +442,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif 'benchmarking' in name_lower:
              # Y-Axis (Price) -> Currency
              if chart.value_axis:
-                 chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                 chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  if currency_symbol == '$':
                      chart.value_axis.major_unit = 5000000
              
