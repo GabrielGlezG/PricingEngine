@@ -269,6 +269,10 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 series.add_data_point(x_val, y_val, size_val)
             except:
                 continue
+         
+         # Force Bubble Chart Formatting specific to this chart type
+         # We'll handle axis formatting in the generic block, but we ensure 'Matriz' is caught.
+         pass
     else:
         ppt_chart_type = XL_CHART_TYPE.COLUMN_CLUSTERED
         if chart_type == 'line': ppt_chart_type = XL_CHART_TYPE.LINE
@@ -380,6 +384,29 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             # We will rely on auto-fit or try to access XML if critical.
             # However, CategoryAxis usually handles date spacing. 
             pass
+
+        # 5. "Matriz" (Scatter/Bubble) -> Fix Axes
+        elif 'matriz' in name_lower or chart_type == 'scatter':
+             # Y-Axis (Price) -> Currency
+             if chart.value_axis:
+                 chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                 # We assume 5M scaling logic applies here too if '$'
+                 if currency_symbol == '$':
+                     chart.value_axis.major_unit = 5000000
+             
+             # X-Axis (Volume) -> Integer, Min 0
+             # In Bubble chart, X axis is technically a value axis too?
+             try:
+                 # Accessing X-axis in PPTX Bubble Chart can be tricky if it thinks it's a category axis.
+                 # But for Bubble/Scatter, both are Value Axes.
+                 # Let's try to access category_axis first (often mapped to Bottom axis)
+                 x_axis = chart.category_axis
+                 # Force numbering format integer
+                 x_axis.tick_labels.number_format = '0'
+                 # Force min to 0 to avoid negative "10.000.000" visual
+                 x_axis.minimum_scale = 0
+             except:
+                 pass
 
         # Apply Brand Colors (if not varying by category)
         val_axis = chart.value_axis
