@@ -9,8 +9,18 @@ from pptx.chart.data import CategoryChartData, XyChartData, BubbleChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 import os
+import base64
+import io
 
-# Brand Colors (Institutional)
+try:
+    from api.ppt_assets import LOGO_B64, BG_B64
+except ImportError:
+    try:
+        from ppt_assets import LOGO_B64, BG_B64
+    except:
+        LOGO_B64 = None
+        BG_B64 = None
+
 # Brand Colors (Institutional)
 DARK_BLUE = RGBColor(30, 41, 59)  # Slate 900 #1E293B
 DEEP_NAVY = RGBColor(13, 40, 65)  # #0D2841 (Cover BG)
@@ -46,8 +56,13 @@ def set_font(shape, font_name="Avenir Medium", font_size=None, bold=False, color
             if bold is not None: run.font.bold = bold
             if color: run.font.color.rgb = color
 
-def create_logo_slide(prs, logo_path):
-    """Creates a slide with a large centered logo on Deep Navy background."""
+def get_image_stream(b64_string):
+    if not b64_string:
+        return None
+    return io.BytesIO(base64.b64decode(b64_string))
+
+def create_logo_slide(prs):
+    """Creates a slide with a large centered logo on Deep Navy background using embedded asset."""
     slide = prs.slides.add_slide(prs.slide_layouts[6]) 
     background = slide.background
     fill = background.fill
@@ -55,16 +70,19 @@ def create_logo_slide(prs, logo_path):
     fill.fore_color.rgb = DEEP_NAVY # #0D2841
     
     try:
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
-        logo_width = Inches(4.5) 
-        left = (slide_width - logo_width) / 2
-        
-        # Use provided path
-        pic = slide.shapes.add_picture(logo_path, left, 0, width=logo_width)
-        
-        top = (slide_height - pic.height) / 2
-        pic.top = int(top)
+        img_stream = get_image_stream(LOGO_B64)
+        if img_stream:
+            slide_width = prs.slide_width
+            slide_height = prs.slide_height
+            logo_width = Inches(4.5) 
+            left = (slide_width - logo_width) / 2
+            
+            pic = slide.shapes.add_picture(img_stream, left, 0, width=logo_width)
+            
+            top = (slide_height - pic.height) / 2
+            pic.top = int(top)
+        else:
+            print("Warning: LOGO_B64 not available")
     except Exception as e:
         print(f"Error adding logo to slide: {e}")
 
@@ -75,13 +93,14 @@ def create_title_slide(prs, title, date_str):
     if slide.placeholders[1]:
         slide.placeholders[1].text = date_str
 
-def create_intro_slide(prs, title, date_str, bg_path):
-    """Creates intro slide with split background."""
+def create_intro_slide(prs, title, date_str):
+    """Creates intro slide with split background using embedded asset."""
     slide = prs.slides.add_slide(prs.slide_layouts[6]) 
     
     try:
-        # Fit background
-        slide.shapes.add_picture(bg_path, 0, 0, width=prs.slide_width, height=prs.slide_height)
+        img_stream = get_image_stream(BG_B64)
+        if img_stream:
+            slide.shapes.add_picture(img_stream, 0, 0, width=prs.slide_width, height=prs.slide_height)
     except Exception as e:
         print(f"Error adding background: {e}")
         
@@ -328,29 +347,16 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
 def generate_ppt(data):
     try:
         prs = Presentation()
-        base_dir = os.getcwd()
-        
-        logo_path = os.path.join(base_dir, 'public', 'logo-white-full.png')
-        if not os.path.exists(logo_path):
-             logo_path = os.path.join(base_dir, 'public', 'pricing-engine-logo-new.png')
-    
-        bg_path = os.path.join(base_dir, 'public', 'ppt-background-split.png')
         
         title = data.get('title', 'Reporte Dashboard')
         currency_symbol = data.get('currencySymbol', '$')
         date_str = datetime.now().strftime("%d/%m/%Y")
         
         # 1. Slide 1: Logo Cover
-        if os.path.exists(logo_path):
-            create_logo_slide(prs, logo_path)
-        else:
-            create_title_slide(prs, "Pricing Engine", date_str)
+        create_logo_slide(prs)
     
         # 2. Slide 2: Intro
-        if os.path.exists(bg_path):
-            create_intro_slide(prs, title, date_str, bg_path)
-        else:
-            create_title_slide(prs, title, date_str)
+        create_intro_slide(prs, title, date_str)
         
         # 3. Summary Slide (Same as Excel Summary Sheet)
         summary = data.get('summary')
@@ -360,7 +366,7 @@ def generate_ppt(data):
             except Exception as e:
                 print(f"Summary slide error: {e}")
             
-        # 4. Sheets (Charts + Data Tables) = Same as Excel Chart Sheets
+        # 4. Sheets (Charts + Data Tables)
         sheets = data.get('sheets', [])
         for sheet in sheets:
             try:
@@ -368,16 +374,11 @@ def generate_ppt(data):
             except Exception as e:
                 print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
                 
-        # 5. Models Data (Raw Table) = Same as Excel "Modelos" Sheet
-        # This can be very long, so we might need multiple slides or just a sample.
-        # For now, let's treat it as a paginated table slide.
+        # 5. Models Data (Raw Table)
         models = data.get('models', [])
         if models:
-            # Prepare rows for the table function
             model_rows = []
-            # Normalize keys to match add_table_slide expectations
             for m in models:
-                 # Calculate Discount
                  p_lista = float(m.get('precio_lista', 0) or 0)
                  bono = float(m.get('bono', 0) or 0)
                  dsc = (bono / p_lista) if p_lista > 0 else 0
@@ -393,21 +394,18 @@ def generate_ppt(data):
                      "% Desc.": dsc
                  })
             
-            # Add table slides for models (paginated)
             try:
                 add_table_slide(prs, "Detalle de Modelos", model_rows, currency_symbol)
             except Exception as e:
                 print(f"Error adding models table: {e}")
 
         # 6. Last Slide: Logo Cover
-        if os.path.exists(logo_path):
-            create_logo_slide(prs, logo_path)
+        create_logo_slide(prs)
             
         output = io.BytesIO()
         prs.save(output)
         output.seek(0)
         return output.getvalue()
-
     except Exception as global_e:
         # Fallback: Create a simple error presentation
         print(f"CRITICAL ERROR GENERATING PPT: {global_e}")
