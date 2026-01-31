@@ -101,8 +101,18 @@ def create_intro_slide(prs, title, date_str):
         img_stream = get_image_stream(BG_B64)
         if img_stream:
             slide.shapes.add_picture(img_stream, 0, 0, width=prs.slide_width, height=prs.slide_height)
+            
+        # Overlay Logo at bottom-left to fix visibility (covering the faint one in BG)
+        logo_stream = get_image_stream(LOGO_B64)
+        if logo_stream:
+            logo_width = Inches(2.0)
+            # Centered in the white section (approx left 4.5 inches)
+            left = Inches(1.2) 
+            top = Inches(6.0) 
+            slide.shapes.add_picture(logo_stream, left, top, width=logo_width)
+            
     except Exception as e:
-        print(f"Error adding background: {e}")
+        print(f"Error adding background/logo to intro: {e}")
         
     # Text Layout for Split Background (Left side white space)
     left = Inches(0.8) # Left padding
