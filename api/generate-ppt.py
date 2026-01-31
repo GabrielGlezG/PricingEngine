@@ -390,23 +390,29 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              # Y-Axis (Price) -> Currency
              if chart.value_axis:
                  chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
-                 # We assume 5M scaling logic applies here too if '$'
+                 chart.value_axis.minimum_scale = 0 # Force 0 start to avoid negative values
                  if currency_symbol == '$':
                      chart.value_axis.major_unit = 5000000
              
              # X-Axis (Volume) -> Integer, Min 0
-             # In Bubble chart, X axis is technically a value axis too?
              try:
-                 # Accessing X-axis in PPTX Bubble Chart can be tricky if it thinks it's a category axis.
-                 # But for Bubble/Scatter, both are Value Axes.
-                 # Let's try to access category_axis first (often mapped to Bottom axis)
                  x_axis = chart.category_axis
-                 # Force numbering format integer
                  x_axis.tick_labels.number_format = '0'
-                 # Force min to 0 to avoid negative "10.000.000" visual
                  x_axis.minimum_scale = 0
              except:
                  pass
+                 
+             # Reduce Bubble Size (XML Hack)
+             try:
+                 # chart.plots[0] is the BubblePlot
+                 plot = chart.plots[0]
+                 # Access the c:bubbleChart element
+                 bubbleChart = plot._element
+                 # Set scale to 60% (default is 100)
+                 bubbleScale = bubbleChart.get_or_add_bubbleScale()
+                 bubbleScale.val = 60
+             except Exception as e:
+                 print(f"Error scaling bubbles: {e}")
 
         # Apply Brand Colors (if not varying by category)
         val_axis = chart.value_axis
