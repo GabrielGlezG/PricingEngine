@@ -273,28 +273,37 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              for i, series in enumerate(chart.series):
                 color = brand_palette[i % len(brand_palette)]
                 
-                # For Scatter (Markers)
-                if chart_type == 'scatter':
-                     series.marker.format.fill.solid()
-                     series.marker.format.fill.fore_color.rgb = color
-                     series.marker.format.line.fill.solid()
-                     series.marker.format.line.fill.fore_color.rgb = color
-                # For Line (Lines)
-                elif chart_type == 'line':
-                     series.format.line.solid()
-                     series.format.line.color.rgb = color
-                # For Bar/Column (Fill)
-                else:
-                     series.format.fill.solid()
-                     series.format.fill.fore_color.rgb = color
+                try:
+                    # For Scatter (Markers)
+                    if chart_type == 'scatter':
+                         series.marker.format.fill.solid()
+                         series.marker.format.fill.fore_color.rgb = color
+                         series.marker.format.line.fill.solid()
+                         series.marker.format.line.fill.fore_color.rgb = color
+                    # For Line (Lines)
+                    elif chart_type == 'line':
+                         series.format.line.solid()
+                         series.format.line.color.rgb = color
+                    # For Bar/Column (Fill)
+                    else:
+                         series.format.fill.solid()
+                         series.format.fill.fore_color.rgb = color
+                except:
+                    pass
 
-        if chart_type != 'line':
-            plot = chart.plots[0]
-            plot.has_data_labels = True
-            data_labels = plot.data_labels
-            data_labels.font.name = "Avenir Medium"
-            data_labels.font.size = Pt(8)
-            data_labels.font.color.rgb = DARK_BLUE
+        # Enable Data Labels (Exclude Scatter/Line to avoid clutter/errors)
+        if chart_type not in ['line', 'scatter']:
+            try:
+                plot = chart.plots[0]
+                plot.has_data_labels = True
+                data_labels = plot.data_labels
+                data_labels.font.name = "Avenir Medium"
+                data_labels.font.size = Pt(8)
+                data_labels.font.color.rgb = DARK_BLUE
+                # data_labels.number_format = '0.0%' if 'share' in str(chart_info).lower() else '#,##0'
+                
+            except Exception as e:
+                print(f"Data Labels warning: {e}")
     except Exception as e:
         print(f"Chart formatting warning: {e}")
 
