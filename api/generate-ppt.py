@@ -56,8 +56,11 @@ def create_logo_slide(prs, logo_path):
     
     try:
         # Force use of white logo if available for dark background
-        base_dir = os.getcwd()
-        preferred_logo = os.path.join(base_dir, 'public', 'logo-white-full.png')
+        # Robust Path Resolution inside function
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        public_dir = os.path.join(script_dir, '..', 'public')
+        
+        preferred_logo = os.path.join(public_dir, 'logo-white-full.png')
         if os.path.exists(preferred_logo):
             logo_path = preferred_logo
 
