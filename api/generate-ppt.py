@@ -335,7 +335,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.font.size = Pt(8)
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.font.color.rgb = WHITE
-            data_labels.number_format = '#,##0' # Force Integer (No Decimals)
+            data_labels.number_format = f'{currency_symbol} #,##0' # Force Integer with Currency
             
             # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
             try:
