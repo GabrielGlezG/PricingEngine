@@ -5,7 +5,7 @@ from datetime import datetime
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
-from pptx.chart.data import CategoryChartData, XyChartData
+from pptx.chart.data import CategoryChartData, XyChartData, BubbleChartData
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 import os
@@ -55,9 +55,15 @@ def create_logo_slide(prs, logo_path):
     fill.fore_color.rgb = DEEP_NAVY # #0D2841
     
     try:
+        # Force use of white logo if available for dark background
+        base_dir = os.getcwd()
+        preferred_logo = os.path.join(base_dir, 'public', 'logo-white-full.png')
+        if os.path.exists(preferred_logo):
+            logo_path = preferred_logo
+
         slide_width = prs.slide_width
         slide_height = prs.slide_height
-        logo_width = Inches(5)
+        logo_width = Inches(4.5) # Slightly smaller for elegance
         left = (slide_width - logo_width) / 2
         pic = slide.shapes.add_picture(logo_path, left, 0, width=logo_width)
         top = (slide_height - pic.height) / 2
@@ -82,9 +88,10 @@ def create_intro_slide(prs, title, date_str, bg_path):
     except Exception as e:
         print(f"Error adding background: {e}")
         
-    left = Inches(0.5)
-    top = Inches(2.5)
-    width = Inches(5.5) 
+    # Text Layout for Split Background (Left side white space)
+    left = Inches(0.8) # Left padding
+    top = Inches(2.8)  # Vertical center alignment roughly
+    width = Inches(4.5) 
     height = Inches(2.5)
     
     tb = slide.shapes.add_textbox(left, top, width, height)
@@ -92,18 +99,18 @@ def create_intro_slide(prs, title, date_str, bg_path):
     tf.word_wrap = True
     
     p_title = tf.paragraphs[0]
-    p_title.text = title.upper()
-    p_title.font.name = "Avenir Black" # Template uses Black
-    p_title.font.size = Pt(44)
+    p_title.text = title # Keep original casing or .title()
+    p_title.font.name = "Avenir Black"
+    p_title.font.size = Pt(40) # Large Title
     p_title.font.bold = True
-    p_title.font.color.rgb = DARK_BLUE
+    p_title.font.color.rgb = RGBColor(0, 0, 0) # Black text on White part
     p_title.alignment = PP_ALIGN.LEFT
     
     p_date = tf.add_paragraph()
-    p_date.text = f"\nGenerado el: {date_str}"
+    p_date.text = f"\nGenerado: {date_str}"
     p_date.font.name = "Avenir Medium"
-    p_date.font.size = Pt(18)
-    p_date.font.color.rgb = LIGHT_BLUE
+    p_date.font.size = Pt(16)
+    p_date.font.color.rgb = LIGHT_BLUE # Slate color for date
     p_date.alignment = PP_ALIGN.LEFT
 
 def create_summary_slide(prs, summary, currency_symbol):
