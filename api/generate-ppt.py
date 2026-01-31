@@ -65,6 +65,13 @@ def create_logo_slide(prs, logo_path):
     except Exception as e:
         print(f"Error adding logo to slide: {e}")
 
+def create_title_slide(prs, title, date_str):
+    """Fallback title slide if no images available"""
+    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text = title
+    if slide.placeholders[1]:
+        slide.placeholders[1].text = date_str
+
 def create_intro_slide(prs, title, date_str, bg_path):
     """Creates intro slide with split background."""
     slide = prs.slides.add_slide(prs.slide_layouts[6]) 
