@@ -310,52 +310,78 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     add_table_slide(prs, chart_info.get('chart_title', 'Datos'), rows, currency_symbol)
 
 def generate_ppt(data):
-    prs = Presentation()
-    base_dir = os.getcwd()
-    
-    logo_path = os.path.join(base_dir, 'public', 'logo-white-full.png')
-    if not os.path.exists(logo_path):
-         logo_path = os.path.join(base_dir, 'public', 'pricing-engine-logo-new.png')
-
-    bg_path = os.path.join(base_dir, 'public', 'ppt-background-split.png')
-    
-    title = data.get('title', 'Reporte Dashboard')
-    currency_symbol = data.get('currencySymbol', '$')
-    date_str = datetime.now().strftime("%d/%m/%Y")
-    
-    # 1. Slide 1: Logo Cover
-    if os.path.exists(logo_path):
-        create_logo_slide(prs, logo_path)
-    else:
-        create_title_slide(prs, "Pricing Engine", date_str)
-
-    # 2. Slide 2: Data Intro
-    if os.path.exists(bg_path):
-        create_intro_slide(prs, title, date_str, bg_path)
-    else:
-        create_title_slide(prs, title, date_str)
-    
-    # 3. Summary Slide
-    summary = data.get('summary')
-    if summary:
-        create_summary_slide(prs, summary, currency_symbol)
+    try:
+        prs = Presentation()
+        base_dir = os.getcwd()
         
-    # 4. Data/Charts Slides
-    sheets = data.get('sheets', [])
-    for sheet in sheets:
-        try:
-            add_chart_slide(prs, sheet, currency_symbol)
-        except Exception as e:
-            print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
+        logo_path = os.path.join(base_dir, 'public', 'logo-white-full.png')
+        if not os.path.exists(logo_path):
+             logo_path = os.path.join(base_dir, 'public', 'pricing-engine-logo-new.png')
+    
+        bg_path = os.path.join(base_dir, 'public', 'ppt-background-split.png')
+        
+        title = data.get('title', 'Reporte Dashboard')
+        currency_symbol = data.get('currencySymbol', '$')
+        date_str = datetime.now().strftime("%d/%m/%Y")
+        
+        # 1. Slide 1: Logo Cover
+        if os.path.exists(logo_path):
+            create_logo_slide(prs, logo_path)
+        else:
+            create_title_slide(prs, "Pricing Engine", date_str)
+    
+        # 2. Slide 2: Data Intro
+        if os.path.exists(bg_path):
+            create_intro_slide(prs, title, date_str, bg_path)
+        else:
+            create_title_slide(prs, title, date_str)
+        
+        # 3. Summary Slide
+        summary = data.get('summary')
+        if summary:
+            try:
+                create_summary_slide(prs, summary, currency_symbol)
+            except Exception as e:
+                print(f"Summary slide error: {e}")
             
-    # 5. Last Slide: Logo Cover
-    if os.path.exists(logo_path):
-        create_logo_slide(prs, logo_path)
+        # 4. Data/Charts Slides
+        sheets = data.get('sheets', [])
+        for sheet in sheets:
+            try:
+                add_chart_slide(prs, sheet, currency_symbol)
+            except Exception as e:
+                print(f"Error creating chart/table slide {sheet.get('name')}: {e}")
+                try:
+                     # Add error placeholder slide
+                    slide = prs.slides.add_slide(prs.slide_layouts[5])
+                    slide.shapes.title.text = f"Error in {sheet.get('name')}"
+                    slide.shapes.add_textbox(Inches(1), Inches(2), Inches(8), Inches(1)).text = str(e)
+                except: pass
+                
+        # 5. Last Slide: Logo Cover
+        if os.path.exists(logo_path):
+            create_logo_slide(prs, logo_path)
+            
+        output = io.BytesIO()
+        prs.save(output)
+        output.seek(0)
+        return output.getvalue()
+
+    except Exception as global_e:
+        # Fallback: Create a simple error presentation
+        print(f"CRITICAL ERROR GENERATING PPT: {global_e}")
+        import traceback
+        traceback.print_exc()
         
-    output = io.BytesIO()
-    prs.save(output)
-    output.seek(0)
-    return output.getvalue()
+        err_prs = Presentation()
+        slide = err_prs.slides.add_slide(err_prs.slide_layouts[0])
+        slide.shapes.title.text = "Error Generando Reporte"
+        slide.placeholders[1].text = f"Detalles: {str(global_e)}\n\nConsulte los logs del servidor."
+        
+        output = io.BytesIO()
+        err_prs.save(output)
+        output.seek(0)
+        return output.getvalue()
 
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
