@@ -11,7 +11,9 @@ from pptx.enum.text import PP_ALIGN
 import os
 
 # Brand Colors (Institutional)
-DARK_BLUE = RGBColor(30, 41, 59)  # Slate 900
+# Brand Colors (Institutional)
+DARK_BLUE = RGBColor(30, 41, 59)  # Slate 900 #1E293B
+DEEP_NAVY = RGBColor(13, 40, 65)  # #0D2841 (Cover BG)
 LIGHT_BLUE = RGBColor(71, 85, 105) # Slate 600
 WHITE = RGBColor(255, 255, 255)
 
@@ -20,25 +22,21 @@ def format_value(val, fmt=None, currency='$'):
     try:
         val_float = float(val)
         if fmt == 'currency':
-             # Use specific currency formatting
              if currency == 'UF':
                  return f"UF {val_float:,.2f}".replace(",", ".")
              else:
                  return f"{currency} {val_float:,.0f}".replace(",", ".")
         elif fmt == 'percent':
-            # Multiply by 100 if it's a decimal (0.1 -> 10%)
-            # Assumption: Input is 0.15 for 15%
             return f"{val_float * 100:.1f}%"
         elif fmt == 'integer':
              return f"{val_float:,.0f}".replace(",", ".")
         elif isinstance(val, (int, float)):
-             # General number
             return f"{val_float:,.0f}" if val_float.is_integer() else f"{val_float:.2f}"
     except:
         pass
     return str(val)
 
-def set_font(shape, font_name="Avenir Light", font_size=None, bold=False, color=None):
+def set_font(shape, font_name="Avenir Medium", font_size=None, bold=False, color=None):
     if not shape.has_text_frame:
         return
     for paragraph in shape.text_frame.paragraphs:
@@ -49,12 +47,12 @@ def set_font(shape, font_name="Avenir Light", font_size=None, bold=False, color=
             if color: run.font.color.rgb = color
 
 def create_logo_slide(prs, logo_path):
-    """Creates a slide with a large centered logo on Dark Blue background."""
+    """Creates a slide with a large centered logo on Deep Navy background."""
     slide = prs.slides.add_slide(prs.slide_layouts[6]) 
     background = slide.background
     fill = background.fill
     fill.solid()
-    fill.fore_color.rgb = DARK_BLUE
+    fill.fore_color.rgb = DEEP_NAVY # #0D2841
     
     try:
         slide_width = prs.slide_width
@@ -67,18 +65,12 @@ def create_logo_slide(prs, logo_path):
     except Exception as e:
         print(f"Error adding logo to slide: {e}")
 
-def create_title_slide(prs, title, date_str):
-    """Fallback title slide if no images available"""
-    slide = prs.slides.add_slide(prs.slide_layouts[0])
-    slide.shapes.title.text = title
-    if slide.placeholders[1]:
-        slide.placeholders[1].text = date_str
-
 def create_intro_slide(prs, title, date_str, bg_path):
-    """Creates intro slide with split background, title on left."""
+    """Creates intro slide with split background."""
     slide = prs.slides.add_slide(prs.slide_layouts[6]) 
     
     try:
+        # Fit background
         slide.shapes.add_picture(bg_path, 0, 0, width=prs.slide_width, height=prs.slide_height)
     except Exception as e:
         print(f"Error adding background: {e}")
@@ -94,7 +86,7 @@ def create_intro_slide(prs, title, date_str, bg_path):
     
     p_title = tf.paragraphs[0]
     p_title.text = title.upper()
-    p_title.font.name = "Avenir Light"
+    p_title.font.name = "Avenir Black" # Template uses Black
     p_title.font.size = Pt(44)
     p_title.font.bold = True
     p_title.font.color.rgb = DARK_BLUE
@@ -102,7 +94,7 @@ def create_intro_slide(prs, title, date_str, bg_path):
     
     p_date = tf.add_paragraph()
     p_date.text = f"\nGenerado el: {date_str}"
-    p_date.font.name = "Avenir Light"
+    p_date.font.name = "Avenir Medium"
     p_date.font.size = Pt(18)
     p_date.font.color.rgb = LIGHT_BLUE
     p_date.alignment = PP_ALIGN.LEFT
@@ -110,7 +102,7 @@ def create_intro_slide(prs, title, date_str, bg_path):
 def create_summary_slide(prs, summary, currency_symbol):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = "Resumen Ejecutivo"
-    set_font(slide.shapes.title, font_size=Pt(32), bold=True, color=DARK_BLUE)
+    set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(32), bold=True, color=DARK_BLUE)
     
     rows = 10
     cols = 2
@@ -119,16 +111,16 @@ def create_summary_slide(prs, summary, currency_symbol):
     table.columns[0].width = Inches(3.5)
     table.columns[1].width = Inches(3.5)
     
-    # Header format
+    # Header
     table.cell(0, 0).text = "Métrica"
     table.cell(0, 1).text = "Valor"
     for c in range(2):
         cell = table.cell(0, c)
         cell.fill.solid()
-        cell.fill.fore_color.rgb = DARK_BLUE
+        cell.fill.fore_color.rgb = DARK_BLUE # #1E293B
         cell.text_frame.paragraphs[0].font.color.rgb = WHITE
         cell.text_frame.paragraphs[0].font.bold = True
-        cell.text_frame.paragraphs[0].font.name = "Avenir Light"
+        cell.text_frame.paragraphs[0].font.name = "Avenir Medium" # Template Header Font
     
     metrics = [
         ("Total Modelos", summary.get('total_models', 0), 'integer'),
@@ -146,10 +138,10 @@ def create_summary_slide(prs, summary, currency_symbol):
         row = i + 1
         c1 = table.cell(row, 0)
         c1.text = label
-        c1.text_frame.paragraphs[0].font.name = "Avenir Light"
+        c1.text_frame.paragraphs[0].font.name = "Avenir Medium"
         c2 = table.cell(row, 1)
         c2.text = format_value(val, fmt, currency_symbol)
-        c2.text_frame.paragraphs[0].font.name = "Avenir Light"
+        c2.text_frame.paragraphs[0].font.name = "Avenir Medium"
         c2.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
 
 def add_table_slide(prs, title, rows, currency_symbol='$'):
@@ -159,8 +151,9 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
     
     for i, chunk in enumerate(chunks):
         slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide.shapes.title.text = f"{title}" if i == 0 else f"{title} (Cont.)"
-        set_font(slide.shapes.title, font_size=Pt(24), bold=True, color=DARK_BLUE)
+        slide_title = f"{title}" if i == 0 else f"{title} (Cont.)"
+        slide.shapes.title.text = slide_title
+        set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
         
         headers = list(rows[0].keys())
         shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
@@ -170,11 +163,11 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             cell = table.cell(0, c)
             cell.text = str(header)
             cell.fill.solid()
-            cell.fill.fore_color.rgb = DARK_BLUE
+            cell.fill.fore_color.rgb = DARK_BLUE # #1E293B
             tf = cell.text_frame.paragraphs[0]
             tf.font.color.rgb = WHITE
             tf.font.bold = True
-            tf.font.name = "Avenir Light"
+            tf.font.name = "Avenir Medium" # Template Header Font https://github.com/scanny/python-pptx/issues/455
             tf.font.size = Pt(10)
             tf.alignment = PP_ALIGN.CENTER
 
@@ -185,42 +178,36 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
                 
                 h_str = str(header).lower()
                 t_str = str(title).lower()
-                
                 fmt = None
                 
-                # 1. Percentage Detection
                 if any(x in h_str for x in ['%', 'percent', 'variación', 'variation', 'coef', 'descuento', 'volatilidad']):
                     fmt = 'percent'
-                
-                # 2. Integer/Count Detection
                 elif any(x in h_str for x in ['cantidad', 'cant.', 'volumen', 'versiones', 'total', 'numero', 'count']):
                     fmt = 'integer'
-                    
-                # 3. Currency Detection
                 elif any(x in h_str for x in ['precio', 'price', 'monto', 'valor', 'bono', 'lista', 'costo', 'avg', 'min', 'max', 'promedio']):
                     fmt = 'currency'
-                
-                # 4. Contextual Fallback
+                elif any(x in t_str for x in ['volatilidad', 'volatility', 'tendencia', 'trend', 'variación', 'variation', 'share', 'participación', 'discount', 'descuento']):
+                     if isinstance(val, (int, float)) and not any(x in h_str for x in ['fecha', 'date', 'year', 'año', 'mes']): 
+                        fmt = 'percent'
                 elif "precio" in t_str or "price" in t_str:
                      if isinstance(val, (int, float)): fmt = 'currency'
-                     
-                # Special Case: 'Año' or 'Year' should be simple number/string
-                if 'año' in h_str or 'year' in h_str:
-                    fmt = None
+                
+                if 'año' in h_str or 'year' in h_str: fmt = None
 
                 cell.text = format_value(val, fmt, currency_symbol)
                 tf = cell.text_frame.paragraphs[0]
-                tf.font.name = "Avenir Light"
+                tf.font.name = "Avenir Medium" # Template Body Font
                 tf.font.size = Pt(9)
+                
                 if fmt in ['currency', 'percent', 'integer']:
-                    tf.alignment = PP_ALIGN.RIGHT
+                     tf.alignment = PP_ALIGN.RIGHT
                 else:
-                    tf.alignment = PP_ALIGN.LEFT
+                     tf.alignment = PP_ALIGN.LEFT
 
 def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
-    set_font(slide.shapes.title, font_size=Pt(28), bold=True, color=DARK_BLUE)
+    set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
     
     chart_type = chart_info.get('chart_type', 'bar')
     rows = chart_info.get('data', [])
@@ -264,18 +251,48 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     graphic_frame = slide.shapes.add_chart(ppt_chart_type, x, y, cx, cy, chart_data)
     chart = graphic_frame.chart
     
+    # Chart Styling & Data Labels
     try:
-        if chart.has_legend:
-            chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-            chart.legend.include_in_layout = False
-            chart.legend.font.name = "Avenir Light"
-            chart.legend.font.size = Pt(9)
+        chart.has_legend = True
+        chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+        chart.legend.include_in_layout = False
+        chart.legend.font.name = "Avenir Medium"
+        chart.legend.font.size = Pt(9)
+        
+        # Apply Brand Colors to Series
+        # Palette: Dark Blue, Light Blue, maybe a Grey or distinct Accent
+        from pptx.dml.color import RGBColor
+        brand_palette = [
+            RGBColor(30, 41, 59),   # Dark Blue
+            RGBColor(71, 85, 105),  # Light Blue/Slate
+            RGBColor(59, 130, 246), # Accent Blue (Bright)
+            RGBColor(148, 163, 184) # Lighter Slate
+        ]
+        
+        if chart_type != 'pie': # Pie charts have different accessors
+             for i, series in enumerate(chart.series):
+                color = brand_palette[i % len(brand_palette)]
+                
+                # For Scatter (Markers)
+                if chart_type == 'scatter':
+                     series.marker.format.fill.solid()
+                     series.marker.format.fill.fore_color.rgb = color
+                     series.marker.format.line.fill.solid()
+                     series.marker.format.line.fill.fore_color.rgb = color
+                # For Line (Lines)
+                elif chart_type == 'line':
+                     series.format.line.solid()
+                     series.format.line.color.rgb = color
+                # For Bar/Column (Fill)
+                else:
+                     series.format.fill.solid()
+                     series.format.fill.fore_color.rgb = color
 
         if chart_type != 'line':
             plot = chart.plots[0]
             plot.has_data_labels = True
             data_labels = plot.data_labels
-            data_labels.font.name = "Avenir Light"
+            data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
             data_labels.font.color.rgb = DARK_BLUE
     except Exception as e:
