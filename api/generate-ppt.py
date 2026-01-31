@@ -55,20 +55,14 @@ def create_logo_slide(prs, logo_path):
     fill.fore_color.rgb = DEEP_NAVY # #0D2841
     
     try:
-        # Force use of white logo if available for dark background
-        # Robust Path Resolution inside function
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        public_dir = os.path.join(script_dir, '..', 'public')
-        
-        preferred_logo = os.path.join(public_dir, 'logo-white-full.png')
-        if os.path.exists(preferred_logo):
-            logo_path = preferred_logo
-
         slide_width = prs.slide_width
         slide_height = prs.slide_height
-        logo_width = Inches(4.5) # Slightly smaller for elegance
+        logo_width = Inches(4.5) 
         left = (slide_width - logo_width) / 2
+        
+        # Use provided path
         pic = slide.shapes.add_picture(logo_path, left, 0, width=logo_width)
+        
         top = (slide_height - pic.height) / 2
         pic.top = int(top)
     except Exception as e:
