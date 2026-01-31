@@ -378,9 +378,27 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.number_format = '0%'
             data_labels.font.color.rgb = WHITE # Contrast for colored bars
             
-            # Ensure negative bars are colored (not white)
+            # Ensure negative bars are colored
             for series in chart.series:
                 series.invert_if_negative = False
+            
+            # Dynamic Label Positioning (Smart Labels)
+            # If bar is too small (< 2%), move label OUTSIDE with Dark Text.
+            # Otherwise keep INSIDE with White Text.
+            try:
+                series = chart.series[0]
+                values = series.values
+                for i, point in enumerate(series.points):
+                    val = values[i]
+                    # Threshold: 2% (0.02) seems reasonable for visibility
+                    if abs(val) < 0.02: 
+                        point.data_label.position = XL_LABEL_POSITION.OUTSIDE_END
+                        point.data_label.font.color.rgb = RGBColor(30, 41, 59) # Dark Blue
+                    else:
+                        point.data_label.position = XL_LABEL_POSITION.INSIDE_END
+                        point.data_label.font.color.rgb = WHITE
+            except Exception as e:
+                print(f"Error applying smart labels: {e}")
                 
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:
