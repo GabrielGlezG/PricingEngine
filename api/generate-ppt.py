@@ -317,8 +317,12 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
             # Y-Axis Currency
             if chart.value_axis:
-                chart.value_axis.tick_labels.number_format = '$ #,##0'
-                chart.value_axis.major_unit = 5000000 # 5 million increments as requested
+                chart.value_axis.tick_labels.number_format = f'{currency_symbol} #,##0'
+                # Only apply 5M steps if currency is CLP ($)
+                if currency_symbol == '$':
+                    chart.value_axis.major_unit = 5000000 
+                else:
+                     chart.value_axis.major_unit = None # Auto scale for UF/USD
             
             # Data Labels
             plot.has_data_labels = True
