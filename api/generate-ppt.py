@@ -319,70 +319,40 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '$ #,##0'
             
-            # Determine Scale for Heuristic (Max Value)
-            max_val = 0
-            for series in chart.series:
-                for val in series.values:
-                     try:
-                         if val > max_val: max_val = val
-                     except: pass
-            
-            threshold = max_val * 0.20 # If bar is < 20% of Chart Height, put label outside
-            
-            # Apply per-point formatting
+            # Data Labels
             plot.has_data_labels = True
+            data_labels = plot.data_labels
+            data_labels.font.name = "Avenir Medium"
+            data_labels.font.size = Pt(8)
+            data_labels.position = XL_LABEL_POSITION.INSIDE_END
+            data_labels.font.color.rgb = WHITE
             
-            from pptx.enum.chart import XL_LABEL_POSITION
-            from pptx.oxml.ns import qn
-            
-            for series in chart.series:
-                # We need to access points. 
-                # Note: creating data_labels on plot initializes them. 
-                # We can override individual points if python-pptx supports it well.
-                # Actually, standard python-pptx 0.6.21+ supports series.data_labels
-                # But to vary position per point, we must iterate points.
-                 
-                labels = series.data_labels
-                labels.font.name = "Avenir Medium"
-                labels.font.size = Pt(8)
-                # Default to INSIDE_END for most
-                labels.position = XL_LABEL_POSITION.INSIDE_END
-                labels.font.color.rgb = WHITE
+            # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
+            try:
+                # We need to iterate over all points to set the rotation?
+                # Actually, setting it on the DataLabels object might propagate or we need to access the element.
+                # data_labels.element is the c:dLbls element.
+                # We need to ensure that dLbls has a txPr (Text Properties) -> bodyPr -> rot="-5400000"
                 
-                # Iterate points to override small ones
-                for i, point in enumerate(series.points):
-                    try:
-                        val = series.values[i]
-                        
-                        # Get or create the DataLabel object for this point
-                        # This ensures we can format it individually
-                        dl = point.data_label
-                        
-                        if val < threshold:
-                            # Small Bar -> Outside
-                            dl.position = XL_LABEL_POSITION.OUTSIDE_END
-                            dl.font.color.rgb = DARK_BLUE # Visible on white
-                            # Reset rotation for outside labels (optional, usually 0 is good)
-                            # Or keep vertical? Vertical Outside is fine too.
-                            # User image showed all vertical inside. 
-                            # If outside, vertical might look weird if it floats. 
-                            # Let's keep vertical rotation for consistency, just outside.
-                            
-                        else:
-                            # Big Bar -> Inside
-                            dl.position = XL_LABEL_POSITION.INSIDE_END
-                            dl.font.color.rgb = WHITE
-                        
-                        # Apply XML Rotation (-270 deg) to ALL labels for consistency
-                        txPr = dl._element.get_or_add_txPr()
-                        bodyPr = txPr.find(qn('a:bodyPr'))
-                        if bodyPr is None: bodyPr = txPr.get_or_add_bodyPr()
-                        bodyPr.set('rot', '-5400000')
-                        bodyPr.set('vert', 'horz')
-                        
-                    except Exception as e:
-                        # print(f"Point formatting error: {e}")
-                        pass
+                from pptx.oxml.ns import qn
+                
+                # Check if txPr exists, create if not
+                txPr = data_labels._element.get_or_add_txPr()
+                # Check if bodyPr exists
+                bodyPr = txPr.find(qn('a:bodyPr'))
+                if bodyPr is None:
+                     bodyPr = txPr.get_or_add_bodyPr()
+                
+                # Set rotation to -270 degrees (-5400000 EMUs). 
+                # Positive 270 degrees is 16200000, but PowerPoint treats 270 as "Stacked" sometimes or -90.
+                # "Rotate all text 270" corresponds to 'vert270' in standard presets, but custom rot is better.
+                # Let's try rot="-5400000" (which is -90 deg, reading bottom to top)
+                bodyPr.set('rot', '-5400000')
+                bodyPr.set('vert', 'horz') # Ensure it's not trying to be "vertical stacked"
+                
+            except Exception as e:
+                print(f"Error rotating labels: {e}")
+            # ---------------------------------------------
             
         # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
