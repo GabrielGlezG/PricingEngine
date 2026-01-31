@@ -65,7 +65,7 @@ data = {
                 {"Date": "2023-03", "Volvo": 0.13, "BMW": 0.09}
             ]
         }
-        },
+
         # Image New: Benchmarking
         {
             "name": "Benchmarks",

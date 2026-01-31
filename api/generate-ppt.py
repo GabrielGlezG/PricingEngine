@@ -377,6 +377,10 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.number_format = '0%'
             data_labels.font.color.rgb = WHITE # Contrast for colored bars
+            
+            # Ensure negative bars are colored (not white)
+            for series in chart.series:
+                series.invert_if_negative = False
                 
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:
@@ -417,6 +421,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  x_axis = chart.category_axis
                  x_axis.tick_labels.number_format = '0'
                  x_axis.minimum_scale = 0
+                 x_axis.major_unit = 1
              except:
                  pass
                  
