@@ -247,7 +247,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 
                 x_val = float(r.get(x_key, 0))
                 y_val = float(r.get(y_key, 0))
-                size_val = x_val # Size = Volume
+                # Sanitize Size: Must be positive. If Volume is 0 or negative, use a minimal size.
+                size_raw = float(r.get(x_key, 0))
+                size_val = abs(size_raw) if abs(size_raw) > 0.0 else 1.0
                 
                 series = chart_data.add_series(label)
                 series.add_data_point(x_val, y_val, size_val)
@@ -290,19 +292,15 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             RGBColor(148, 163, 184) # Lighter Slate
         ]
         
-        if chart_type != 'pie': # Pie charts have different accessors
+        # Apply colors ONLY to Bar/Column/Line charts.
+        # Skip Scatter/Bubble to avoid XML corruption with many series or complex markers.
+        if chart_type not in ['scatter', 'pie']: 
              for i, series in enumerate(chart.series):
                 color = brand_palette[i % len(brand_palette)]
                 
                 try:
-                    # For Scatter (Markers)
-                    if chart_type == 'scatter':
-                         series.marker.format.fill.solid()
-                         series.marker.format.fill.fore_color.rgb = color
-                         series.marker.format.line.fill.solid()
-                         series.marker.format.line.fill.fore_color.rgb = color
                     # For Line (Lines)
-                    elif chart_type == 'line':
+                    if chart_type == 'line':
                          series.format.line.solid()
                          series.format.line.color.rgb = color
                     # For Bar/Column (Fill)
