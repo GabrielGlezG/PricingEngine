@@ -237,21 +237,20 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         else:
             categories.append(base_val)
 
-    # 2. Filter Series (Y-Axis): Only include potential NUMERIC columns
-    # We scan the first row to determine which columns are actually numbers.
+    # 2. Filter Series (Y-Axis): Include EVERYTHING except known metadata columns
+    # relying on the first row's value is risky (e.g. Row 1 has "-" or "N/A" -> drops valid column).
     series_names = []
+    metadata_keys = ['marca', 'brand', 'modelo', 'model', 'versión', 'version', 'id', 'image', 'logo', 'foto', 'img']
+    
     for h in headers[1:]:
-        val = rows[0].get(h)
-        # Check if it looks like a number (and not a "year" label used as category)
-        try:
-             # If it's a string that doesn't parse to float, it's metadata (e.g. "SUV", "Gasolina")
-             if isinstance(val, str):
-                 float(val.replace(currency_symbol, '').replace(',', '').strip())
-             # If it's None or Number, we assume it's a series
-             series_names.append(h)
-        except:
-             # Not a number -> Skip (Metadata column)
-             continue
+        # If the header itself implies metadata, skip it
+        if str(h).lower() in metadata_keys:
+            continue
+            
+        # Optional: Double check if it looks effectively empty or purely text across ALL rows? 
+        # For now, "Show Everything that isn't ID/Name" is safer to match Frontend.
+        series_names.append(h)
+
     
     # 3. Data Extraction with NULL handling
     # For Line charts, 0.0 should often be None (Gap) to avoid dropping to zero.
