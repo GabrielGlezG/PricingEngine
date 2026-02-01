@@ -11,15 +11,30 @@ from pptx.enum.text import PP_ALIGN
 import os
 import base64
 import io
+import sys
 
+# Ensure current directory is in path for sibling imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+import importlib.util
+
+# Robust asset loading bypassing path issues
 try:
-    from api.ppt_assets import LOGO_B64, BG_B64
-except ImportError:
-    try:
-        from ppt_assets import LOGO_B64, BG_B64
-    except:
+    assets_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ppt_assets.py')
+    if os.path.exists(assets_path):
+        spec = importlib.util.spec_from_file_location("ppt_assets", assets_path)
+        ppt_assets = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ppt_assets)
+        LOGO_B64 = getattr(ppt_assets, 'LOGO_B64', None)
+        BG_B64 = getattr(ppt_assets, 'BG_B64', None)
+    else:
         LOGO_B64 = None
         BG_B64 = None
+except Exception:
+    LOGO_B64 = None
+    BG_B64 = None
 
 # Brand Colors (Institutional)
 DARK_BLUE = RGBColor(30, 41, 59)  # Slate 900 #1E293B
