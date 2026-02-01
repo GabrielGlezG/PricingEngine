@@ -331,7 +331,31 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             # Y-Axis Integer
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0'
-                chart.value_axis.major_unit = 1.0
+                
+                # Calculate max value to decide on major unit
+                try:
+                    max_val = 0
+                    if chart_type == 'stacked':
+                        # For stacked, max is the max sum of a row (excluding headers)
+                        relevant_headers = [h for h in rows[0].keys() if h != headers[0]]
+                        for r in rows:
+                            row_sum = sum(float(r.get(h, 0)) for h in relevant_headers)
+                            if row_sum > max_val: max_val = row_sum
+                    else:
+                        # For clustered, max is the single highest value
+                        relevant_headers = [h for h in rows[0].keys() if h != headers[0]]
+                        for r in rows:
+                            for h in relevant_headers:
+                                val = float(r.get(h, 0))
+                                if val > max_val: max_val = val
+                    
+                    # Only force unit 1.0 if max value is small (e.g. <= 10) to avoid crowding
+                    if max_val <= 10:
+                        chart.value_axis.major_unit = 1.0
+                    else:
+                        chart.value_axis.major_unit = None # Auto
+                except:
+                    chart.value_axis.major_unit = 1.0 # Fallback
                 
         # 2. "Precios" or "Estructura" -> Currency, Data Labels Vertical Inside
         elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
