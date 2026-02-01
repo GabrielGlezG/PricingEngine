@@ -420,8 +420,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 except:
                     chart.value_axis.major_unit = 1.0 # Fallback
                 
-        # 2. "Precios" or "Estructura" -> Currency, Data Labels Vertical Inside
-        elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
+        # 2. "Precios" or "Estructura" or "Segmento" -> Currency, Data Labels Vertical Inside (Rotated)
+        elif any(x in name_lower for x in ['precio', 'price', 'estructura', 'structure', 'segmento', 'segment']):
             # Y-Axis Currency
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
@@ -429,7 +429,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 if currency_symbol == '$':
                     chart.value_axis.major_unit = 5000000 
                 else:
-                     chart.value_axis.major_unit = None # Auto scale for UF/USD
+                     chart.value_axis.major_unit = None # Auto scale
             
             # Data Labels
             plot.has_data_labels = True
@@ -438,24 +438,39 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.font.size = Pt(8)
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.font.color.rgb = WHITE
-            data_labels.number_format = f'"{currency_symbol}" #,##0' # Force Integer with Currency
+            data_labels.number_format = f'"{currency_symbol}" #,##0' 
             
-            # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
+            # --- XML HACK FOR VERTICAL TEXT (-270 deg / -90 deg visual) ---
             try:
-                # Check if txPr exists, create if not
                 txPr = data_labels._element.get_or_add_txPr()
-                # Check if bodyPr exists
+                # bodyPr usually exists on txPr creation, but let's be safe
+                from pptx.oxml.ns import qn
                 bodyPr = txPr.find(qn('a:bodyPr'))
                 if bodyPr is None:
-                     bodyPr = txPr.get_or_add_bodyPr()
+                     bodyPr = txPr.add_bodyPr()
                 
-                # Set rotation to -270 degrees (-5400000 EMUs). 
+                # Set rotation to -5400000 EMUs (approx -90 degrees)
                 bodyPr.set('rot', '-5400000')
-                bodyPr.set('vert', 'horz') # Ensure it's not trying to be "vertical stacked"
-                
+                bodyPr.set('vert', 'horz') 
             except Exception as e:
                 print(f"Error rotating labels: {e}")
-            # ---------------------------------------------
+        
+        # 2.1 "Benchmarking" -> Markers on Lines
+        elif 'benchmarking' in name_lower:
+             # Y-Axis Currency
+             if chart.value_axis:
+                 chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
+             
+             # Smooth Lines with Markers
+             try:
+                 from pptx.enum.chart import XL_MARKER_STYLE
+                 for series in chart.series:
+                     series.smooth = True
+                     series.format.line.width = Pt(2.5)
+                     series.marker.style = XL_MARKER_STYLE.CIRCLE
+                     series.marker.size = 7
+             except Exception as e:
+                 print(f"Error setting markers for benchmarking: {e}")
             
         # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
