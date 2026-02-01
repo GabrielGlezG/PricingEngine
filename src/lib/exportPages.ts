@@ -154,8 +154,8 @@ export function exportCompareData(
         comparisonData[0].priceData.forEach(point => {
             const row: Record<string, string | number> = { Fecha: point.date as string };
             comparisonData.forEach(item => {
-                const label = `${item.product.brand} ${item.product.model}`;
-                const priceKey = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const priceKey = label;
                 row[label] = convertPrice(Number(point[priceKey]) || 0);
             });
             evolutionData.push(row);
@@ -235,8 +235,8 @@ export function exportCompareDataPPT(
         comparisonData[0].priceData.forEach(point => {
             const row: Record<string, string | number> = { Fecha: point.date as string };
             comparisonData.forEach(item => {
-                const label = `${item.product.brand} ${item.product.model}`;
-                const priceKey = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const priceKey = label;
                 row[label] = convertPrice(Number(point[priceKey]) || 0);
             });
             evolutionData.push(row);
