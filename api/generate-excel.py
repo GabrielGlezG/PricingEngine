@@ -104,6 +104,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     """Create a bubble chart for Matriz Posicionamiento where size = volume"""
     from openpyxl.chart import BubbleChart, Series, Reference
     from openpyxl.chart.label import DataLabelList
+    from openpyxl.chart.series import SeriesLabel
     
     chart = BubbleChart()
     chart.title = title
@@ -126,8 +127,8 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     # structure: Col 1=Name, Col 2=Volumen(X), Col 3=Precio(Y)
     for i in range(start_row + 1, data_range + 1):
         # Series Title from Column 1 (Brand - Model)
-        # Fix: Use static value instead of Reference to avoid XYSeries.tx TypeError
         title_val = ws.cell(row=i, column=1).value
+        title_str = str(title_val) if title_val else "Series"
         
         # Values
         x_val = Reference(ws, min_col=2, min_row=i) # Volumen
@@ -135,7 +136,10 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
         z_val = Reference(ws, min_col=2, min_row=i) # Size = Volumen
         
         series = Series(values=y_val, xvalues=x_val, zvalues=z_val)
-        series.title = str(title_val) if title_val else "Series"
+        
+        # Fix: XYSeries.title requires SeriesLabel object, not string
+        series.title = SeriesLabel(v=title_str)
+        
         chart.series.append(series)
     
     chart.width = 15
