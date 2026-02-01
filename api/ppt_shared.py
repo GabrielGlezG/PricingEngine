@@ -219,7 +219,7 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
                         fmt = 'integer'
                     elif any(x in h_str for x in ['precio', 'price', 'monto', 'valor', 'bono', 'lista', 'costo', 'avg', 'min', 'max', 'promedio']):
                         fmt = 'currency'
-                    elif any(x in t_str for x in ['volatilidad', 'volatility', 'tendencia', 'trend', 'variación', 'variation', 'share', 'participación', 'discount', 'descuento']):
+                    elif any(x in t_str for x in ['volatilidad', 'volatility', 'variación', 'variation', 'share', 'participación', 'discount', 'descuento']):
                          if isinstance(val, (int, float)) and not any(x in h_str for x in ['fecha', 'date', 'year', 'año', 'mes']): 
                             fmt = 'percent'
                     elif "precio" in t_str or "price" in t_str:
