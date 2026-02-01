@@ -331,6 +331,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             # Y-Axis Integer
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0'
+                chart.value_axis.major_unit = 1.0
                 
         # 2. "Precios" or "Estructura" -> Currency, Data Labels Vertical Inside
         elif 'precio' in name_lower or 'price' in name_lower or 'estructura' in name_lower:
