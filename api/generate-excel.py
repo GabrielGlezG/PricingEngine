@@ -103,24 +103,39 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
 def create_scatter_chart(ws, title, data_range, start_row, num_series):
     """Create a bubble chart for Matriz Posicionamiento where size = volume"""
     from openpyxl.chart import BubbleChart, Series, Reference
+    from openpyxl.chart.label import DataLabelList
     
     chart = BubbleChart()
     chart.title = title
     chart.style = 10
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
-    chart.bubbleScale = 30  # Scale bubbles to 30% (smaller)
+    chart.bubbleScale = 30  
     
-    # For Matriz Posicionamiento: Columns are [Marca-Modelo, Volumen, Precio Promedio]
-    # We need: X = Volumen (col 2), Y = Precio (col 3), Size = Volumen (col 2)
-    # BubbleChart uses: xvalues, yvalues, zvalues (size)
+    # Enable Data Labels to show Series Name (Brand - Model)
+    chart.dataLabels = DataLabelList()
+    chart.dataLabels.showSerName = True
+    chart.dataLabels.showVal = False
+    chart.dataLabels.position = 't' # Top
     
-    x_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as X
-    y_values = Reference(ws, min_col=3, min_row=start_row + 1, max_row=data_range)  # Precio as Y  
-    z_values = Reference(ws, min_col=2, min_row=start_row + 1, max_row=data_range)  # Volumen as size
-    
-    series = Series(values=y_values, xvalues=x_values, zvalues=z_values, title="Modelos")
-    chart.series.append(series)
+    # Hide Legend (too many items)
+    chart.legend = None
+
+    # Iterate through each row of data to create a distinct Series
+    # This allows us to label each bubble with its specific "Brand - Model" name
+    # structure: Col 1=Name, Col 2=Volumen(X), Col 3=Precio(Y)
+    for i in range(start_row + 1, data_range + 1):
+        # Series Title from Column 1 (Brand - Model)
+        title_ref = Reference(ws, min_col=1, min_row=i)
+        
+        # Values
+        x_val = Reference(ws, min_col=2, min_row=i) # Volumen
+        y_val = Reference(ws, min_col=3, min_row=i) # Precio
+        z_val = Reference(ws, min_col=2, min_row=i) # Size = Volumen
+        
+        series = Series(values=y_val, xvalues=x_val, zvalues=z_val)
+        series.title = title_ref
+        chart.series.append(series)
     
     chart.width = 15
     chart.height = 10
