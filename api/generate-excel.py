@@ -111,16 +111,13 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     chart.style = 10
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
-    chart.bubbleScale = 30  
+    chart.bubbleScale = 30 # Back to standard size
     
-    # Enable Data Labels to show Series Name (Brand - Model)
-    chart.dataLabels = DataLabelList()
-    chart.dataLabels.showSerName = True
-    chart.dataLabels.showVal = False
-    chart.dataLabels.position = 't' # Top
+    # Disable Data Labels on the chart itself (per user request)
+    chart.dataLabels = None
     
-    # Hide Legend (too many items)
-    chart.legend = None
+    # Enable Legend at the Bottom ("abajo del eje x con el color")
+    chart.legend.position = 'b'
 
     # Iterate through each row of data to create a distinct Series
     # This allows us to label each bubble with its specific "Brand - Model" name
@@ -143,7 +140,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
         chart.series.append(series)
     
     chart.width = 15
-    chart.height = 10
+    chart.height = 20 # Taller to accommodate legend at bottom
     
     return chart
 
