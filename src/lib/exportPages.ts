@@ -254,12 +254,6 @@ export function exportCompareDataPPT(
             Modelo: filters.model || []
         },
         sheets: [
-            {
-                name: 'Resumen Comparación',
-                chart_type: 'bar',
-                chart_title: 'Comparación de Precios',
-                data: summaryData
-            },
             evolutionData.length > 0 ? {
                 name: 'Evolución de Precios',
                 chart_type: 'line',
