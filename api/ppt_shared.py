@@ -153,7 +153,15 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
         slide.shapes.title.text = slide_title
         set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
         
-        headers = list(rows[0].keys())
+        # Collect ALL unique keys from all rows to ensure no column is missed
+        # Preserve order based on first appearance
+        headers = []
+        seen = set()
+        for r in rows:
+            for k in r.keys():
+                if k not in seen:
+                    seen.add(k)
+                    headers.append(k)
         shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
         table = shape.table
         
@@ -207,12 +215,18 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
     
-    chart_type = chart_info.get('chart_type', 'bar')
-    rows = chart_info.get('data', [])
     if not rows: return
     
     # Heuristics based on chart name/title (Used for formatting decisions)
     name_lower = str(chart_info.get('name') or chart_info.get('chart_title') or '').lower()
+    
+    # FORCE Chart Type based on Title Keywords (Frontend can be inconsistent)
+    if 'evolución' in name_lower or 'evolution' in name_lower:
+        chart_type = 'line' # Force Line
+    elif 'comparar' in name_lower or 'compare' in name_lower:
+        chart_type = 'bar' # Force Bar
+    else:
+        chart_type = chart_info.get('chart_type', 'bar')
 
     headers = list(rows[0].keys())
     
