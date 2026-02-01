@@ -150,7 +150,7 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
     
     # Configuration
     MAX_ROWS = 12
-    MAX_DATA_COLS = 10 # Date + 10 Data Columns = 11 Cols max (Readable)
+    MAX_DATA_COLS = 7 # Reduced from 10 to ensure wide columns for currency (No wrapping)
     
     # 1. Prepare Columns (Headers)
     all_headers = list(rows[0].keys())
