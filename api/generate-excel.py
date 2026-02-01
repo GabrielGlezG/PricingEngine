@@ -88,6 +88,8 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     chart.title = title
     chart.style = 10
     chart.y_axis.title = "Valor"
+    # Ensure dates are at the very bottom, not crossing the negative values
+    chart.x_axis.tickLblPos = "low"
     
     data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
     cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
