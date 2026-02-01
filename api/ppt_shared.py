@@ -153,15 +153,7 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
         slide.shapes.title.text = slide_title
         set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
         
-        # Collect ALL unique keys from all rows to ensure no column is missed
-        # Preserve order based on first appearance
-        headers = []
-        seen = set()
-        for r in rows:
-            for k in r.keys():
-                if k not in seen:
-                    seen.add(k)
-                    headers.append(k)
+        headers = list(rows[0].keys())
         shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
         table = shape.table
         
@@ -215,61 +207,19 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
     
+    chart_type = chart_info.get('chart_type', 'bar')
+    rows = chart_info.get('data', [])
     if not rows: return
-    
-    # Heuristics based on chart name/title (Used for formatting decisions)
-    name_lower = str(chart_info.get('name') or chart_info.get('chart_title') or '').lower()
-    
-    # FORCE Chart Type based on Title Keywords (Frontend can be inconsistent)
-    if 'evolución' in name_lower or 'evolution' in name_lower:
-        chart_type = 'line' # Force Line
-    elif 'comparar' in name_lower or 'compare' in name_lower:
-        chart_type = 'bar' # Force Bar
-    else:
-        chart_type = chart_info.get('chart_type', 'bar')
 
     headers = list(rows[0].keys())
+    categories = [str(r[headers[0]]) for r in rows]
+    series_names = headers[1:] # Assuming rest are series
     
-    # --- SMART SERIES & CATEGORY LOGIC ---
-    # 1. Enhance Category (X-Axis): If "Brand" is first, try to append "Model"/"Version" for uniqueness
-    categories = []
-    base_cat_key = headers[0]
     
-    # Detect if we have Model/Version columns to append
-    extra_cat_keys = []
-    for k in ['modelo', 'model', 'versión', 'version']:
-        found = next((h for h in headers if k in str(h).lower()), None)
-        if found and found != base_cat_key:
-            extra_cat_keys.append(found)
-            
-    for r in rows:
-        base_val = str(r[base_cat_key])
-        if extra_cat_keys:
-            # Append extras: "BMW - X1 - xDrive"
-            extras = " - ".join([str(r.get(k, '')) for k in extra_cat_keys])
-            categories.append(f"{base_val} {extras}".strip())
-        else:
-            categories.append(base_val)
-
-    # 2. Filter Series (Y-Axis): Include EVERYTHING except known metadata columns
-    # relying on the first row's value is risky (e.g. Row 1 has "-" or "N/A" -> drops valid column).
-    series_names = []
-    metadata_keys = ['marca', 'brand', 'modelo', 'model', 'versión', 'version', 'id', 'image', 'logo', 'foto', 'img']
+    # Heuristics based on chart name/title to apply specific formatting
+    name_lower = str(chart_info.get('name') or chart_info.get('chart_title') or '').lower()
     
-    for h in headers[1:]:
-        # If the header itself implies metadata, skip it
-        if str(h).lower() in metadata_keys:
-            continue
-            
-        # Optional: Double check if it looks effectively empty or purely text across ALL rows? 
-        # For now, "Show Everything that isn't ID/Name" is safer to match Frontend.
-        series_names.append(h)
-
-    
-    # 3. Data Extraction with NULL handling
-    # For Line charts, 0.0 should often be None (Gap) to avoid dropping to zero.
-    treat_zero_as_gap = 'evolución' in name_lower or 'evolution' in name_lower
-
+    # 1. Chart Types & Data Preparation
     if chart_type == 'scatter':
          ppt_chart_type = XL_CHART_TYPE.BUBBLE
          chart_data = BubbleChartData() 
@@ -284,8 +234,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 size_raw = float(r.get(x_key, 0))
                 size_val = abs(size_raw) if abs(size_raw) > 0.0 else 1.0
                 series = chart_data.add_series(label)
-                if y_val > 0: # Only plot real prices
-                    series.add_data_point(x_val, y_val, size_val)
+                series.add_data_point(x_val, y_val, size_val)
             except:
                 continue
     else:
@@ -298,15 +247,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         for s_name in series_names:
             values = []
             for r in rows:
-                val = r.get(s_name)
-                try: 
-                    f_val = float(val) if val is not None else 0.0
-                    if treat_zero_as_gap and f_val == 0:
-                        values.append(None)
-                    else:
-                        values.append(f_val)
-                except: 
-                    values.append(0.0)
+                val = r.get(s_name, 0)
+                try: values.append(float(val) if val is not None else 0.0)
+                except: values.append(0.0)
             chart_data.add_series(s_name, values)
 
     x, y, cx, cy = Inches(0.5), Inches(1.3), Inches(9), Inches(6.0)
@@ -329,8 +272,6 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              if chart.value_axis:
                  chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  chart.value_axis.major_unit = None # Auto scale
-                 chart.value_axis.minimum_scale = 0 # Fix: Avoid negative axis
-
                  
              # Smooth Lines
              for series in chart.series:
