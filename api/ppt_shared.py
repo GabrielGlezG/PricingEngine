@@ -297,8 +297,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              except Exception as e:
                  print(f"Error setting display_blanks_as: {e}")
 
-             # Legend at Top to match platform and fit long names
-             chart.legend.position = XL_LEGEND_POSITION.TOP
+             # Legend at Bottom to prevent blocking high chart values
+             chart.legend.position = XL_LEGEND_POSITION.BOTTOM
              chart.legend.include_in_layout = True
              
              # Y-Axis Currency
