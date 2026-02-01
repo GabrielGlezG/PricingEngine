@@ -268,15 +268,26 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
+             # Legend at Top to match platform and fit long names
+             chart.legend.position = XL_LEGEND_POSITION.TOP
+             chart.legend.include_in_layout = True
+             
              # Y-Axis Currency
              if chart.value_axis:
                  chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  chart.value_axis.major_unit = None # Auto scale
                  
-             # Smooth Lines
-             for series in chart.series:
-                 series.smooth = True
-                 series.format.line.width = Pt(2.5)
+             # Smooth Lines with Markers
+             try:
+                 from pptx.enum.chart import XL_MARKER_STYLE
+                 for series in chart.series:
+                     series.smooth = True
+                     series.format.line.width = Pt(2.5)
+                     # Add Markers (Dots) to match platform
+                     series.marker.style = XL_MARKER_STYLE.CIRCLE
+                     series.marker.size = 7
+             except Exception as e:
+                 print(f"Error setting markers: {e}")
              
              # X-Axis Dates (Rotate if needed)
              try:
