@@ -297,10 +297,21 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              except Exception as e:
                  print(f"Error setting display_blanks_as: {e}")
 
-             # Legend at Bottom (User Request: Below dates)
-             chart.legend.position = XL_LEGEND_POSITION.BOTTOM
-             chart.legend.include_in_layout = True
-             chart.legend.font.size = Pt(9) # Keep small to fit
+             # Manual Layout to reserve space for Dates (Bottom) and Legend (Below Dates)
+             try:
+                 chart.legend.position = XL_LEGEND_POSITION.BOTTOM
+                 chart.legend.include_in_layout = False # Overlay mode (we create space manually)
+                 chart.legend.font.size = Pt(9)
+
+                 # Shrink Plot Area to 75% Height to make room at bottom
+                 plot = chart.plots[0]
+                 playout = plot.layout
+                 playout.manual_layout.height = 0.75
+                 playout.manual_layout.y = 0.0 # Top aligned
+                 # playout.manual_layout.width = 1.0
+                 # playout.manual_layout.x = 0.0
+             except Exception as e:
+                 print(f"Error setting manual layout: {e}")
              
              # Y-Axis Currency
              if chart.value_axis:
