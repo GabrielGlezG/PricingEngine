@@ -22,10 +22,11 @@ def create_test_ppt():
     # Simulate Evolution Data (Date strings as keys?)
     # Usually the dashboard sends: [{'Date': '2025-01', 'Toyota': 100}, {'Date': '2025-02', 'Toyota': 102}]
     evolution_data = [
-        {'Fecha': '2025-01-01', 'Toyota RAV4': 25000000, 'Mazda CX-5': 24500000},
+        {'Fecha': '2025-01-01', 'Toyota RAV4': 25000000, 'Mazda CX-5': 0},
         {'Fecha': '2025-02-01', 'Toyota RAV4': 25200000, 'Mazda CX-5': 24600000},
-        {'Fecha': '2025-03-01', 'Toyota RAV4': 25500000, 'Mazda CX-5': 24800000},
+        {'Fecha': '2025-03-01', 'Toyota RAV4': 0, 'Mazda CX-5': 24800000}, # Gap for Toyota
         {'Fecha': '2025-04-01', 'Toyota RAV4': 26000000, 'Mazda CX-5': 25000000},
+        {'Fecha': '2025-05-01', 'Toyota RAV4': 26200000, 'Mazda CX-5': 0}, # Gap for Mazda
     ]
     
     chart_info = {

@@ -7,7 +7,11 @@ from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 from pptx.chart.data import CategoryChartData, XyChartData, BubbleChartData
-from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION, XL_TICK_MARK, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION
+from pptx.enum.chart import (
+    XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION, 
+    XL_TICK_MARK, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION,
+    XL_DISPLAY_BLANKS_AS
+)
 from pptx.oxml.ns import qn
 
 # --- BRAND COLORS (Institutional) ---
@@ -242,14 +246,25 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         if chart_type == 'line': ppt_chart_type = XL_CHART_TYPE.LINE
         elif chart_type == 'stacked': ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
         
+        is_evolution = 'evolución' in name_lower or 'evolution' in name_lower
+        
         chart_data = CategoryChartData()
         chart_data.categories = categories
         for s_name in series_names:
             values = []
             for r in rows:
                 val = r.get(s_name, 0)
-                try: values.append(float(val) if val is not None else 0.0)
-                except: values.append(0.0)
+                try:
+                    # Logic: If Evolution, treat 0 as None (Gap)
+                    # Otherwise default to 0.0
+                    fval = float(val) if val is not None else 0.0
+                    
+                    if is_evolution and fval == 0.0:
+                        values.append(None)
+                    else:
+                        values.append(fval)
+                except: 
+                    values.append(0.0)
             chart_data.add_series(s_name, values)
 
     x, y, cx, cy = Inches(0.5), Inches(1.3), Inches(9), Inches(6.0)
@@ -268,6 +283,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
+             # Connect data points with line (don't leave gaps)
+             chart.display_blanks_as = XL_DISPLAY_BLANKS_AS.SPAN
+             
              # Legend at Top to match platform and fit long names
              chart.legend.position = XL_LEGEND_POSITION.TOP
              chart.legend.include_in_layout = True
