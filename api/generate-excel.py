@@ -145,10 +145,11 @@ def generate_excel(data):
     # Summary Sheet (Dashboard style)
     if summary:
         ws = wb.create_sheet("Resumen Ejecutivo", 0)
+        ws.sheet_view.showGridLines = False # White background
         ws['A1'] = title
-        ws['A1'].font = Font(bold=True, size=16)
+        ws['A1'].font = Font(name="Avenir Black", bold=True, size=16)
         ws['A2'] = f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}"
-        ws['A2'].font = Font(italic=True, color="666666")
+        ws['A2'].font = Font(name="Avenir Medium", italic=True, color="666666")
         
         ws['A4'] = "Métrica"
         ws['B4'] = "Valor"
@@ -163,22 +164,26 @@ def generate_excel(data):
             ("Precio Máximo", summary.get('max_price', 0)),
             ("Desviación Estándar", summary.get('price_std_dev', 0)),
             ("Coef. Variación", summary.get('variation_coefficient', 0)),
-            ("Descuento Promedio", summary.get('avg_discount_pct', 0)), # New Metric
+            ("Descuento Promedio", summary.get('avg_discount_pct', 0)), 
         ]
         
         for i, (label, value) in enumerate(metrics):
             row = 5 + i
-            ws.cell(row=row, column=1, value=label)
-            ws.cell(row=row, column=2, value=value)
+            # Apply Avenir Font
+            c1 = ws.cell(row=row, column=1, value=label)
+            c1.font = Font(name="Avenir Medium", size=10)
+            c2 = ws.cell(row=row, column=2, value=value)
+            c2.font = Font(name="Avenir Medium", size=10)
+            
             if 2 <= i <= 6:
-                ws.cell(row=row, column=2).number_format = f'"{currency_symbol}" #,##0'
-            elif i >= 7: # Percentage (Variation & Discount)
-                ws.cell(row=row, column=2).number_format = '0.00%'
+                c2.number_format = f'"{currency_symbol}" #,##0'
+            elif i >= 7: 
+                c2.number_format = '0.00%'
         
         style_data_rows(ws, 5, 13, 2)
         
         ws['A14'] = "Filtros Aplicados"
-        ws['A14'].font = Font(bold=True)
+        ws['A14'].font = Font(name="Avenir Black", bold=True)
         
         filters = summary.get('filters', {})
         ws['A15'] = "Segmento:"
@@ -188,110 +193,50 @@ def generate_excel(data):
         ws['A17'] = "Modelo:"
         ws['B17'] = ', '.join(filters.get('model', [])) or "Todos"
         
+        # Apply font to filters
+        for r in range(15, 18):
+            ws[f'A{r}'].font = Font(name="Avenir Medium", bold=True)
+            ws[f'B{r}'].font = Font(name="Avenir Medium")
+
         ws.column_dimensions['A'].width = 25
         ws.column_dimensions['B'].width = 30
     
     # Info sheet for generic exports
     elif title and not summary:
         ws = wb.create_sheet("Información", 0)
+        ws.sheet_view.showGridLines = False # White background
         ws['A1'] = title
-        ws['A1'].font = Font(bold=True, size=16)
+        ws['A1'].font = Font(name="Avenir Black", bold=True, size=16)
         ws['A2'] = f"Generado: {local_time.strftime('%d/%m/%Y %H:%M')}"
-        ws['A2'].font = Font(italic=True, color="666666")
+        ws['A2'].font = Font(name="Avenir Medium", italic=True, color="666666")
         
         if filters_data:
             current_row = 4
-            ws.cell(row=current_row, column=1, value="Filtros Aplicados")
-            ws.cell(row=current_row, column=1).font = Font(bold=True)
+            ws.cell(row=current_row, column=1, value="Filtros Aplicados").font = Font(name="Avenir Black", bold=True)
             current_row += 1
             
             for filter_name, filter_values in filters_data.items():
                 if isinstance(filter_values, list) and len(filter_values) > 0:
-                    ws.cell(row=current_row, column=1, value=f"{filter_name}:")
-                    ws.cell(row=current_row, column=2, value=', '.join(filter_values))
+                    ws.cell(row=current_row, column=1, value=f"{filter_name}:").font = Font(name="Avenir Medium", bold=True)
+                    ws.cell(row=current_row, column=2, value=', '.join(filter_values)).font = Font(name="Avenir Medium")
                     current_row += 1
         
         ws.column_dimensions['A'].width = 20
         ws.column_dimensions['B'].width = 40
     
-    # Chart sheets
-    for sheet_data in sheets:
-        sheet_name = sheet_data.get('name', 'Sheet')[:31]
-        chart_type = sheet_data.get('chart_type', 'bar')
-        chart_title = sheet_data.get('chart_title', sheet_name)
-        rows = sheet_data.get('data', [])
-        
-        if not rows:
-            continue
-        
-        ws = wb.create_sheet(sheet_name)
-        headers = list(rows[0].keys())
-        num_cols = len(headers)
-        
-        for col, header in enumerate(headers, 1):
-            ws.cell(row=1, column=col, value=header)
-        style_header_row(ws, 1, num_cols)
-        
-        for row_idx, row_data in enumerate(rows, 2):
-            for col_idx, header in enumerate(headers, 1):
-                value = row_data.get(header, '')
-                cell = ws.cell(row=row_idx, column=col_idx, value=value)
-                if col_idx > 1 and isinstance(value, (int, float)):
-                    header_lower = header.lower()
-                    sheet_name_lower = sheet_name.lower()
-                    
-                    # 1. Percentage Rules
-                    if (
-                        'variacion' in header_lower or 
-                        '%' in header_lower or 
-                        'volatilidad' in sheet_name_lower or
-                        'tendencia' in sheet_name_lower
-                    ):
-                        cell.number_format = '0.00%'
-                    
-                    # 2. Integer/Count Rules (Including Composición sheet which has all counts)
-                    elif (
-                        'cantidad' in header_lower or 
-                        'volumen' in header_lower or 
-                        'versiones' in header_lower or
-                        'count' in header_lower or
-                        'numero' in header_lower or
-                        'composición' in sheet_name_lower or
-                        'composicion' in sheet_name_lower  # Without accent
-                    ):
-                        cell.number_format = '#,##0'
-                    
-                    # 3. Currency Rules (Default for other numbers, mainly prices)
-                    else:
-                        cell.number_format = f'"{currency_symbol}" #,##0'
-        
-        end_row = len(rows) + 1
-        style_data_rows(ws, 2, end_row, num_cols)
-        
-        for col in range(1, num_cols + 1):
-            ws.column_dimensions[get_column_letter(col)].width = 18
-        
-        num_series = num_cols - 1
-        if chart_type == 'line':
-            chart = create_line_chart(ws, chart_title, end_row, 1, num_series)
-        elif chart_type == 'stacked':
-            chart = create_stacked_chart(ws, chart_title, end_row, 1, num_series)
-        elif chart_type == 'scatter':
-            chart = create_scatter_chart(ws, chart_title, end_row, 1, num_series)
-        else:
-            chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
-        
-        chart_position = f"{get_column_letter(num_cols + 2)}2"
-        ws.add_chart(chart, chart_position)
-    
+    # Chart sheets created below...
+
     # Models sheet
     if models and len(models) > 0:
         ws = wb.create_sheet("Modelos")
+        ws.sheet_view.showGridLines = False # White background
         headers = ["Marca", "Modelo", "Versión", "Estado", "Tipo Vehículo", 
                   "Precio c/Bono", "Precio Lista", "Bono", "% Descuento"]
         
         for col, header in enumerate(headers, 1):
-            ws.cell(row=1, column=col, value=header)
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(name="Avenir Medium", bold=True, color="FFFFFF")
+        
         style_header_row(ws, 1, len(headers))
         
         for row_idx, model in enumerate(models, 2):
