@@ -286,10 +286,14 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              # chart.display_blanks_as = XL_DISPLAY_BLANKS_AS.SPAN (Not available in this version)
              try:
                  c_chart = chart._chartSpace.chart
-                 # Ensure dispBlanksAs element exists and set to 'span'
+                 # Ensure dispBlanksAs element exists
                  if c_chart.dispBlanksAs is None:
                     c_chart.add_dispBlanksAs()
-                 c_chart.dispBlanksAs.val = 'span'
+                 
+                 # Access the element directly to avoid proxy issues
+                 # In some versions, it might be an oxml element directly or a proxy.
+                 # Try setting the attribute on the element.
+                 c_chart.dispBlanksAs.set('val', 'span')
              except Exception as e:
                  print(f"Error setting display_blanks_as: {e}")
 
