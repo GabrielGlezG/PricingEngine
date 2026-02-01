@@ -126,7 +126,8 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     # structure: Col 1=Name, Col 2=Volumen(X), Col 3=Precio(Y)
     for i in range(start_row + 1, data_range + 1):
         # Series Title from Column 1 (Brand - Model)
-        title_ref = Reference(ws, min_col=1, min_row=i)
+        # Fix: Use static value instead of Reference to avoid XYSeries.tx TypeError
+        title_val = ws.cell(row=i, column=1).value
         
         # Values
         x_val = Reference(ws, min_col=2, min_row=i) # Volumen
@@ -134,7 +135,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
         z_val = Reference(ws, min_col=2, min_row=i) # Size = Volumen
         
         series = Series(values=y_val, xvalues=x_val, zvalues=z_val)
-        series.title = title_ref
+        series.title = str(title_val) if title_val else "Series"
         chart.series.append(series)
     
     chart.width = 15
