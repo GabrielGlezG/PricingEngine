@@ -147,63 +147,97 @@ def create_intro_slide(prs, title, date_str):
 
 def add_table_slide(prs, title, rows, currency_symbol='$'):
     if not rows: return
-    MAX_ROWS = 12
-    chunks = [rows[i:i + MAX_ROWS] for i in range(0, len(rows), MAX_ROWS)]
     
-    for i, chunk in enumerate(chunks):
-        slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide_title = f"{title}" if i == 0 else f"{title} (Cont.)"
-        slide.shapes.title.text = slide_title
-        set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+    # Configuration
+    MAX_ROWS = 12
+    MAX_DATA_COLS = 10 # Date + 10 Data Columns = 11 Cols max (Readable)
+    
+    # 1. Prepare Columns (Headers)
+    all_headers = list(rows[0].keys())
+    fixed_header = all_headers[0] # Assume 'Fecha' or 'Marca' is first
+    data_headers = all_headers[1:]
+    
+    # Chunk Columns (Horizontal Split) - Outer Loop (Group by Series/Topic)
+    col_chunks = [data_headers[i:i + MAX_DATA_COLS] for i in range(0, len(data_headers), MAX_DATA_COLS)]
+    
+    slide_count = 0
+    
+    for c_idx, col_chunk in enumerate(col_chunks):
+        # Current subset of headers for this "Sheet"
+        current_headers = [fixed_header] + col_chunk
         
-        headers = list(rows[0].keys())
-        shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
-        table = shape.table
+        # 2. Chunk Rows (Vertical Split) - Inner Loop (Pagination over time/items)
+        row_chunks = [rows[i:i + MAX_ROWS] for i in range(0, len(rows), MAX_ROWS)]
         
-        for c, header in enumerate(headers):
-            cell = table.cell(0, c)
-            cell.text = str(header)
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = DARK_BLUE # #1E293B
-            tf = cell.text_frame.paragraphs[0]
-            tf.font.color.rgb = WHITE
-            tf.font.bold = True
-            tf.font.name = "Avenir Medium" # Template Header Font
-            tf.font.size = Pt(10)
-            tf.alignment = PP_ALIGN.CENTER
-
-        for r, row_data in enumerate(chunk):
-            for c, header in enumerate(headers):
-                val = row_data.get(header)
-                cell = table.cell(r + 1, c)
-                
-                h_str = str(header).lower()
-                t_str = str(title).lower()
-                fmt = None
-                
-                if any(x in h_str for x in ['%', 'percent', 'variación', 'variation', 'coef', 'descuento', 'volatilidad']):
-                    fmt = 'percent'
-                elif any(x in h_str for x in ['cantidad', 'cant.', 'volumen', 'versiones', 'total', 'numero', 'count']):
-                    fmt = 'integer'
-                elif any(x in h_str for x in ['precio', 'price', 'monto', 'valor', 'bono', 'lista', 'costo', 'avg', 'min', 'max', 'promedio']):
-                    fmt = 'currency'
-                elif any(x in t_str for x in ['volatilidad', 'volatility', 'tendencia', 'trend', 'variación', 'variation', 'share', 'participación', 'discount', 'descuento']):
-                     if isinstance(val, (int, float)) and not any(x in h_str for x in ['fecha', 'date', 'year', 'año', 'mes']): 
-                        fmt = 'percent'
-                elif "precio" in t_str or "price" in t_str:
-                     if isinstance(val, (int, float)): fmt = 'currency'
-                
-                if 'año' in h_str or 'year' in h_str: fmt = None
-
-                cell.text = format_value(val, fmt, currency_symbol)
+        for r_idx, row_chunk in enumerate(row_chunks):
+            slide = prs.slides.add_slide(prs.slide_layouts[5])
+            
+            # Smart Title: "Title (Part X)" or simple Continuation
+            # "Evolución de Precios" -> "Evolución de Precios (Cont.)"
+            suffix = ""
+            if slide_count > 0: suffix = " (Cont.)"
+            slide.shapes.title.text = f"{title}{suffix}"
+            
+            set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+            
+            # Create Table
+            rows_num = len(row_chunk) + 1
+            cols_num = len(current_headers)
+            
+            # Dynamic Width Calculation? Standard is 9 inches total.
+            # If fewer columns, use full width? Yes.
+            
+            shape = slide.shapes.add_table(rows_num, cols_num, Inches(0.5), Inches(1.5), Inches(9), Inches(0.4 * rows_num))
+            table = shape.table
+            
+            # Render Header Row
+            for c, header in enumerate(current_headers):
+                cell = table.cell(0, c)
+                cell.text = str(header)
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = DARK_BLUE 
                 tf = cell.text_frame.paragraphs[0]
-                tf.font.name = "Avenir Medium" # Template Body Font
-                tf.font.size = Pt(9)
-                
-                if fmt in ['currency', 'percent', 'integer']:
-                     tf.alignment = PP_ALIGN.RIGHT
-                else:
-                     tf.alignment = PP_ALIGN.LEFT
+                tf.font.color.rgb = WHITE
+                tf.font.bold = True
+                tf.font.name = "Avenir Medium"
+                tf.font.size = Pt(10)
+                tf.alignment = PP_ALIGN.CENTER
+
+            # Render Data Rows
+            for r, row_data in enumerate(row_chunk):
+                for c, header in enumerate(current_headers):
+                    val = row_data.get(header)
+                    cell = table.cell(r + 1, c)
+                    
+                    h_str = str(header).lower()
+                    t_str = str(title).lower()
+                    fmt = None
+                    
+                    if any(x in h_str for x in ['%', 'percent', 'variación', 'variation', 'coef', 'descuento', 'volatilidad']):
+                        fmt = 'percent'
+                    elif any(x in h_str for x in ['cantidad', 'cant.', 'volumen', 'versiones', 'total', 'numero', 'count']):
+                        fmt = 'integer'
+                    elif any(x in h_str for x in ['precio', 'price', 'monto', 'valor', 'bono', 'lista', 'costo', 'avg', 'min', 'max', 'promedio']):
+                        fmt = 'currency'
+                    elif any(x in t_str for x in ['volatilidad', 'volatility', 'tendencia', 'trend', 'variación', 'variation', 'share', 'participación', 'discount', 'descuento']):
+                         if isinstance(val, (int, float)) and not any(x in h_str for x in ['fecha', 'date', 'year', 'año', 'mes']): 
+                            fmt = 'percent'
+                    elif "precio" in t_str or "price" in t_str:
+                         if isinstance(val, (int, float)): fmt = 'currency'
+                    
+                    if 'año' in h_str or 'year' in h_str: fmt = None
+
+                    cell.text = format_value(val, fmt, currency_symbol)
+                    tf = cell.text_frame.paragraphs[0]
+                    tf.font.name = "Avenir Medium"
+                    tf.font.size = Pt(9)
+                    
+                    if fmt in ['currency', 'percent', 'integer']:
+                         tf.alignment = PP_ALIGN.RIGHT
+                    else:
+                         tf.alignment = PP_ALIGN.LEFT
+            
+            slide_count += 1
 
 def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
