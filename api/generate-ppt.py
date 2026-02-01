@@ -353,17 +353,31 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.font.color.rgb = WHITE
             data_labels.number_format = f'"{currency_symbol}" #,##0' # Force Integer with Currency
             
-            # --- XML HACK DISABLED TO PREVENT CORRUPTION ---
-            # try:
-            #     from pptx.oxml.ns import qn
-            #     txPr = data_labels._element.get_or_add_txPr()
-            #     bodyPr = txPr.find(qn('a:bodyPr'))
-            #     if bodyPr is None:
-            #          bodyPr = txPr.get_or_add_bodyPr()
-            #     bodyPr.set('rot', '-5400000')
-            #     bodyPr.set('vert', 'horz') 
-            # except Exception as e:
-            #     print(f"Error rotating labels: {e}")
+            # --- XML HACK FOR VERTICAL TEXT (-270 deg) ---
+            try:
+                # We need to iterate over all points to set the rotation?
+                # Actually, setting it on the DataLabels object might propagate or we need to access the element.
+                # data_labels.element is the c:dLbls element.
+                # We need to ensure that dLbls has a txPr (Text Properties) -> bodyPr -> rot="-5400000"
+                
+                from pptx.oxml.ns import qn
+                
+                # Check if txPr exists, create if not
+                txPr = data_labels._element.get_or_add_txPr()
+                # Check if bodyPr exists
+                bodyPr = txPr.find(qn('a:bodyPr'))
+                if bodyPr is None:
+                     bodyPr = txPr.get_or_add_bodyPr()
+                
+                # Set rotation to -270 degrees (-5400000 EMUs). 
+                # Positive 270 degrees is 16200000, but PowerPoint treats 270 as "Stacked" sometimes or -90.
+                # "Rotate all text 270" corresponds to 'vert270' in standard presets, but custom rot is better.
+                # Let's try rot="-5400000" (which is -90 deg, reading bottom to top)
+                bodyPr.set('rot', '-5400000')
+                bodyPr.set('vert', 'horz') # Ensure it's not trying to be "vertical stacked"
+                
+            except Exception as e:
+                print(f"Error rotating labels: {e}")
             # ---------------------------------------------
             
         # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
@@ -401,12 +415,12 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 category_axis.tick_labels.font.size = Pt(9)
                 category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
                 
-                # XML Hack DISABLED
-                # from pptx.oxml.ns import qn
-                # txPr = category_axis._element.get_or_add_txPr()
-                # bodyPr = txPr.get_or_add_bodyPr()
-                # bodyPr.set('rot', '-5400000')
-                # bodyPr.set('vert', 'horz')
+                # XML Hack for Rotation (-90 degrees)
+                from pptx.oxml.ns import qn
+                txPr = category_axis._element.get_or_add_txPr()
+                bodyPr = txPr.get_or_add_bodyPr()
+                bodyPr.set('rot', '-5400000')
+                bodyPr.set('vert', 'horz')
             except Exception as e:
                 print(f"Error formatting volatility axis: {e}")
 
