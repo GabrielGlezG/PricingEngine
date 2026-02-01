@@ -9,8 +9,7 @@ from pptx.enum.text import PP_ALIGN
 from pptx.chart.data import CategoryChartData, XyChartData, BubbleChartData
 from pptx.enum.chart import (
     XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION, 
-    XL_TICK_MARK, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION,
-    XL_DISPLAY_BLANKS_AS
+    XL_TICK_MARK, XL_MARKER_STYLE, XL_TICK_LABEL_POSITION
 )
 from pptx.oxml.ns import qn
 
@@ -283,9 +282,17 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
-             # Connect data points with line (don't leave gaps)
-             chart.display_blanks_as = XL_DISPLAY_BLANKS_AS.SPAN
-             
+             # Connect data points with line (don't leave gaps) using XML
+             # chart.display_blanks_as = XL_DISPLAY_BLANKS_AS.SPAN (Not available in this version)
+             try:
+                 c_chart = chart._chartSpace.chart
+                 # Ensure dispBlanksAs element exists and set to 'span'
+                 if c_chart.dispBlanksAs is None:
+                    c_chart.add_dispBlanksAs()
+                 c_chart.dispBlanksAs.val = 'span'
+             except Exception as e:
+                 print(f"Error setting display_blanks_as: {e}")
+
              # Legend at Top to match platform and fit long names
              chart.legend.position = XL_LEGEND_POSITION.TOP
              chart.legend.include_in_layout = True
