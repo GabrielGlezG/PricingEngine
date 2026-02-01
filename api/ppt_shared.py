@@ -266,8 +266,43 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         plot = chart.plots[0]
         
+        # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
+        if 'evolución' in name_lower or 'evolution' in name_lower:
+             # Y-Axis Currency
+             if chart.value_axis:
+                 chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
+                 chart.value_axis.major_unit = None # Auto scale
+                 
+             # Smooth Lines
+             for series in chart.series:
+                 series.smooth = True
+                 series.format.line.width = Pt(2.5)
+             
+             # X-Axis Dates (Rotate if needed)
+             try:
+                 category_axis = chart.category_axis
+                 category_axis.tick_labels.font.size = Pt(9)
+                 category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+                 
+                 # XML Hack for Rotation (-45 or -90 degrees)
+                 txPr = category_axis._element.get_or_add_txPr()
+                 # Check if bodyPr exists
+                 if hasattr(txPr, 'bodyPr'):
+                     bodyPr = txPr.bodyPr
+                 else:
+                     # Fallback for OXML element manipulation
+                     from pptx.oxml.ns import qn
+                     bodyPr = txPr.find(qn('a:bodyPr'))
+                     if bodyPr is None:
+                         bodyPr = txPr.add_bodyPr()
+
+                 bodyPr.set('rot', '-2700000') # -45 degrees roughly
+                 bodyPr.set('vert', 'horz')
+             except Exception as e:
+                 print(f"Error formatting evolution axis: {e}")
+
         # 1. "Composición" -> Integers, Vary Colors
-        if 'composición' in name_lower or 'composition' in name_lower:
+        elif 'composición' in name_lower or 'composition' in name_lower:
             plot.vary_by_categories = True
             
             # Y-Axis Integer
