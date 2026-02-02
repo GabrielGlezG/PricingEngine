@@ -144,9 +144,6 @@ export function exportCompareData(
         'Precio Promedio': convertPrice(item.product.avg_price || 0),
         'Precio Mínimo': convertPrice(item.product.min_price || 0),
         'Precio Máximo': convertPrice(item.product.max_price || 0),
-        'Marca': item.product.brand,
-        'Modelo': item.product.model,
-        'Versión': item.product.submodel || '-',
         'Segmento': item.product.tipo_vehiculo || 'N/A'
     }));
 
