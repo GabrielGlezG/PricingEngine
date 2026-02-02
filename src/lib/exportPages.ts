@@ -137,15 +137,17 @@ export function exportCompareData(
     const dateStr = new Date().toISOString().split('T')[0];
 
     // Create comparison summary sheet
+    // Create comparison summary sheet
     const summaryData = comparisonData.map(item => ({
-        Marca: item.product.brand,
-        Modelo: item.product.model,
-        Versión: item.product.submodel || '-',
-        Segmento: item.product.tipo_vehiculo || 'N/A',
+        'Vehículo': `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim(),
         'Precio Actual': convertPrice(item.product.latest_price || 0),
         'Precio Promedio': convertPrice(item.product.avg_price || 0),
         'Precio Mínimo': convertPrice(item.product.min_price || 0),
-        'Precio Máximo': convertPrice(item.product.max_price || 0)
+        'Precio Máximo': convertPrice(item.product.max_price || 0),
+        'Marca': item.product.brand,
+        'Modelo': item.product.model,
+        'Versión': item.product.submodel || '-',
+        'Segmento': item.product.tipo_vehiculo || 'N/A'
     }));
 
     // Create price evolution data for chart
@@ -188,7 +190,6 @@ export function exportCompareData(
         ].filter(Boolean) as ExportSheet[]
     };
 
-    return exportToExcel(payload);
     return exportToExcel(payload);
 }
 
