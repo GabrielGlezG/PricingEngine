@@ -137,15 +137,14 @@ export function exportCompareData(
     const dateStr = new Date().toISOString().split('T')[0];
 
     // Create comparison summary sheet
+    // Create comparison summary sheet
     const summaryData = comparisonData.map(item => ({
-        Marca: item.product.brand,
-        Modelo: item.product.model,
-        Versión: item.product.submodel || '-',
-        Segmento: item.product.tipo_vehiculo || 'N/A',
+        'Vehículo': `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim(),
         'Precio Actual': convertPrice(item.product.latest_price || 0),
         'Precio Promedio': convertPrice(item.product.avg_price || 0),
         'Precio Mínimo': convertPrice(item.product.min_price || 0),
-        'Precio Máximo': convertPrice(item.product.max_price || 0)
+        'Precio Máximo': convertPrice(item.product.max_price || 0),
+        'Segmento': item.product.tipo_vehiculo || 'N/A'
     }));
 
     // Create price evolution data for chart
@@ -154,8 +153,8 @@ export function exportCompareData(
         comparisonData[0].priceData.forEach(point => {
             const row: Record<string, string | number> = { Fecha: point.date as string };
             comparisonData.forEach(item => {
-                const label = `${item.product.brand} ${item.product.model}`;
-                const priceKey = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const priceKey = label;
                 row[label] = convertPrice(Number(point[priceKey]) || 0);
             });
             evolutionData.push(row);
@@ -188,7 +187,6 @@ export function exportCompareData(
         ].filter(Boolean) as ExportSheet[]
     };
 
-    return exportToExcel(payload);
     return exportToExcel(payload);
 }
 
@@ -235,8 +233,8 @@ export function exportCompareDataPPT(
         comparisonData[0].priceData.forEach(point => {
             const row: Record<string, string | number> = { Fecha: point.date as string };
             comparisonData.forEach(item => {
-                const label = `${item.product.brand} ${item.product.model}`;
-                const priceKey = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const label = `${item.product.brand} ${item.product.model} ${item.product.submodel || ''}`.trim();
+                const priceKey = label;
                 row[label] = convertPrice(Number(point[priceKey]) || 0);
             });
             evolutionData.push(row);
@@ -254,12 +252,6 @@ export function exportCompareDataPPT(
             Modelo: filters.model || []
         },
         sheets: [
-            {
-                name: 'Resumen Comparación',
-                chart_type: 'bar',
-                chart_title: 'Comparación de Precios',
-                data: summaryData
-            },
             evolutionData.length > 0 ? {
                 name: 'Evolución de Precios',
                 chart_type: 'line',

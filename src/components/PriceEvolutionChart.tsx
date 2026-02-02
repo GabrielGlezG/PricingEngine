@@ -247,8 +247,10 @@ export function PriceEvolutionChart({
             timeKey = date.toISOString().split("T")[0];
         }
 
-        const modelKey = selectedSubmodel
-          ? `${item.products.brand} ${item.products.name} (${item.products.submodel})`
+        const useSubmodel = selectedSubmodel || submodelFilters.length > 0;
+        
+        const modelKey = useSubmodel
+          ? `${item.products.brand} ${item.products.name} ${item.products.submodel}`
           : `${item.products.brand} ${item.products.name}`;
 
         if (!groupedData.has(timeKey)) {
@@ -267,8 +269,10 @@ export function PriceEvolutionChart({
       const uniqueModels = new Set<string>();
       
       data?.forEach((item) => {
-        const modelKey = selectedSubmodel
-          ? `${item.products.brand} ${item.products.name} (${item.products.submodel})`
+        const useSubmodel = selectedSubmodel || submodelFilters.length > 0;
+        
+        const modelKey = useSubmodel
+          ? `${item.products.brand} ${item.products.name} ${item.products.submodel}`
           : `${item.products.brand} ${item.products.name}`;
         uniqueModels.add(modelKey);
       });
