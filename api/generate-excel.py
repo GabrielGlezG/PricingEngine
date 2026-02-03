@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 # openpyxl imports
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.text import RichText
+from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import base64
@@ -44,6 +46,46 @@ def style_data_rows(ws, start_row, end_row, num_cols):
             cell.border = THIN_BORDER
 
 
+def apply_chart_styling(chart):
+    """
+    Attempts to enforce Avenir Font on Chart Elements using RichText.
+    This works by replacing the standard Text object with a RichText object defined with specific font properties.
+    """
+    try:
+        # Define Avenir Font Properties
+        # sz is 100ths of point, so 1100 = 11pt
+        font_title = DrawingFont(typeface='Avenir Black')
+        cp_title = CharacterProperties(latin=font_title, sz=1400, b=True) 
+        pp_title = ParagraphProperties(defRPr=cp_title)
+        
+        font_axis = DrawingFont(typeface='Avenir Medium')
+        cp_axis = CharacterProperties(latin=font_axis, sz=900)
+        pp_axis = ParagraphProperties(defRPr=cp_axis)
+
+        # 1. Chart Title (If exists and is string)
+        if chart.title and isinstance(chart.title, str):
+            rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, text=chart.title)])
+            chart.title = rt_title
+            
+        # 2. X-Axis Title
+        if chart.x_axis and chart.x_axis.title and isinstance(chart.x_axis.title, str):
+            rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.x_axis.title)])
+            chart.x_axis.title = rt_x
+
+        # 3. Y-Axis Title
+        if chart.y_axis and chart.y_axis.title and isinstance(chart.y_axis.title, str):
+            rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.y_axis.title)])
+            chart.y_axis.title = rt_y
+            
+        # 4. Legend Font (Uses TextProperties directly if possible, else difficult in OpenPyXL)
+        if chart.legend:
+             chart.legend.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+
+    except Exception as e:
+        # Fail silently - do not crash generation just for font
+        print(f"Font styling warning: {str(e)}")
+
+
 def create_bar_chart(ws, title, data_range, start_row, num_series):
     chart = BarChart()
     chart.type = "col"
@@ -59,6 +101,8 @@ def create_bar_chart(ws, title, data_range, start_row, num_series):
     chart.set_categories(cats)
     chart.width = 15
     chart.height = 10
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -80,6 +124,8 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
     chart.width = 15
     chart.height = 10
     
+    apply_chart_styling(chart)
+    
     return chart
 
 
@@ -98,6 +144,8 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     chart.set_categories(cats)
     chart.width = 15
     chart.height = 10
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -143,6 +191,8 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     
     chart.width = 15
     chart.height = 20 # Taller to accommodate legend at bottom
+    
+    apply_chart_styling(chart)
     
     return chart
 

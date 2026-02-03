@@ -312,7 +312,30 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart.legend.font.name = "Avenir Medium"
         chart.legend.font.size = Pt(9)
         
+        # --- GLOBAL AXIS FONT STYLING ---
+        # Apply standard branding to axes if they validly exist
+        try:
+            if chart.value_axis:
+                chart.value_axis.tick_labels.font.name = "Avenir Medium"
+                chart.value_axis.tick_labels.font.size = Pt(9)
+        except: pass # Bubble chart or Pie chart might differ
+
+        try:
+            # For Bubble charts, this might fail or be different, so we wrap it
+            if chart.category_axis:
+                chart.category_axis.tick_labels.font.name = "Avenir Medium"
+                chart.category_axis.tick_labels.font.size = Pt(9)
+        except: pass
+        
         plot = chart.plots[0]
+
+        # --- GLOBAL DATA LABEL FONT STYLING ---
+        try:
+            if plot.has_data_labels:
+                dl = plot.data_labels
+                dl.font.name = "Avenir Medium"
+                dl.font.size = Pt(9)
+        except: pass
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
@@ -351,6 +374,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              if chart.value_axis:
                  chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  chart.value_axis.major_unit = None # Auto scale
+                 chart.value_axis.tick_labels.font.name = "Avenir Medium"
+                 chart.value_axis.tick_labels.font.size = Pt(9)
                  
              # Smooth Lines with Markers
              try:
@@ -367,6 +392,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              # X-Axis Dates (Rotate if needed)
              try:
                  category_axis = chart.category_axis
+                 category_axis.tick_labels.font.name = "Avenir Medium"
                  category_axis.tick_labels.font.size = Pt(9)
                  category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
                  
