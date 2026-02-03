@@ -69,15 +69,23 @@ def apply_chart_styling(chart):
             rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, text=chart.title)])
             chart.title = rt_title
             
-        # 2. X-Axis Title
-        if chart.x_axis and chart.x_axis.title and isinstance(chart.x_axis.title, str):
-            rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.x_axis.title)])
-            chart.x_axis.title = rt_x
+        # 2. X-Axis Title & Ticks
+        if chart.x_axis:
+            # Title
+            if chart.x_axis.title and isinstance(chart.x_axis.title, str):
+                rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.x_axis.title)])
+                chart.x_axis.title = rt_x
+            # Ticks (Numbers/Categories) - Critical for "Ejes" look
+            chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
 
-        # 3. Y-Axis Title
-        if chart.y_axis and chart.y_axis.title and isinstance(chart.y_axis.title, str):
-            rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.y_axis.title)])
-            chart.y_axis.title = rt_y
+        # 3. Y-Axis Title & Ticks
+        if chart.y_axis:
+            # Title
+            if chart.y_axis.title and isinstance(chart.y_axis.title, str):
+                rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.y_axis.title)])
+                chart.y_axis.title = rt_y
+            # Ticks (Numbers)
+            chart.y_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
             
         # 4. Legend Font (Uses TextProperties directly if possible, else difficult in OpenPyXL)
         if chart.legend:
