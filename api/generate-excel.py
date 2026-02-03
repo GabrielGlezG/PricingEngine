@@ -205,19 +205,49 @@ def generate_error_excel(error_message):
     ws['A1'] = "Critical Error generating Excel"
     ws['A1'].font = Font(color="FF0000", bold=True, size=14)
     ws['A3'] = str(error_message)
-    ws.column_dimensions['A'].width = 100
+    # Auto-adjust column width
+    ws.column_dimensions['A'].width = 80
     
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-    return output.getvalue()
+    virtual_workbook = io.BytesIO()
+    wb.save(virtual_workbook)
+    virtual_workbook.seek(0)
+    return virtual_workbook.getvalue()
 
+def set_global_styles(wb):
+    """
+    Modifies the default styles to ensure Avenir Medium is the baseline font.
+    This helps chart elements that inherit 'Document Default' to use Avenir.
+    """
+    try:
+        # Access the 'Normal' named style
+        if 'Normal' in wb.named_styles:
+            normal = wb.named_styles['Normal']
+            normal.font = Font(name='Avenir Medium', size=11)
+        
+        # Also try to set it on the default style of the workbook logic
+        # (OpenPyXL internal default)
+        
+    except Exception as e:
+        print(f"Global style warning: {e}")
 
 def generate_excel(data):
     # Initialize Debug Log
     debug_log = []
     
     try:
+        wb = Workbook()
+        
+        # Apply Global Font Settings immediately
+        set_global_styles(wb)
+
+        # Remove default sheet
+        default_ws = wb.active
+        wb.remove(default_ws)
+        
+        # Debug Sheet (Hidden)
+        debug_ws = wb.create_sheet("DEBUG LOG")
+        debug_ws.sheet_state = 'hidden'
+        
         sheets = data.get('sheets', [])
         summary = data.get('summary', None)
         models = data.get('models', None)

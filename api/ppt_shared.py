@@ -316,15 +316,24 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         # Apply standard branding to axes if they validly exist
         try:
             if chart.value_axis:
+                # Tick Labels
                 chart.value_axis.tick_labels.font.name = "Avenir Medium"
                 chart.value_axis.tick_labels.font.size = Pt(9)
-        except: pass # Bubble chart or Pie chart might differ
+                # Axis Title (e.g. "Valor")
+                if chart.value_axis.has_title:
+                     chart.value_axis.axis_title.text_frame.paragraphs[0].font.name = "Avenir Medium"
+                     chart.value_axis.axis_title.text_frame.paragraphs[0].font.size = Pt(10)
+        except: pass 
 
         try:
-            # For Bubble charts, this might fail or be different, so we wrap it
             if chart.category_axis:
+                # Tick Labels
                 chart.category_axis.tick_labels.font.name = "Avenir Medium"
                 chart.category_axis.tick_labels.font.size = Pt(9)
+                # Axis Title
+                if chart.category_axis.has_title:
+                     chart.category_axis.axis_title.text_frame.paragraphs[0].font.name = "Avenir Medium"
+                     chart.category_axis.axis_title.text_frame.paragraphs[0].font.size = Pt(10)
         except: pass
         
         plot = chart.plots[0]
