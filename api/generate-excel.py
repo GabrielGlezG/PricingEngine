@@ -19,6 +19,7 @@ import base64
 # Styling constants
 HEADER_FILL = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
 HEADER_FONT = Font(name="Avenir Medium", color="FFFFFF", bold=True, size=11)
+BODY_FONT = Font(name="Avenir Medium", size=10)
 ALT_ROW_FILL = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
 THIN_BORDER = Border(
     left=Side(style='thin', color='E2E8F0'),
@@ -41,6 +42,7 @@ def style_data_rows(ws, start_row, end_row, num_cols):
     for row in range(start_row, end_row + 1):
         for col in range(1, num_cols + 1):
             cell = ws.cell(row=row, column=col)
+            cell.font = BODY_FONT
             if (row - start_row) % 2 == 1:
                 cell.fill = ALT_ROW_FILL
             cell.border = THIN_BORDER
@@ -229,6 +231,33 @@ def set_global_styles(wb):
         
     except Exception as e:
         print(f"Global style warning: {e}")
+
+def enforce_global_font(wb):
+    """
+    Final pass: Iterates through EVERY cell in ALL sheets to enforce Avenir Medium.
+    This ensures no cell is left behind with default settings.
+    """
+    try:
+        avenir = Font(name="Avenir Medium", size=10) # Base font
+        
+        for sheet in wb.worksheets:
+            for row in sheet.iter_rows():
+                 for cell in row:
+                     if cell.font and cell.font.name != "Avenir Medium":
+                         # Create new font preserving basics
+                         current = cell.font
+                         new_f = Font(
+                             name="Avenir Medium",
+                             size=current.size if current.size else 10,
+                             bold=current.bold,
+                             italic=current.italic,
+                             color=current.color
+                         )
+                         cell.font = new_f
+                     elif not cell.font:
+                         cell.font = avenir
+    except Exception as e:
+        print(f"Enforce font error: {e}")
 
 def generate_excel(data):
     # Initialize Debug Log
@@ -508,6 +537,7 @@ def generate_excel(data):
                 ws_debug.cell(row=i+1, column=1, value=log)
                 
         # Save to BytesIO
+        enforce_global_font(wb)
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
