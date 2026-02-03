@@ -138,9 +138,12 @@ def create_intro_slide(prs, title, date_str):
     
     p_date = tf.add_paragraph()
     p_date.text = f"\nGenerado: {date_str}"
-    p_date.font.name = "Avenir Medium"
-    p_date.font.size = Pt(16)
-    p_date.font.color.rgb = LIGHT_BLUE # Slate color for date
+    # Explicitly style the run to avoid inheritance issues
+    if p_date.runs:
+        run = p_date.runs[0]
+        run.font.name = "Avenir Medium"
+        run.font.size = Pt(16)
+        run.font.color.rgb = LIGHT_BLUE
     p_date.alignment = PP_ALIGN.LEFT
 
 # --- SHARED CHART & TABLE LOGIC ---

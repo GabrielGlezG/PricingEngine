@@ -18,7 +18,7 @@ import base64
 
 # Styling constants
 HEADER_FILL = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
-HEADER_FONT = Font(color="FFFFFF", bold=True, size=11)
+HEADER_FONT = Font(name="Avenir Medium", color="FFFFFF", bold=True, size=11)
 ALT_ROW_FILL = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
 THIN_BORDER = Border(
     left=Side(style='thin', color='E2E8F0'),
