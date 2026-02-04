@@ -575,9 +575,15 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              except Exception as e:
                  print(f"Error setting markers for benchmarking: {e}")
             
-        # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
+        # 0. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
             plot.vary_by_categories = True
+            
+            # --- FIX 1: LABELS AT BOTTOM ---
+            try:
+                chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+            except: pass
+            
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
@@ -590,9 +596,42 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.number_format = '0%'
             data_labels.font.color.rgb = WHITE # Contrast for colored bars
             
-            # Ensure negative bars are colored (not white)
-            for series in chart.series:
-                series.invert_if_negative = False
+            # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
+            try:
+                 for series in chart.series:
+                     series.invert_if_negative = False 
+                     
+                     for i, val in enumerate(series.values):
+                         try:
+                             f_val = float(val)
+                         except:
+                             f_val = 0.0
+
+                         if f_val < 0:
+                             try:
+                                 # Access Data Point
+                                 pt = series.points[i]
+                                 
+                                 # 1. Border: Thick Red
+                                 pt.format.line.solid()
+                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
+                                 pt.format.line.width = Pt(2.5)
+                                 
+                                 # 2. Fill: White (Explicit)
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
+
+                                 # 3. Data Label: Red Text + Bold
+                                 if pt.data_label:
+                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
+                                     pt.data_label.font.bold = True
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+
+                             except Exception as e_pt:
+                                 print(f"Failed to style negative point {i}: {e_pt}")
+
+            except Exception as e:
+                 print(f"Error styling trend chart: {e}")
                 
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:
