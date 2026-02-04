@@ -577,8 +577,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             
         # 0. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
-            # 1. Restore Theme Colors (User preferred)
-            plot.vary_by_categories = True
+            # 1. UNIFORM STYLE: All Blue
+            plot.vary_by_categories = False
             
             # 2. X-Axis Labels at Bottom
             try:
@@ -588,53 +588,29 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
-            # 3. Enable Data Labels (Baseline = BLACK for Safety)
+            # 3. GLOBAL DATA LABELS (White, Bold, Inside)
+            # Since all bars will be Blue, White text is perfect.
             plot.has_data_labels = True
             data_labels = plot.data_labels
             data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
+            data_labels.font.bold = True
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.number_format = '0%'
-            # SAFETY: Set global color to BLACK so it's visible on White bars if override fails
-            data_labels.font.color.rgb = RGBColor(0, 0, 0) 
+            data_labels.font.color.rgb = WHITE 
             
-            # 4. POINT-BY-POINT STYLING
+            # 4. SERIES UNIFORM COLORING (Manual Blue)
+            # This ensures we get the "Nice Blue" not the "Dark Navy" default
+            EXCEL_BLUE = RGBColor(68, 114, 196) 
+            
             try:
                  for series in chart.series:
-                     series.invert_if_negative = False 
+                     # Force Series to Blue
+                     series.format.fill.solid()
+                     series.format.fill.fore_color.rgb = EXCEL_BLUE
                      
-                     for i, val in enumerate(series.values):
-                         try:
-                             f_val = float(val)
-                         except:
-                             f_val = 0.0
-                        
-                         # Get Point
-                         try:
-                             pt = series.points[i]
-                             
-                             if f_val >= 0:
-                                 # POSITIVE: Blue Bar -> White Text
-                                 if pt.data_label:
-                                     # Force White
-                                     pt.data_label.font.color.rgb = WHITE
-                                     pt.data_label.font.bold = False
-                             else:
-                                 # NEGATIVE: White Bar -> Red Text + Red Border
-                                 # 1. Border
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
-                                 pt.format.line.width = Pt(2.0)
-                                 
-                                 # 2. Label
-                                 if pt.data_label:
-                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
-                                     pt.data_label.font.bold = True
-                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
-
-                         except Exception as e_pt:
-                             print(f"Pt error {i}: {e_pt}")
-
+                     # Force Negatives to stay Blue
+                     series.invert_if_negative = False
             except Exception as e:
                  print(f"Error styling trend chart: {e}")
                 
