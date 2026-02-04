@@ -51,6 +51,12 @@ def create_summary_slide(prs, summary, currency_symbol):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = "Resumen Ejecutivo"
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(32), bold=True, color=DARK_BLUE)
+    # Center Title
+    try:
+        slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        slide.shapes.title.left = Inches(0.5)
+        slide.shapes.title.width = Inches(12.33)
+    except: pass
     
     rows = 10
     cols = 2
@@ -104,6 +110,12 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
         slide_title = f"{title}" if i == 0 else f"{title} (Cont.)"
         slide.shapes.title.text = slide_title
         set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+        # Center Title
+        try:
+            slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+            slide.shapes.title.left = Inches(0.5)
+            slide.shapes.title.width = Inches(12.33)
+        except: pass
         
         headers = list(rows[0].keys())
         # 16:9 Layout: Width 12", Margin 0.665"
