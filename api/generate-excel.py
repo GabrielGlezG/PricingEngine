@@ -529,22 +529,22 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Create Margins for Visual Centering (Screen)
-                # Pushing chart to the right to simulate center on typical screen
-                ws_chart.column_dimensions['A'].width = 20 
-                ws_chart.row_dimensions[1].height = 20
-                
-                # Print Settings: True Centering for PDF/Paper
+                # Set View to Page Layout (Visualizes Centering)
+                ws_chart.sheet_view.view = "pageLayout"
+                ws_chart.sheet_view.zoomScale = 100
+
+                # Print Settings: True Centering
                 ws_chart.page_setup.centerHorizontally = True
                 ws_chart.page_setup.centerVertically = True
                 ws_chart.page_setup.orientation = ws_chart.ORIENTATION_LANDSCAPE
                 ws_chart.page_setup.paperSize = ws_chart.PAPERSIZE_A4
 
-                # Chart Size: Balanced
-                chart.width = 26 # ~26cm
-                chart.height = 16 # ~16cm
+                # Chart Size: Fit A4 Printable Area (approx 26cm width avail)
+                chart.width = 25 # 25cm fits nicely with margins
+                chart.height = 16 
                 
-                ws_chart.add_chart(chart, "B2") 
+                # Place at A1 (Centering settings handle the rest)
+                ws_chart.add_chart(chart, "A1") 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
