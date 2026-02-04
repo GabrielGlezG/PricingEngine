@@ -140,17 +140,15 @@ def apply_chart_styling(chart):
         # 5. Remove Gridlines (Cleaner look like PPT)
         chart.y_axis.majorGridlines = None
         
-        # 6. Negative Value Coloring & Axis Labels
+        # 6. Negative Value Coloring (Red if Negative)
         # Apply specifically to "Tendencia" or "Variación" charts as requested
+        # We enable 'invertIfNegative'. Getting it explicitly RED usually requires Theme or specific RGB hack,
+        # but standard Excel 'Invert' often defaults to Red or White.
         if isinstance(chart.title, str):
             t_low = chart.title.lower()
             if "tendencia" in t_low or "variación" in t_low or "variacion" in t_low:
                  for s in chart.series:
                      s.invertIfNegative = True
-                 
-                 # Force Labels to Bottom (Low) to avoid overlap with negative bars
-                 if chart.x_axis:
-                     chart.x_axis.tickLblPos = "low"
 
     except Exception as e:
         # Fail silently - do not crash generation just for font

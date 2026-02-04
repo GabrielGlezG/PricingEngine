@@ -182,12 +182,6 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             slide.shapes.title.text = f"{title}{suffix}"
             
             set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
-            # Center Title
-            try:
-                slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-                slide.shapes.title.left = Inches(0.5)
-                slide.shapes.title.width = Inches(12.33)
-            except: pass
             
             # Create Table
             rows_num = len(row_chunk) + 1
@@ -254,12 +248,6 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
-    # Center Title
-    try:
-        slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-        slide.shapes.title.left = Inches(0.5)
-        slide.shapes.title.width = Inches(12.33)
-    except: pass
     
     chart_type = chart_info.get('chart_type', 'bar')
     rows = chart_info.get('data', [])
@@ -566,10 +554,6 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
-            # Force Labels to Bottom (Low) to avoid overlap with negative bars
-            if chart.category_axis:
-                 chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
-
             # Data Labels
             plot.has_data_labels = True
             data_labels = plot.data_labels
