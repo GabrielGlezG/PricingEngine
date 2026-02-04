@@ -104,9 +104,14 @@ export default function UploadComponent() {
         jsonData = JSON.parse(text);
       } else if (file.name.endsWith(".csv")) {
         const text = await file.text();
+        // Simple heuristic to detect delimiter (Excel uses semicolon in many regions)
+        const firstLine = text.split('\n')[0];
+        const delimiter = firstLine.includes(';') ? ';' : ',';
+        
         const parsed = Papa.parse(text, {
           header: true,
           skipEmptyLines: true,
+          delimiter: delimiter, // Explicitly set detected delimiter
           transformHeader: (header) => header.trim(),
         });
         jsonData = parsed.data;
