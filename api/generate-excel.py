@@ -533,17 +533,28 @@ def generate_excel(data):
                 ws_chart.sheet_view.view = "pageLayout"
                 ws_chart.sheet_view.zoomScale = 100
 
-                # Print Settings: True Centering
+                # Print Settings: True Centering AND Fit-to-One-Page
                 ws_chart.page_setup.centerHorizontally = True
                 ws_chart.page_setup.centerVertically = True
                 ws_chart.page_setup.orientation = ws_chart.ORIENTATION_LANDSCAPE
                 ws_chart.page_setup.paperSize = ws_chart.PAPERSIZE_A4
+                
+                # Force strictly 1 page (Prevents spillover/ghost pages)
+                ws_chart.page_setup.fitToPage = True
+                ws_chart.page_setup.fitToHeight = 1
+                ws_chart.page_setup.fitToWidth = 1
+                
+                # Set Narrow Margins to maximize space
+                ws_chart.page_margins.left = 0.5
+                ws_chart.page_margins.right = 0.5
+                ws_chart.page_margins.top = 0.5
+                ws_chart.page_margins.bottom = 0.5
 
-                # Chart Size: Fit A4 Printable Area (approx 26cm width avail)
-                chart.width = 25 # 25cm fits nicely with margins
+                # Chart Size: Slightly narrower to be 100% safe
+                chart.width = 24 
                 chart.height = 16 
                 
-                # Place at A1 (Centering settings handle the rest)
+                # Place at A1
                 ws_chart.add_chart(chart, "A1") 
             except Exception as e:
                 import traceback
