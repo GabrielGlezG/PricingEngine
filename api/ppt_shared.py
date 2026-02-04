@@ -349,6 +349,15 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 dl.font.size = Pt(9)
         except: pass
         
+        # --- NEGATIVE VALUE INVERSION (RED BARS) ---
+        # Mirroring Excel logic for "Tendencia" or "Variación"
+        if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
+             try:
+                 for series in chart.series:
+                     series.invert_if_negative = True
+             except Exception as e:
+                 print(f"Error setting invert_if_negative: {e}")
+        
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
              # Connect data points with line (don't leave gaps) using XML
