@@ -11,6 +11,7 @@ interface JsonData {
   Categoría: string;
   "Modelo Principal": string;
   Modelo: string;
+  Submodelo?: string; // Re-adding for TS support
   ctx_precio: string;
   precio_num: number;
   precio_lista_num: number;
@@ -55,10 +56,19 @@ async function processBackground(jsonData: JsonData[], batchId: string, supabase
       const categoria = item["Categoría"] || item.Categoría;
       const modeloPrincipal = item["Modelo Principal"];
       const modelo = item.Modelo;
-      const idBase = item.ID_Base; // Critical for linking
+      const submodelo = item.Submodelo || modelo; // Fallback to model if submodel missing
+
+      let idBase = item.ID_Base;
+
+      // Auto-generate ID_Base if missing (Deterministic Slug)
+      if (!idBase && categoria && modelo) {
+        const cleanStr = (str: string) => str ? str.trim().toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+        idBase = `${cleanStr(categoria)}-${cleanStr(modelo)}-${cleanStr(submodelo)}`;
+        // console.log(`Generated ID_Base: ${idBase}`);
+      }
 
       if (!categoria || !modeloPrincipal || !modelo || !idBase) {
-        // Skip invalid items (or log them)
+        console.warn(`[Batch] Skipping item due to missing required fields. Category: ${categoria}, Model: ${modelo}, ID_Base: ${idBase}`);
         continue;
       }
 
