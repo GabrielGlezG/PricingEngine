@@ -529,33 +529,15 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Set View to Page Layout (Visualizes Centering)
-                ws_chart.sheet_view.view = "pageLayout"
-                ws_chart.sheet_view.zoomScale = 100
-
-                # Print Settings: True Centering AND Fit-to-One-Page
-                ws_chart.page_setup.centerHorizontally = True
-                ws_chart.page_setup.centerVertically = True
-                ws_chart.page_setup.orientation = ws_chart.ORIENTATION_LANDSCAPE
-                ws_chart.page_setup.paperSize = ws_chart.PAPERSIZE_A4
+                # Place chart at B2 with a margin for centering effect
+                chart.width = 28 # "Un poco mas pequeño" / Moderate Large
+                chart.height = 17
                 
-                # Force strictly 1 page (Prevents spillover/ghost pages)
-                ws_chart.page_setup.fitToPage = True
-                ws_chart.page_setup.fitToHeight = 1
-                ws_chart.page_setup.fitToWidth = 1
+                # Create Margins
+                ws_chart.column_dimensions['A'].width = 2
+                ws_chart.row_dimensions[1].height = 15
                 
-                # Set Narrow Margins to maximize space
-                ws_chart.page_margins.left = 0.5
-                ws_chart.page_margins.right = 0.5
-                ws_chart.page_margins.top = 0.5
-                ws_chart.page_margins.bottom = 0.5
-
-                # Chart Size: Slightly narrower to be 100% safe
-                chart.width = 24 
-                chart.height = 16 
-                
-                # Place at A1
-                ws_chart.add_chart(chart, "A1") 
+                ws_chart.add_chart(chart, "B2") 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
