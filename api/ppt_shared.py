@@ -376,21 +376,40 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              # --- FIX 2: ROBUST RED NEGATIVE BARS (OXML HACK) ---
              try:
                  for series in chart.series:
-                     series.invert_if_negative = False # Disable automatic (often white) inversion
-                     
+                     # 1. FORCE invertIfNegative = False (XML LEVEL)
+                     # This is critical. If True, PPT ignores point formatting for negative values.
+                     try:
+                         # Get the c:ser element
+                         c_ser = series._element
+                         # Find or create invertIfNegative
+                         invert_if_negative = c_ser.find(qn('c:invertIfNegative'))
+                         if invert_if_negative is None:
+                             invert_if_negative = OxmlElement('c:invertIfNegative')
+                             c_ser.append(invert_if_negative)
+                         # Set value to 0 (False)
+                         invert_if_negative.set('val', '0')
+                     except Exception as e_xml:
+                         print(f"XML Invert Error: {e_xml}")
+
+                     # 2. Color Negative Points
                      for i, val in enumerate(series.values):
-                         if val is not None and isinstance(val, (int, float)) and val < 0:
+                         # Handle potentially exotic number types
+                         try:
+                             f_val = float(val)
+                         except:
+                             f_val = 0.0
+
+                         if f_val < 0:
                              try:
                                  # Access Data Point
                                  pt = series.points[i]
                                  
-                                 # -- BORDER (Native API works for this) --
+                                 # -- BORDER (Native API) --
                                  pt.format.line.solid()
                                  pt.format.line.color.rgb = RGBColor(255, 0, 0)
                                  pt.format.line.width = Pt(0.75)
                                  
-                                 # -- FILL (OXML Hack for robustness) --
-                                 # Local import ensuring we have the tools
+                                 # -- FILL (OXML Hack) --
                                  from pptx.oxml.ns import qn
                                  from pptx.oxml.xmlchemy import OxmlElement
                                  
@@ -399,7 +418,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                                  if fill is None:
                                      fill = spPr.add_solidFill()
                                  
-                                 # Nuke existing children to remove schemeClr or existing colors
+                                 # Nuke existing children
                                  fill.clear_content() 
                                  
                                  # Create Red Color Element
