@@ -11,6 +11,8 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.title import Title
 from openpyxl.chart.text import RichText
+from openpyxl.chart.shapes import GraphicalProperties
+from openpyxl.drawing.line import LineProperties
 from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont, RegularTextRun, LineBreak
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -92,9 +94,19 @@ def apply_chart_styling(chart):
             # Ticks (Numbers)
             chart.y_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
             
-        # 4. Legend Font
+        # 4. Legend Font & Position
         if chart.legend:
              chart.legend.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+             chart.legend.position = 'b' # Bottom Legend
+
+        # 5. Remove Gridlines (Cleaner look like PPT)
+        chart.y_axis.majorGridlines = None
+        
+        # 6. Remove Borders from Series (to make stacking seamless)
+        # This is critical for the "no separacion" look
+        no_line = LineProperties(noFill=True)
+        for s in chart.series:
+             s.graphicalProperties = GraphicalProperties(ln=no_line)
 
     except Exception as e:
         # Fail silently - do not crash generation just for font
@@ -106,8 +118,9 @@ def create_bar_chart(ws, title, data_range, start_row, num_series):
     chart.type = "col"
     chart.grouping = "clustered"
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Valor"
+    chart.gapWidth = 50 # Make bars wider
     
     data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
     cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
@@ -128,8 +141,10 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
     chart.type = "col"
     chart.grouping = "stacked"  # STACKED instead of clustered
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Total"
+    chart.gapWidth = 50 # Make bars wider (closer to PPT style)
+    chart.overlap = 100 # Ensure perfect stacking
     
     data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
     cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
@@ -147,7 +162,7 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
 def create_line_chart(ws, title, data_range, start_row, num_series):
     chart = LineChart()
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Valor"
     # Ensure dates are at the very bottom, not crossing the negative values
     chart.x_axis.tickLblPos = "low"
@@ -173,7 +188,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     
     chart = BubbleChart()
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     chart.bubbleScale = 30 # Back to standard size
