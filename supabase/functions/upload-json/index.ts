@@ -136,6 +136,41 @@ async function processBackground(jsonData: JsonData[], batchId: string, supabase
     });
 
     // 4. Prepare Final Price Rows
+    // Helper to parse financial numbers (handles "26.290.000" -> 26290000)
+    const parseFinancialNumber = (val: any): number | null => {
+      if (val === null || val === undefined || val === '') return null;
+      if (typeof val === 'number') return val;
+
+      const str = String(val).trim();
+      // Handle "26.290.000" (Thousand separators = dots)
+      // We assume if there are multiple dots, they are thousands. 
+      // If there is a comma, it might be decimal "26.290,00"
+
+      // Strategy: Remove key non-numeric chars
+      // 1. Remove currency symbols and spaces
+      let clean = str.replace(/[$\sA-Za-z]/g, '');
+
+      // 2. Check strict integer format with dots (common in Latin America/Europe for millions)
+      if (clean.includes('.') && !clean.includes(',')) {
+        // If multiple dots (26.290.000) -> Remove all dots
+        if ((clean.match(/\./g) || []).length > 1) {
+          clean = clean.replace(/\./g, '');
+        }
+        // If single dot (26.290), ambiguous. Could be 26.29 or 26290.
+        // Context: Cars cost > 1000. So 26.290 is likely 26290.
+        else if (clean.length > 5) { // Heuristic
+          clean = clean.replace(/\./g, '');
+        }
+      }
+
+      // 3. Fallback: Parse float normally after cleaning
+      // If it has commas, replace with dot for JS
+      clean = clean.replace(/,/g, '.');
+
+      const num = parseFloat(clean);
+      return isNaN(num) ? null : num;
+    }
+
     const finalPrices = [];
 
     for (const item of pricesToInsert) {
@@ -151,16 +186,20 @@ async function processBackground(jsonData: JsonData[], batchId: string, supabase
       const categoria = item["Categoría"] || item.Categoría;
       const precioTexto = item.Precio_Texto || item.precio_texto; // fallback
 
+      const precioClean = parseFinancialNumber(item.precio_num);
+      const precioListaClean = parseFinancialNumber(item.precio_lista_num);
+      const bonoClean = parseFinancialNumber(item.bono_num);
+
       finalPrices.push({
         product_id: pId,
         uid: uid,
         store: (categoria || 'DDS') + ' Store',
-        price: item.precio_num ? Number(item.precio_num) : 0,
+        price: precioClean || 0,
         date: new Date(fecha).toISOString(),
         ctx_precio: item.ctx_precio || null,
-        precio_num: item.precio_num ? Number(item.precio_num) : 0,
-        precio_lista_num: item.precio_lista_num ? Number(item.precio_lista_num) : null,
-        bono_num: item.bono_num ? Number(item.bono_num) : null,
+        precio_num: precioClean || 0,
+        precio_lista_num: precioListaClean,
+        bono_num: bonoClean,
         precio_texto: precioTexto,
         fuente_texto_raw: item.fuente_texto_raw || null,
         modelo_url: item.Modelo_URL || null,
