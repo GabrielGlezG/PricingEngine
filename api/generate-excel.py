@@ -114,8 +114,8 @@ def create_bar_chart(ws, title, data_range, start_row, num_series):
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 34
+    chart.height = 21
     
     apply_chart_styling(chart)
     
@@ -136,8 +136,8 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 34
+    chart.height = 21
     
     apply_chart_styling(chart)
     
@@ -157,8 +157,8 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 34
+    chart.height = 21
     
     apply_chart_styling(chart)
     
@@ -204,8 +204,8 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
         
         chart.series.append(series)
     
-    chart.width = 15
-    chart.height = 20 # Taller to accommodate legend at bottom
+    chart.width = 34
+    chart.height = 21 # Taller to accommodate legend at bottom
     
     apply_chart_styling(chart)
     
@@ -530,10 +530,10 @@ def generate_excel(data):
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
                 # Place chart at A1 of the NEW sheet
-                chart.width = 25 # Wider
-                chart.height = 15 # Taller
+                chart.width = 34
+                chart.height = 21
                 
-                ws_chart.add_chart(chart, "B2") 
+                ws_chart.add_chart(chart, "A1") 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
