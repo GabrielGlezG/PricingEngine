@@ -13,7 +13,7 @@ from openpyxl.chart.title import Title
 from openpyxl.chart.text import RichText
 from openpyxl.chart.shapes import GraphicalProperties
 from openpyxl.drawing.line import LineProperties
-from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont, RegularTextRun, LineBreak
+from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont, RegularTextRun, LineBreak, RichTextProperties
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import base64
@@ -81,8 +81,10 @@ def apply_chart_styling(chart):
                 rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_x])])
                 chart.x_axis.title = Title(tx=rt_x)
             # Ticks (Numbers/Categories)
-            # Ticks don't take text run (values are dynamic), but we set the Paragraph Props default
-            chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+            # FORCE VERTICAL ROTATION: rot="-5400000" corresponds to 270 degrees (Vertical Up)
+            # This ensures labels are "vertical always" as requested, preventing diagonal slanting
+            vertical_body = RichTextProperties(rot="-5400000", vert="horz") 
+            chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)], bodyPr=vertical_body)
 
         # 3. Y-Axis Title & Ticks
         if chart.y_axis:
