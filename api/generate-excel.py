@@ -586,6 +586,38 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
+                # Manual Coloring for Negative Values (Red)
+                # "Tendencia" or "Variación" often have positive/negative mixed bars.
+                # Standard 'invertIfNegative' is hit-or-miss with themes. We force Red points.
+                if isinstance(chart_title, str): 
+                    t_low = chart_title.lower()
+                    if "tendencia" in t_low or "variación" in t_low or "variacion" in t_low:
+                         # Identify negative indices
+                         neg_indices = []
+                         # Assuming Series 1 (Column 2) is the main data
+                         # rows contains data dicts. Header keys.
+                         # Need to know which key corresponds to value.
+                         # Headers[1] is usually the first data column.
+                         if len(headers) > 1:
+                             val_key = headers[1] 
+                             for i, row_data in enumerate(rows):
+                                 try:
+                                     val = row_data.get(val_key, 0)
+                                     if isinstance(val, (int, float)) and val < 0:
+                                         neg_indices.append(i)
+                                 except: pass
+                        
+                         # Apply Red Points
+                         from openpyxl.chart.marker import DataPoint
+                         for s in chart.series:
+                             # Generally apply to all series or just first?
+                             # Tendencia usually has 1 series. Safe to apply to all if they share structure.
+                             for idx in neg_indices:
+                                 # Create DataPoint for this index
+                                 pt = DataPoint(idx=idx)
+                                 pt.graphicalProperties = GraphicalProperties(solidFill="FF0000") # Red
+                                 s.dPt.append(pt)
+
                 # Add chart to the Chart Sheet (Auto-fills the page)
                 ws_chart.add_chart(chart) 
             except Exception as e:

@@ -350,13 +350,18 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         except: pass
         
         # --- NEGATIVE VALUE INVERSION (RED BARS) ---
-        # Mirroring Excel logic for "Tendencia" or "Variación"
+        # Explicitly coloring points Red because invert_if_negative defaults to White/Theme
         if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
              try:
                  for series in chart.series:
-                     series.invert_if_negative = True
+                     # python-pptx series.values is a tuple of values
+                     for i, val in enumerate(series.values):
+                         if val is not None and val < 0:
+                             pt = series.points[i]
+                             pt.format.fill.solid()
+                             pt.format.fill.fore_color.rgb = RGBColor(255, 0, 0) # Red
              except Exception as e:
-                 print(f"Error setting invert_if_negative: {e}")
+                 print(f"Error coloring negative points: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
