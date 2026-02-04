@@ -190,7 +190,9 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             # Dynamic Width Calculation? Standard is 9 inches total.
             # If fewer columns, use full width? Yes.
             
-            shape = slide.shapes.add_table(rows_num, cols_num, Inches(0.5), Inches(1.5), Inches(9), Inches(0.4 * rows_num))
+            # 16:9 Layout Adjustments (Width 13.33")
+            # Centered Wider Table: Width 12", Margin (13.33 - 12)/2 = 0.665"
+            shape = slide.shapes.add_table(rows_num, cols_num, Inches(0.665), Inches(1.5), Inches(12), Inches(0.4 * rows_num))
             table = shape.table
             
             # Render Header Row
@@ -303,7 +305,11 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                     values.append(0.0)
             chart_data.add_series(s_name, values)
 
-    x, y, cx, cy = Inches(0.5), Inches(1.3), Inches(9), Inches(6.0)
+            chart_data.add_series(s_name, values)
+
+    # 16:9 Layout Adjustments (Width 13.33")
+    # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
+    x, y, cx, cy = Inches(0.665), Inches(1.3), Inches(12), Inches(6.0)
     graphic_frame = slide.shapes.add_chart(ppt_chart_type, x, y, cx, cy, chart_data)
     chart = graphic_frame.chart
     

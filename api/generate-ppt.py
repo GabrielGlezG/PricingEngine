@@ -54,10 +54,12 @@ def create_summary_slide(prs, summary, currency_symbol):
     
     rows = 10
     cols = 2
-    shape = slide.shapes.add_table(rows, cols, Inches(1.5), Inches(2), Inches(7), Inches(4))
+    # 16:9 Layout: Center Summary Table
+    # Width 8", Margin (13.33 - 8)/2 = 2.665"
+    shape = slide.shapes.add_table(rows, cols, Inches(2.665), Inches(2), Inches(8), Inches(4))
     table = shape.table
-    table.columns[0].width = Inches(3.5)
-    table.columns[1].width = Inches(3.5)
+    table.columns[0].width = Inches(4)
+    table.columns[1].width = Inches(4)
     
     # Header
     table.cell(0, 0).text = "Métrica"
@@ -104,7 +106,8 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
         set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
         
         headers = list(rows[0].keys())
-        shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
+        # 16:9 Layout: Width 12", Margin 0.665"
+        shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.665), Inches(1.5), Inches(12), Inches(0.4*(len(chunk)+1)))
         table = shape.table
         
         for c, header in enumerate(headers):
