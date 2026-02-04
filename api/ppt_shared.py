@@ -360,27 +360,20 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                      points = series.points
                      # python-pptx series.values is a tuple of values
                      for i, val in enumerate(series.values):
-                         if val is not None and val < 0:
+                         if val is not None and isinstance(val, (int, float)) and val < 0:
                              try:
-                                 # Access point (creates Custom Format override)
-                                 pt = points[i]
+                                 pt = series.points[i]
                                  
-                                 # 1. Fill Red (OXML HACK)
-                                 # Standard API .fore_color.rgb failed (rendered White)
-                                 # We force it via XML directly
-                                 spPr = pt._element.get_or_add_spPr()
-                                 solidFill = spPr.get_or_add_solidFill()
-                                 srgbClr = solidFill.get_or_add_srgbClr()
-                                 srgbClr.val = 'FF0000' # Red Hex
+                                 # Local import to ensure availability
+                                 from pptx.dml.color import RGBColor
                                  
-                                 # 2. Border Red (Backup)
-                                 # This worked previously
-                                 ln = spPr.get_or_add_ln()
-                                 ln_solidFill = ln.get_or_add_solidFill()
-                                 ln_srgbClr = ln_solidFill.get_or_add_srgbClr()
-                                 ln_srgbClr.val = 'FF0000'
+                                 # 1. Fill Red (Native API)
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(255, 0, 0)
                                  
-                                 # Also set standard API line width just in case
+                                 # 2. Border Red
+                                 pt.format.line.fill.solid() 
+                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
                                  pt.format.line.width = Pt(0.75)
 
                              except Exception as e_pt:
