@@ -103,7 +103,13 @@ export default function UploadComponent() {
         const text = await file.text();
         jsonData = JSON.parse(text);
       } else if (file.name.endsWith(".csv")) {
-        const text = await file.text();
+        let text = await file.text();
+        
+        // Strip BOM if present (Common in Excel UTF-8 CSVs)
+        if (text.charCodeAt(0) === 0xFEFF) {
+            text = text.slice(1);
+        }
+
         // Simple heuristic to detect delimiter (Excel uses semicolon in many regions)
         const firstLine = text.split('\n')[0];
         const delimiter = firstLine.includes(';') ? ';' : ',';
