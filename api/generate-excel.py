@@ -529,17 +529,18 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Use Page Layout View for true centering
+                # Use Page Layout View with Landscape for correct sizing
                 ws_chart.sheet_view.view = "pageLayout"
-                ws_chart.page_setup.centerHorizontally = True # Physically centers on the page
-                ws_chart.page_setup.centerVertically = False
+                ws_chart.page_setup.orientation = ws_chart.ORIENTATION_LANDSCAPE
+                ws_chart.page_setup.paperSize = ws_chart.PAPERSIZE_A4
+                ws_chart.page_setup.centerHorizontally = True
+                ws_chart.page_setup.centerVertically = True # Center vertically too for "Postcard" look
                 
-                # Margins
-                ws_chart.column_dimensions['A'].width = 2
-                ws_chart.row_dimensions[1].height = 15
+                # Tiny top margin
+                ws_chart.row_dimensions[1].height = 10
                 
-                chart.width = 28
-                chart.height = 17
+                chart.width = 26 # Fits safely in A4 Landscape
+                chart.height = 16
                 
                 ws_chart.add_chart(chart, "B2") 
             except Exception as e:
