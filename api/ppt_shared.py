@@ -588,16 +588,17 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
-            # 3. Enable Data Labels (Baseline)
+            # 3. Enable Data Labels (Baseline = BLACK for Safety)
             plot.has_data_labels = True
             data_labels = plot.data_labels
             data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.number_format = '0%'
-            data_labels.font.color.rgb = WHITE
+            # SAFETY: Set global color to BLACK so it's visible on White bars if override fails
+            data_labels.font.color.rgb = RGBColor(0, 0, 0) 
             
-            # 4. NEGATIVE VALUES: RED BORDER + RED LABEL INSIDE
+            # 4. POINT-BY-POINT STYLING
             try:
                  for series in chart.series:
                      series.invert_if_negative = False 
@@ -607,25 +608,32 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                              f_val = float(val)
                          except:
                              f_val = 0.0
-
-                         if f_val < 0:
-                             try:
-                                 pt = series.points[i]
-                                 
-                                 # A. BORDER: THICK RED
+                        
+                         # Get Point
+                         try:
+                             pt = series.points[i]
+                             
+                             if f_val >= 0:
+                                 # POSITIVE: Blue Bar -> White Text
+                                 if pt.data_label:
+                                     # Force White
+                                     pt.data_label.font.color.rgb = WHITE
+                                     pt.data_label.font.bold = False
+                             else:
+                                 # NEGATIVE: White Bar -> Red Text + Red Border
+                                 # 1. Border
                                  pt.format.line.solid()
                                  pt.format.line.color.rgb = RGBColor(255, 0, 0)
                                  pt.format.line.width = Pt(2.0)
                                  
-                                 # B. LABEL: RED, BOLD, INSIDE
-                                 # We force the font color to Red so it's visible on the white/light bar
+                                 # 2. Label
                                  if pt.data_label:
                                      pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
                                      pt.data_label.font.bold = True
                                      pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
 
-                             except Exception as e_pt:
-                                 print(f"Pt error {i}: {e_pt}")
+                         except Exception as e_pt:
+                             print(f"Pt error {i}: {e_pt}")
 
             except Exception as e:
                  print(f"Error styling trend chart: {e}")
