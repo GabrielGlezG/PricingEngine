@@ -515,8 +515,8 @@ def generate_excel(data):
                     chart_sheet_name = f"Gráfico {sheet_name[:20]} {counter}"
                     counter += 1
 
-                ws_chart = wb.create_sheet(chart_sheet_name)
-                ws_chart.sheet_view.showGridLines = False # White background
+                # Create dedicated Chart Sheet (No grid, auto-maximized)
+                ws_chart = wb.create_chartsheet(chart_sheet_name)
                 
                 num_series = num_cols - 1
                 # Create chart referencing data on 'ws' (Data Sheet)
@@ -529,15 +529,8 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Place chart at B2 with a margin for centering effect
-                chart.width = 28 # "Un poco mas pequeño" / Moderate Large
-                chart.height = 17
-                
-                # Create Margins
-                ws_chart.column_dimensions['A'].width = 2
-                ws_chart.row_dimensions[1].height = 15
-                
-                ws_chart.add_chart(chart, "B2") 
+                # Add chart to the Chart Sheet (Auto-fills the page)
+                ws_chart.add_chart(chart) 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
