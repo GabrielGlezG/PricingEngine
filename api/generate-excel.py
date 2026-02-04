@@ -81,10 +81,46 @@ def apply_chart_styling(chart):
                 rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_x])])
                 chart.x_axis.title = Title(tx=rt_x)
             # Ticks (Numbers/Categories)
-            # FORCE VERTICAL ROTATION: rot="-5400000" corresponds to 270 degrees (Vertical Up)
-            # This ensures labels are "vertical always" as requested, preventing diagonal slanting
-            vertical_body = RichTextProperties(rot="-5400000", vert="horz") 
-            chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)], bodyPr=vertical_body)
+            # FORCE VERTICAL ROTATION only for specific stressful charts
+            # "Volatilidad" (Dates) & "Estructura" (Long Categories)
+            is_stressful_chart = False
+            if chart.title:
+                t_str = ""
+                if isinstance(chart.title, str): t_str = chart.title
+                elif isinstance(chart.title, Title):
+                    # Try to extract text from Title object if simple
+                    # But often we just set it as string before styling
+                    pass 
+                
+                # Check keywords (using title passed to creator functions usually)
+                # But here chart.title is already a Title object because we set it above?
+                # Actually, in apply_chart_styling step 1, we turn it into Title.
+                # Use a heuristic or passed flag? 
+                
+                # Correction: We can check if we just converted it. 
+                # Better approach: Check the keywords in the string content we just put in.
+                # However, accessing the inner text of a RichText Title is hard.
+                pass
+
+            # Simpler: The Chart object doesn't store the original string easily once converted.
+            # But wait! We define the Title *inside* this function at the top (lines 60-70).
+            # The 'chart.title' passed IN is likely still a string if it hasn't been processed yet?
+            # Yes, lines 69 check `if isinstance(chart.title, str)`.
+            
+            # Let's verify: Calls to apply_chart_styling happen at the END of creators.
+            # So chart.title is a string when entering this function.
+            
+            should_rotate = False
+            if isinstance(chart.title, str):
+                title_lower = chart.title.lower()
+                if "volatilidad" in title_lower or "estructura" in title_lower:
+                    should_rotate = True
+            
+            if should_rotate:
+                 vertical_body = RichTextProperties(rot="-5400000", vert="horz") 
+                 chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)], bodyPr=vertical_body)
+            else:
+                 chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
 
         # 3. Y-Axis Title & Ticks
         if chart.y_axis:
