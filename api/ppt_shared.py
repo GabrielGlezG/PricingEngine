@@ -577,8 +577,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             
         # 0. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
-            # 1. Disable Automatic Theme Colors (Allows manual override)
-            plot.vary_by_categories = False
+            # 1. Restore Theme Colors (User preferred)
+            plot.vary_by_categories = True
             
             # 2. X-Axis Labels at Bottom
             try:
@@ -597,10 +597,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             data_labels.number_format = '0%'
             data_labels.font.color.rgb = WHITE
             
-            # 4. MANUAL DUAL COLORING (Blue vs Red)
-            EXCEL_BLUE = RGBColor(68, 114, 196) # Standard Blue
-            RED = RGBColor(255, 0, 0)
-            
+            # 4. NEGATIVE VALUES: RED BORDER + RED LABEL INSIDE
             try:
                  for series in chart.series:
                      series.invert_if_negative = False 
@@ -611,39 +608,24 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                          except:
                              f_val = 0.0
 
-                         try:
-                             pt = series.points[i]
-                             
-                             # RESET any weird OXML states first (Clear Fill)
-                             spPr = pt._element.get_or_add_spPr()
-                             if spPr.find(qn('a:solidFill')):
-                                 spPr.find(qn('a:solidFill')).clear_content()
-
-                             # APPLY COLORS
-                             pt.format.fill.solid()
-                             
-                             if f_val >= 0:
-                                 # Positive: Restore "Nice Blue"
-                                 pt.format.fill.fore_color.rgb = EXCEL_BLUE
-                                 # Ensure label works
-                                 if pt.data_label:
-                                     pt.data_label.font.color.rgb = WHITE
-                                     pt.data_label.font.bold = False
-                             else:
-                                 # Negative: Red
-                                 pt.format.fill.fore_color.rgb = RED
-                                 # Optional: Red Border for Emphasis
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RED
-                                 pt.format.line.width = Pt(1.5)
+                         if f_val < 0:
+                             try:
+                                 pt = series.points[i]
                                  
-                                 # Label
+                                 # A. BORDER: THICK RED
+                                 pt.format.line.solid()
+                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
+                                 pt.format.line.width = Pt(2.0)
+                                 
+                                 # B. LABEL: RED, BOLD, INSIDE
+                                 # We force the font color to Red so it's visible on the white/light bar
                                  if pt.data_label:
-                                     pt.data_label.font.color.rgb = WHITE
+                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
                                      pt.data_label.font.bold = True
-                                     
-                         except Exception as e_pt:
-                             print(f"Pt error {i}: {e_pt}")
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+
+                             except Exception as e_pt:
+                                 print(f"Pt error {i}: {e_pt}")
 
             except Exception as e:
                  print(f"Error styling trend chart: {e}")
