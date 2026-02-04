@@ -3,6 +3,7 @@ import json
 import io
 from datetime import datetime
 from pptx import Presentation
+from pptx.util import Inches
 import sys
 import os
 
@@ -26,6 +27,9 @@ class handler(BaseHTTPRequestHandler):
         data = json.loads(post_body)
         
         prs = Presentation()
+        # Enforce 16:9 Aspect Ratio (Widescreen)
+        prs.slide_width = Inches(13.333)
+        prs.slide_height = Inches(7.5)
         
         # 1. Cover
         create_logo_slide(prs)

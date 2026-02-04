@@ -50,14 +50,23 @@ def create_title_slide(prs, title, date_str):
 def create_summary_slide(prs, summary, currency_symbol):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = "Resumen Ejecutivo"
+    
+    # Force Title to Full Width
+    slide.shapes.title.left = Inches(0)
+    slide.shapes.title.width = prs.slide_width
+    slide.shapes.title.top = Inches(0.5) # Add top margin
+    
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(32), bold=True, color=DARK_BLUE)
+    slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
     
     rows = 10
     cols = 2
-    shape = slide.shapes.add_table(rows, cols, Inches(1.5), Inches(2), Inches(7), Inches(4))
+    # 16:9 Layout: Center Summary Table
+    # Width 8", Margin (13.33 - 8)/2 = 2.665"
+    shape = slide.shapes.add_table(rows, cols, Inches(2.665), Inches(2), Inches(8), Inches(4))
     table = shape.table
-    table.columns[0].width = Inches(3.5)
-    table.columns[1].width = Inches(3.5)
+    table.columns[0].width = Inches(4)
+    table.columns[1].width = Inches(4)
     
     # Header
     table.cell(0, 0).text = "Métrica"
@@ -101,10 +110,18 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
         slide = prs.slides.add_slide(prs.slide_layouts[5])
         slide_title = f"{title}" if i == 0 else f"{title} (Cont.)"
         slide.shapes.title.text = slide_title
+        
+        # Force Title to Full Width
+        slide.shapes.title.left = Inches(0)
+        slide.shapes.title.width = prs.slide_width
+        slide.shapes.title.top = Inches(0.5) # Add top margin
+        
         set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+        slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
         
         headers = list(rows[0].keys())
-        shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.5), Inches(1.5), Inches(9), Inches(0.4*(len(chunk)+1)))
+        # 16:9 Layout: Width 12", Margin 0.665"
+        shape = slide.shapes.add_table(len(chunk)+1, len(headers), Inches(0.665), Inches(1.5), Inches(12), Inches(0.4*(len(chunk)+1)))
         table = shape.table
         
         for c, header in enumerate(headers):
@@ -157,6 +174,9 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
 def generate_ppt(data):
     try:
         prs = Presentation()
+        # Enforce 16:9 Aspect Ratio (Widescreen)
+        prs.slide_width = Inches(13.333)
+        prs.slide_height = Inches(7.5)
         
         title = data.get('title', 'Reporte Dashboard')
         currency_symbol = data.get('currencySymbol', '$')

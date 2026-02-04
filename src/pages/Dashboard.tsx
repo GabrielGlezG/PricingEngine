@@ -805,7 +805,12 @@ export default function Dashboard() {
                 <span className="text-lg font-medium text-muted-foreground">Marcas</span>
              </div>
           }
-          subValue={`${analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos / ${analytics.metrics.total_models} versiones`}
+          subValue={
+             <div className="flex flex-col">
+                <span>{analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos</span>
+                <span>{analytics.metrics.total_models} versiones</span>
+             </div>
+          }
           icon={Package}
         />
         

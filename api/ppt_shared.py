@@ -138,9 +138,12 @@ def create_intro_slide(prs, title, date_str):
     
     p_date = tf.add_paragraph()
     p_date.text = f"\nGenerado: {date_str}"
-    p_date.font.name = "Avenir Medium"
-    p_date.font.size = Pt(16)
-    p_date.font.color.rgb = LIGHT_BLUE # Slate color for date
+    # Explicitly style the run to avoid inheritance issues
+    if p_date.runs:
+        run = p_date.runs[0]
+        run.font.name = "Avenir Medium"
+        run.font.size = Pt(16)
+        run.font.color.rgb = LIGHT_BLUE
     p_date.alignment = PP_ALIGN.LEFT
 
 # --- SHARED CHART & TABLE LOGIC ---
@@ -178,7 +181,13 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             if slide_count > 0: suffix = " (Cont.)"
             slide.shapes.title.text = f"{title}{suffix}"
             
+            # Force Title to Full Width for true centering
+            slide.shapes.title.left = Inches(0)
+            slide.shapes.title.width = prs.slide_width
+            slide.shapes.title.top = Inches(0.5) # Add top margin
+            
             set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+            slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
             
             # Create Table
             rows_num = len(row_chunk) + 1
@@ -187,7 +196,9 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             # Dynamic Width Calculation? Standard is 9 inches total.
             # If fewer columns, use full width? Yes.
             
-            shape = slide.shapes.add_table(rows_num, cols_num, Inches(0.5), Inches(1.5), Inches(9), Inches(0.4 * rows_num))
+            # 16:9 Layout Adjustments (Width 13.33")
+            # Centered Wider Table: Width 12", Margin (13.33 - 12)/2 = 0.665"
+            shape = slide.shapes.add_table(rows_num, cols_num, Inches(0.665), Inches(1.5), Inches(12), Inches(0.4 * rows_num))
             table = shape.table
             
             # Render Header Row
@@ -242,7 +253,14 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
 def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
+    
+    # Force Title to Full Width for true centering
+    slide.shapes.title.left = Inches(0)
+    slide.shapes.title.width = prs.slide_width
+    slide.shapes.title.top = Inches(0.5) # Add top margin
+    
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
+    slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
     
     chart_type = chart_info.get('chart_type', 'bar')
     rows = chart_info.get('data', [])
@@ -300,7 +318,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                     values.append(0.0)
             chart_data.add_series(s_name, values)
 
-    x, y, cx, cy = Inches(0.5), Inches(1.3), Inches(9), Inches(6.0)
+    # 16:9 Layout Adjustments (Width 13.33")
+    # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
+    x, y, cx, cy = Inches(0.665), Inches(1.3), Inches(12), Inches(6.0)
     graphic_frame = slide.shapes.add_chart(ppt_chart_type, x, y, cx, cy, chart_data)
     chart = graphic_frame.chart
     
@@ -312,7 +332,87 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart.legend.font.name = "Avenir Medium"
         chart.legend.font.size = Pt(9)
         
+        # --- GLOBAL AXIS FONT STYLING ---
+        # Apply standard branding to axes if they validly exist
+        try:
+            if chart.value_axis:
+                # Tick Labels
+                chart.value_axis.tick_labels.font.name = "Avenir Medium"
+                chart.value_axis.tick_labels.font.size = Pt(9)
+                # Axis Title (e.g. "Valor")
+                if chart.value_axis.has_title:
+                     chart.value_axis.axis_title.text_frame.paragraphs[0].font.name = "Avenir Medium"
+                     chart.value_axis.axis_title.text_frame.paragraphs[0].font.size = Pt(10)
+        except: pass 
+
+        try:
+            if chart.category_axis:
+                # Tick Labels
+                chart.category_axis.tick_labels.font.name = "Avenir Medium"
+                chart.category_axis.tick_labels.font.size = Pt(9)
+                # Axis Title
+                if chart.category_axis.has_title:
+                     chart.category_axis.axis_title.text_frame.paragraphs[0].font.name = "Avenir Medium"
+                     chart.category_axis.axis_title.text_frame.paragraphs[0].font.size = Pt(10)
+        except: pass
+        
         plot = chart.plots[0]
+
+        # --- GLOBAL DATA LABEL FONT STYLING ---
+        try:
+            if plot.has_data_labels:
+                dl = plot.data_labels
+                dl.font.name = "Avenir Medium"
+                dl.font.size = Pt(9)
+        except: pass
+        
+        # 0. "Tendencia" / "Variación" Specifics
+        if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
+             # --- FIX 1: LABELS AT BOTTOM (Avoid overlap with negative bars) ---
+             try:
+                 chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+             except: pass
+
+             # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
+             # Since solid fill is failing, we highlight via Thick Red Border + Red Text
+             try:
+                 for series in chart.series:
+                     series.invert_if_negative = False 
+                     
+                     for i, val in enumerate(series.values):
+                         # Handle potentially exotic number types
+                         try:
+                             f_val = float(val)
+                         except:
+                             f_val = 0.0
+
+                         if f_val < 0:
+                             try:
+                                 # Access Data Point
+                                 pt = series.points[i]
+                                 
+                                 # 1. Border: Thick Red
+                                 pt.format.line.solid()
+                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
+                                 pt.format.line.width = Pt(2.5) # Thicker to make it obvious
+                                 
+                                 # 2. Fill: Explicit White (so Red text pops)
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
+
+                                 # 3. Data Label: Red Text + Bold
+                                 # We must access the specific label for this point
+                                 if pt.data_label:
+                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
+                                     pt.data_label.font.bold = True
+                                     # Ensure it's inside
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+
+                             except Exception as e_pt:
+                                 print(f"Failed to style negative point {i}: {e_pt}")
+
+             except Exception as e:
+                 print(f"Error coloring negative points: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
@@ -351,6 +451,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              if chart.value_axis:
                  chart.value_axis.tick_labels.number_format = f'"{currency_symbol}" #,##0'
                  chart.value_axis.major_unit = None # Auto scale
+                 chart.value_axis.tick_labels.font.name = "Avenir Medium"
+                 chart.value_axis.tick_labels.font.size = Pt(9)
                  
              # Smooth Lines with Markers
              try:
@@ -367,6 +469,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              # X-Axis Dates (Rotate if needed)
              try:
                  category_axis = chart.category_axis
+                 category_axis.tick_labels.font.name = "Avenir Medium"
                  category_axis.tick_labels.font.size = Pt(9)
                  category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
                  
@@ -472,24 +575,44 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
              except Exception as e:
                  print(f"Error setting markers for benchmarking: {e}")
             
-        # 3. "Tendencia" (Trend) -> Percent Axis, Colored Bars
+        # 0. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
-            plot.vary_by_categories = True
+            # 1. UNIFORM STYLE: All Blue
+            plot.vary_by_categories = False
+            
+            # 2. X-Axis Labels at Bottom
+            try:
+                chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+            except: pass
+            
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
-            # Data Labels
+            # 3. GLOBAL DATA LABELS (White, Bold, Inside)
+            # Since all bars will be Blue, White text is perfect.
             plot.has_data_labels = True
             data_labels = plot.data_labels
             data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
+            data_labels.font.bold = True
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.number_format = '0%'
-            data_labels.font.color.rgb = WHITE # Contrast for colored bars
+            data_labels.font.color.rgb = WHITE 
             
-            # Ensure negative bars are colored (not white)
-            for series in chart.series:
-                series.invert_if_negative = False
+            # 4. SERIES UNIFORM COLORING (Manual Blue)
+            # This ensures we get the "Nice Blue" not the "Dark Navy" default
+            EXCEL_BLUE = RGBColor(68, 114, 196) 
+            
+            try:
+                 for series in chart.series:
+                     # Force Series to Blue
+                     series.format.fill.solid()
+                     series.format.fill.fore_color.rgb = EXCEL_BLUE
+                     
+                     # Force Negatives to stay Blue
+                     series.invert_if_negative = False
+            except Exception as e:
+                 print(f"Error styling trend chart: {e}")
                 
         # 4. "Volatilidad" (Volatility) -> Percent Axis, Smoothed Lines, Vertical Dates
         elif 'volatilidad' in name_lower or 'volatility' in name_lower:

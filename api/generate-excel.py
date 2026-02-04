@@ -9,6 +9,11 @@ from datetime import datetime, timedelta
 # openpyxl imports
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.title import Title
+from openpyxl.chart.text import RichText
+from openpyxl.chart.shapes import GraphicalProperties
+from openpyxl.drawing.line import LineProperties
+from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont, RegularTextRun, LineBreak, RichTextProperties
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import base64
@@ -16,7 +21,8 @@ import base64
 
 # Styling constants
 HEADER_FILL = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
-HEADER_FONT = Font(color="FFFFFF", bold=True, size=11)
+HEADER_FONT = Font(name="Avenir Medium", color="FFFFFF", bold=True, size=11)
+BODY_FONT = Font(name="Avenir Medium", size=10)
 ALT_ROW_FILL = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
 THIN_BORDER = Border(
     left=Side(style='thin', color='E2E8F0'),
@@ -39,9 +45,114 @@ def style_data_rows(ws, start_row, end_row, num_cols):
     for row in range(start_row, end_row + 1):
         for col in range(1, num_cols + 1):
             cell = ws.cell(row=row, column=col)
+            cell.font = BODY_FONT
             if (row - start_row) % 2 == 1:
                 cell.fill = ALT_ROW_FILL
             cell.border = THIN_BORDER
+
+
+def apply_chart_styling(chart):
+    """
+    Attempts to enforce Avenir Font on Chart Elements using RichText.
+    This works by replacing the standard Text object with a RichText object defined with specific font properties.
+    """
+    try:
+        # Define Avenir Font Properties
+        # sz is 100ths of point, so 1100 = 11pt
+        font_title = DrawingFont(typeface='Avenir Black')
+        cp_title = CharacterProperties(latin=font_title, sz=1400, b=True) 
+        pp_title = ParagraphProperties(defRPr=cp_title)
+        
+        font_axis = DrawingFont(typeface='Avenir Medium')
+        cp_axis = CharacterProperties(latin=font_axis, sz=900)
+        pp_axis = ParagraphProperties(defRPr=cp_axis)
+
+        # 1. Chart Title
+        if chart.title and isinstance(chart.title, str):
+            run = RegularTextRun(t=chart.title, rPr=cp_title)
+            rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, r=[run])])
+            chart.title = Title(tx=rt_title)
+            
+        # 2. X-Axis Title & Ticks
+        if chart.x_axis:
+            # Title
+            if chart.x_axis.title and isinstance(chart.x_axis.title, str):
+                run_x = RegularTextRun(t=chart.x_axis.title, rPr=cp_axis)
+                rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_x])])
+                chart.x_axis.title = Title(tx=rt_x)
+            # Ticks (Numbers/Categories)
+            # FORCE VERTICAL ROTATION only for specific stressful charts
+            # "Volatilidad" (Dates) & "Estructura" (Long Categories)
+            is_stressful_chart = False
+            if chart.title:
+                t_str = ""
+                if isinstance(chart.title, str): t_str = chart.title
+                elif isinstance(chart.title, Title):
+                    # Try to extract text from Title object if simple
+                    # But often we just set it as string before styling
+                    pass 
+                
+                # Check keywords (using title passed to creator functions usually)
+                # But here chart.title is already a Title object because we set it above?
+                # Actually, in apply_chart_styling step 1, we turn it into Title.
+                # Use a heuristic or passed flag? 
+                
+                # Correction: We can check if we just converted it. 
+                # Better approach: Check the keywords in the string content we just put in.
+                # However, accessing the inner text of a RichText Title is hard.
+                pass
+
+            # Simpler: The Chart object doesn't store the original string easily once converted.
+            # But wait! We define the Title *inside* this function at the top (lines 60-70).
+            # The 'chart.title' passed IN is likely still a string if it hasn't been processed yet?
+            # Yes, lines 69 check `if isinstance(chart.title, str)`.
+            
+            # Let's verify: Calls to apply_chart_styling happen at the END of creators.
+            # So chart.title is a string when entering this function.
+            
+            should_rotate = False
+            if isinstance(chart.title, str):
+                title_lower = chart.title.lower()
+                if "volatilidad" in title_lower or "estructura" in title_lower:
+                    should_rotate = True
+            
+            if should_rotate:
+                 vertical_body = RichTextProperties(rot="-5400000", vert="horz") 
+                 chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)], bodyPr=vertical_body)
+            else:
+                 chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+
+        # 3. Y-Axis Title & Ticks
+        if chart.y_axis:
+            # Title
+            if chart.y_axis.title and isinstance(chart.y_axis.title, str):
+                run_y = RegularTextRun(t=chart.y_axis.title, rPr=cp_axis)
+                rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_y])])
+                chart.y_axis.title = Title(tx=rt_y)
+            # Ticks (Numbers)
+            chart.y_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+            
+        # 4. Legend Font & Position
+        if chart.legend:
+             chart.legend.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
+             chart.legend.position = 'b' # Bottom Legend
+
+        # 5. Remove Gridlines (Cleaner look like PPT)
+        chart.y_axis.majorGridlines = None
+        
+        # 6. Negative Value Coloring (Red if Negative)
+        # Apply specifically to "Tendencia" or "Variación" charts as requested
+        # We enable 'invertIfNegative'. Getting it explicitly RED usually requires Theme or specific RGB hack,
+        # but standard Excel 'Invert' often defaults to Red or White.
+        if isinstance(chart.title, str):
+            t_low = chart.title.lower()
+            if "tendencia" in t_low or "variación" in t_low or "variacion" in t_low:
+                 for s in chart.series:
+                     s.invertIfNegative = True
+
+    except Exception as e:
+        # Fail silently - do not crash generation just for font
+        print(f"Font styling warning: {str(e)}")
 
 
 def create_bar_chart(ws, title, data_range, start_row, num_series):
@@ -49,16 +160,19 @@ def create_bar_chart(ws, title, data_range, start_row, num_series):
     chart.type = "col"
     chart.grouping = "clustered"
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Valor"
+    chart.gapWidth = 50 # Make bars wider
     
     data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
     cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 28
+    chart.height = 17
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -69,16 +183,20 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
     chart.type = "col"
     chart.grouping = "stacked"  # STACKED instead of clustered
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Total"
+    chart.gapWidth = 50 # Make bars wider (closer to PPT style)
+    chart.overlap = 100 # Ensure perfect stacking
     
     data = Reference(ws, min_col=2, min_row=start_row, max_col=1 + num_series, max_row=data_range)
     cats = Reference(ws, min_col=1, min_row=start_row + 1, max_row=data_range)
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 28
+    chart.height = 17
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -86,7 +204,7 @@ def create_stacked_chart(ws, title, data_range, start_row, num_series):
 def create_line_chart(ws, title, data_range, start_row, num_series):
     chart = LineChart()
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.y_axis.title = "Valor"
     # Ensure dates are at the very bottom, not crossing the negative values
     chart.x_axis.tickLblPos = "low"
@@ -96,8 +214,10 @@ def create_line_chart(ws, title, data_range, start_row, num_series):
     
     chart.add_data(data, titles_from_data=True)
     chart.set_categories(cats)
-    chart.width = 15
-    chart.height = 10
+    chart.width = 28
+    chart.height = 17
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -110,7 +230,7 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
     
     chart = BubbleChart()
     chart.title = title
-    chart.style = 10
+    chart.style = 2 # Flat style
     chart.x_axis.title = "Volumen"
     chart.y_axis.title = "Precio"
     chart.bubbleScale = 30 # Back to standard size
@@ -141,8 +261,10 @@ def create_scatter_chart(ws, title, data_range, start_row, num_series):
         
         chart.series.append(series)
     
-    chart.width = 15
-    chart.height = 20 # Taller to accommodate legend at bottom
+    chart.width = 28
+    chart.height = 17 # Taller to accommodate legend at bottom
+    
+    apply_chart_styling(chart)
     
     return chart
 
@@ -155,19 +277,76 @@ def generate_error_excel(error_message):
     ws['A1'] = "Critical Error generating Excel"
     ws['A1'].font = Font(color="FF0000", bold=True, size=14)
     ws['A3'] = str(error_message)
-    ws.column_dimensions['A'].width = 100
+    # Auto-adjust column width
+    ws.column_dimensions['A'].width = 80
     
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-    return output.getvalue()
+    virtual_workbook = io.BytesIO()
+    wb.save(virtual_workbook)
+    virtual_workbook.seek(0)
+    return virtual_workbook.getvalue()
 
+def set_global_styles(wb):
+    """
+    Modifies the default styles to ensure Avenir Medium is the baseline font.
+    This helps chart elements that inherit 'Document Default' to use Avenir.
+    """
+    try:
+        # Access the 'Normal' named style
+        if 'Normal' in wb.named_styles:
+            normal = wb.named_styles['Normal']
+            normal.font = Font(name='Avenir Medium', size=11)
+        
+        # Also try to set it on the default style of the workbook logic
+        # (OpenPyXL internal default)
+        
+    except Exception as e:
+        print(f"Global style warning: {e}")
+
+def enforce_global_font(wb):
+    """
+    Final pass: Iterates through EVERY cell in ALL sheets to enforce Avenir Medium.
+    This ensures no cell is left behind with default settings.
+    """
+    try:
+        avenir = Font(name="Avenir Medium", size=10) # Base font
+        
+        for sheet in wb.worksheets:
+            for row in sheet.iter_rows():
+                 for cell in row:
+                     if cell.font and cell.font.name != "Avenir Medium":
+                         # Create new font preserving basics
+                         current = cell.font
+                         new_f = Font(
+                             name="Avenir Medium",
+                             size=current.size if current.size else 10,
+                             bold=current.bold,
+                             italic=current.italic,
+                             color=current.color
+                         )
+                         cell.font = new_f
+                     elif not cell.font:
+                         cell.font = avenir
+    except Exception as e:
+        print(f"Enforce font error: {e}")
 
 def generate_excel(data):
     # Initialize Debug Log
     debug_log = []
     
     try:
+        wb = Workbook()
+        
+        # Apply Global Font Settings immediately
+        set_global_styles(wb)
+
+        # Remove default sheet
+        default_ws = wb.active
+        wb.remove(default_ws)
+        
+        # Debug Sheet (Hidden)
+        debug_ws = wb.create_sheet("DEBUG LOG")
+        debug_ws.sheet_state = 'hidden'
+        
         sheets = data.get('sheets', [])
         summary = data.get('summary', None)
         models = data.get('models', None)
@@ -234,7 +413,7 @@ def generate_excel(data):
             
             # Apply font to filters
             for r in range(15, 18):
-                ws[f'A{r}'].font = Font(name="Avenir Medium", bold=True)
+                ws[f'A{r}'].font = Font(name="Avenir Medium") # Plain text as requested
                 ws[f'B{r}'].font = Font(name="Avenir Medium")
 
             ws.column_dimensions['A'].width = 25
@@ -256,7 +435,7 @@ def generate_excel(data):
                 
                 for filter_name, filter_values in filters_data.items():
                     if isinstance(filter_values, list) and len(filter_values) > 0:
-                        ws.cell(row=current_row, column=1, value=f"{filter_name}:").font = Font(name="Avenir Medium", bold=True)
+                        ws.cell(row=current_row, column=1, value=f"{filter_name}:").font = Font(name="Avenir Medium")
                         ws.cell(row=current_row, column=2, value=', '.join(filter_values)).font = Font(name="Avenir Medium")
                         current_row += 1
             
@@ -393,8 +572,8 @@ def generate_excel(data):
                     chart_sheet_name = f"Gráfico {sheet_name[:20]} {counter}"
                     counter += 1
 
-                ws_chart = wb.create_sheet(chart_sheet_name)
-                ws_chart.sheet_view.showGridLines = False # White background
+                # Create dedicated Chart Sheet (No grid, auto-maximized)
+                ws_chart = wb.create_chartsheet(chart_sheet_name)
                 
                 num_series = num_cols - 1
                 # Create chart referencing data on 'ws' (Data Sheet)
@@ -407,11 +586,43 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Place chart at A1 of the NEW sheet
-                chart.width = 25 # Wider
-                chart.height = 15 # Taller
-                
-                ws_chart.add_chart(chart, "B2") 
+                # Manual Coloring for Negative Values (Red)
+                # "Tendencia" or "Variación" often have positive/negative mixed bars.
+                # Standard 'invertIfNegative' is hit-or-miss with themes. We force Red points.
+                if isinstance(chart_title, str): 
+                    t_low = chart_title.lower()
+                    if "tendencia" in t_low or "variación" in t_low or "variacion" in t_low:
+                         # FIX: Move X-Axis Labels to Bottom (Low)
+                         chart.x_axis.tickLblPos = "low"
+                         
+                         # Identify negative indices
+                         neg_indices = []
+                         # Assuming Series 1 (Column 2) is the main data
+                         # rows contains data dicts. Header keys.
+                         # Need to know which key corresponds to value.
+                         # Headers[1] is usually the first data column.
+                         if len(headers) > 1:
+                             val_key = headers[1] 
+                             for i, row_data in enumerate(rows):
+                                 try:
+                                     val = row_data.get(val_key, 0)
+                                     if isinstance(val, (int, float)) and val < 0:
+                                         neg_indices.append(i)
+                                 except: pass
+                        
+                         # Apply Red Points
+                         from openpyxl.chart.marker import DataPoint
+                         for s in chart.series:
+                             # Generally apply to all series or just first?
+                             # Tendencia usually has 1 series. Safe to apply to all if they share structure.
+                             for idx in neg_indices:
+                                 # Create DataPoint for this index
+                                 pt = DataPoint(idx=idx)
+                                 pt.graphicalProperties = GraphicalProperties(solidFill="FF0000") # Red
+                                 s.dPt.append(pt)
+
+                # Add chart to the Chart Sheet (Auto-fills the page)
+                ws_chart.add_chart(chart) 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
@@ -428,6 +639,7 @@ def generate_excel(data):
                 ws_debug.cell(row=i+1, column=1, value=log)
                 
         # Save to BytesIO
+        enforce_global_font(wb)
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
