@@ -157,6 +157,9 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
 def generate_ppt(data):
     try:
         prs = Presentation()
+        # Enforce 16:9 Aspect Ratio (Widescreen)
+        prs.slide_width = Inches(13.333)
+        prs.slide_height = Inches(7.5)
         
         title = data.get('title', 'Reporte Dashboard')
         currency_symbol = data.get('currencySymbol', '$')
