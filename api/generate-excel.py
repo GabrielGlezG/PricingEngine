@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 # openpyxl imports
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.title import Title
 from openpyxl.chart.text import RichText
 from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -64,18 +65,18 @@ def apply_chart_styling(chart):
         cp_axis = CharacterProperties(latin=font_axis, sz=900)
         pp_axis = ParagraphProperties(defRPr=cp_axis)
 
-        # 1. Chart Title (If exists and is string)
+        # 1. Chart Title
         if chart.title and isinstance(chart.title, str):
             rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, text=chart.title)])
-            chart.title = rt_title
+            chart.title = Title(tx=rt_title)
             
         # 2. X-Axis Title & Ticks
         if chart.x_axis:
             # Title
             if chart.x_axis.title and isinstance(chart.x_axis.title, str):
                 rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.x_axis.title)])
-                chart.x_axis.title = rt_x
-            # Ticks (Numbers/Categories) - Critical for "Ejes" look
+                chart.x_axis.title = Title(tx=rt_x)
+            # Ticks (Numbers/Categories)
             chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
 
         # 3. Y-Axis Title & Ticks
@@ -83,11 +84,11 @@ def apply_chart_styling(chart):
             # Title
             if chart.y_axis.title and isinstance(chart.y_axis.title, str):
                 rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.y_axis.title)])
-                chart.y_axis.title = rt_y
+                chart.y_axis.title = Title(tx=rt_y)
             # Ticks (Numbers)
             chart.y_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
             
-        # 4. Legend Font (Uses TextProperties directly if possible, else difficult in OpenPyXL)
+        # 4. Legend Font
         if chart.legend:
              chart.legend.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
 
