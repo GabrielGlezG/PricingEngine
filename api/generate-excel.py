@@ -11,7 +11,7 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.title import Title
 from openpyxl.chart.text import RichText
-from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont
+from openpyxl.drawing.text import Paragraph, ParagraphProperties, CharacterProperties, Font as DrawingFont, RegularTextRun, LineBreak
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import base64
@@ -67,23 +67,27 @@ def apply_chart_styling(chart):
 
         # 1. Chart Title
         if chart.title and isinstance(chart.title, str):
-            rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, text=chart.title)])
+            run = RegularTextRun(t=chart.title, rPr=cp_title)
+            rt_title = RichText(p=[Paragraph(pPr=pp_title, endParaRPr=cp_title, r=[run])])
             chart.title = Title(tx=rt_title)
             
         # 2. X-Axis Title & Ticks
         if chart.x_axis:
             # Title
             if chart.x_axis.title and isinstance(chart.x_axis.title, str):
-                rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.x_axis.title)])
+                run_x = RegularTextRun(t=chart.x_axis.title, rPr=cp_axis)
+                rt_x = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_x])])
                 chart.x_axis.title = Title(tx=rt_x)
             # Ticks (Numbers/Categories)
+            # Ticks don't take text run (values are dynamic), but we set the Paragraph Props default
             chart.x_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
 
         # 3. Y-Axis Title & Ticks
         if chart.y_axis:
             # Title
             if chart.y_axis.title and isinstance(chart.y_axis.title, str):
-                rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, text=chart.y_axis.title)])
+                run_y = RegularTextRun(t=chart.y_axis.title, rPr=cp_axis)
+                rt_y = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis, r=[run_y])])
                 chart.y_axis.title = Title(tx=rt_y)
             # Ticks (Numbers)
             chart.y_axis.textProperties = RichText(p=[Paragraph(pPr=pp_axis, endParaRPr=cp_axis)])
