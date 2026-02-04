@@ -548,6 +548,12 @@ def generate_excel(data):
                 
         # Save to BytesIO
         enforce_global_font(wb)
+        
+        # Fix: Set active sheet to first regular worksheet (not chart sheet)
+        # This prevents Excel "white screen" bug when enabling editing from Protected View
+        if wb.worksheets:
+            wb.active = wb.worksheets[0]
+        
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
