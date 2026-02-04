@@ -305,8 +305,6 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                     values.append(0.0)
             chart_data.add_series(s_name, values)
 
-            chart_data.add_series(s_name, values)
-
     # 16:9 Layout Adjustments (Width 13.33")
     # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
     x, y, cx, cy = Inches(0.665), Inches(1.3), Inches(12), Inches(6.0)
