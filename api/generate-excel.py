@@ -101,12 +101,6 @@ def apply_chart_styling(chart):
 
         # 5. Remove Gridlines (Cleaner look like PPT)
         chart.y_axis.majorGridlines = None
-        
-        # 6. Remove Borders from Series (to make stacking seamless)
-        # This is critical for the "no separacion" look
-        no_line = LineProperties(noFill=True)
-        for s in chart.series:
-             s.graphicalProperties = GraphicalProperties(ln=no_line)
 
     except Exception as e:
         # Fail silently - do not crash generation just for font
