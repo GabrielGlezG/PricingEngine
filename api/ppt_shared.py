@@ -373,25 +373,12 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 2: ROBUST RED NEGATIVE BARS (OXML HACK) ---
+             # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
+             # Since solid fill is failing, we highlight via Thick Red Border + Red Text
              try:
                  for series in chart.series:
-                     # 1. FORCE invertIfNegative = False (XML LEVEL)
-                     # This is critical. If True, PPT ignores point formatting for negative values.
-                     try:
-                         # Get the c:ser element
-                         c_ser = series._element
-                         # Find or create invertIfNegative
-                         invert_if_negative = c_ser.find(qn('c:invertIfNegative'))
-                         if invert_if_negative is None:
-                             invert_if_negative = OxmlElement('c:invertIfNegative')
-                             c_ser.append(invert_if_negative)
-                         # Set value to 0 (False)
-                         invert_if_negative.set('val', '0')
-                     except Exception as e_xml:
-                         print(f"XML Invert Error: {e_xml}")
-
-                     # 2. Color Negative Points
+                     series.invert_if_negative = False 
+                     
                      for i, val in enumerate(series.values):
                          # Handle potentially exotic number types
                          try:
@@ -404,30 +391,25 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                                  # Access Data Point
                                  pt = series.points[i]
                                  
-                                 # -- BORDER (Native API) --
+                                 # 1. Border: Thick Red
                                  pt.format.line.solid()
                                  pt.format.line.color.rgb = RGBColor(255, 0, 0)
-                                 pt.format.line.width = Pt(0.75)
+                                 pt.format.line.width = Pt(2.5) # Thicker to make it obvious
                                  
-                                 # -- FILL (OXML Hack) --
-                                 from pptx.oxml.ns import qn
-                                 from pptx.oxml.xmlchemy import OxmlElement
-                                 
-                                 spPr = pt._element.get_or_add_spPr()
-                                 fill = spPr.find(qn('a:solidFill'))
-                                 if fill is None:
-                                     fill = spPr.add_solidFill()
-                                 
-                                 # Nuke existing children
-                                 fill.clear_content() 
-                                 
-                                 # Create Red Color Element
-                                 srgbClr = OxmlElement('a:srgbClr')
-                                 srgbClr.set('val', 'FF0000')
-                                 fill.append(srgbClr)
+                                 # 2. Fill: Explicit White (so Red text pops)
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
+
+                                 # 3. Data Label: Red Text + Bold
+                                 # We must access the specific label for this point
+                                 if pt.data_label:
+                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
+                                     pt.data_label.font.bold = True
+                                     # Ensure it's inside
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
 
                              except Exception as e_pt:
-                                 print(f"Failed to color point {i}: {e_pt}")
+                                 print(f"Failed to style negative point {i}: {e_pt}")
 
              except Exception as e:
                  print(f"Error coloring negative points: {e}")
