@@ -181,6 +181,10 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             if slide_count > 0: suffix = " (Cont.)"
             slide.shapes.title.text = f"{title}{suffix}"
             
+            # Force Title to Full Width for true centering
+            slide.shapes.title.left = Inches(0)
+            slide.shapes.title.width = prs.slide_width
+            
             set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
             slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
             
@@ -248,6 +252,11 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
 def add_chart_slide(prs, chart_info, currency_symbol='$'):
     slide = prs.slides.add_slide(prs.slide_layouts[5])
     slide.shapes.title.text = chart_info.get('chart_title', 'Gráfico')
+    
+    # Force Title to Full Width for true centering
+    slide.shapes.title.left = Inches(0)
+    slide.shapes.title.width = prs.slide_width
+    
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
     slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
     
