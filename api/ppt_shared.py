@@ -184,6 +184,7 @@ def add_table_slide(prs, title, rows, currency_symbol='$'):
             # Force Title to Full Width for true centering
             slide.shapes.title.left = Inches(0)
             slide.shapes.title.width = prs.slide_width
+            slide.shapes.title.top = Inches(0.5) # Add top margin
             
             set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
             slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
@@ -256,6 +257,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
     # Force Title to Full Width for true centering
     slide.shapes.title.left = Inches(0)
     slide.shapes.title.width = prs.slide_width
+    slide.shapes.title.top = Inches(0.5) # Add top margin
     
     set_font(slide.shapes.title, font_name="Avenir Black", font_size=Pt(28), bold=True, color=DARK_BLUE)
     slide.shapes.title.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
