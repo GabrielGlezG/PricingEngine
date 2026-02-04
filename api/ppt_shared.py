@@ -366,35 +366,45 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                 dl.font.size = Pt(9)
         except: pass
         
-        # --- NEGATIVE VALUE INVERSION (RED BARS) ---
-        # Explicitly coloring points Red because invert_if_negative defaults to White/Theme
+        # 0. "Tendencia" / "Variación" Specifics
         if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
+             # --- FIX 1: LABELS AT BOTTOM (Avoid overlap with negative bars) ---
+             try:
+                 chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
+             except: pass
+
+             # --- FIX 2: ROBUST RED NEGATIVE BARS (OXML HACK) ---
              try:
                  for series in chart.series:
-                     # FIRST: Disable automatic inversion
-                     series.invert_if_negative = False
+                     series.invert_if_negative = False # Disable automatic (often white) inversion
                      
-                     points = series.points
-                     # python-pptx series.values is a tuple of values
                      for i, val in enumerate(series.values):
                          if val is not None and isinstance(val, (int, float)) and val < 0:
                              try:
+                                 # Access Data Point
                                  pt = series.points[i]
                                  
-                                 # Local import to ensure availability
-                                 from pptx.dml.color import RGBColor
-                                 
-                                 # 1. Fill Red (Native API)
-                                 pt.format.fill.solid()
-                                 pt.format.fill.fore_color.rgb = RGBColor(255, 0, 0)
-                                 
-                                 # 2. Border Red
-                                 pt.format.line.fill.solid() 
+                                 # -- BORDER (Native API works for this) --
+                                 pt.format.line.solid()
                                  pt.format.line.color.rgb = RGBColor(255, 0, 0)
                                  pt.format.line.width = Pt(0.75)
+                                 
+                                 # -- FILL (OXML Hack for robustness) --
+                                 # Using explicit XML ensures the solid fill 'sticks' even if themes fight it
+                                 spPr = pt._element.get_or_add_spPr()
+                                 fill = spPr.find(qn('a:solidFill'))
+                                 if fill is None:
+                                     fill = spPr.add_solidFill()
+                                 
+                                 # Clear existing color choices in solidFill
+                                 fill.clear_content() 
+                                 
+                                 # Add srgbClr val="FF0000"
+                                 srgbClr = fill.makeelement(qn('a:srgbClr'))
+                                 srgbClr.set('val', 'FF0000')
+                                 fill.append(srgbClr)
 
                              except Exception as e_pt:
-                                 # Log individual point failure
                                  print(f"Failed to color point {i}: {e_pt}")
 
              except Exception as e:
