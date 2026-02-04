@@ -518,6 +518,9 @@ def generate_excel(data):
                 # Create dedicated Chart Sheet (No grid, auto-maximized)
                 ws_chart = wb.create_chartsheet(chart_sheet_name)
                 
+                # Set explicit zoom to prevent Protected View rendering bug
+                ws_chart.sheet_view.zoomScale = 100
+                
                 num_series = num_cols - 1
                 # Create chart referencing data on 'ws' (Data Sheet)
                 if chart_type == 'line':
