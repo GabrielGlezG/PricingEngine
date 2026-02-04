@@ -577,9 +577,10 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             
         # 0. "Tendencia" (Trend) -> Percent Axis, Colored Bars
         elif 'tendencia' in name_lower or 'trend' in name_lower:
-            plot.vary_by_categories = True
+            # 1. Standardize Base Style (Blue Bars)
+            plot.vary_by_categories = False
             
-            # --- FIX 1: LABELS AT BOTTOM ---
+            # 2. X-Axis Labels at Bottom
             try:
                 chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
             except: pass
@@ -587,20 +588,32 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
             if chart.value_axis:
                 chart.value_axis.tick_labels.number_format = '0%'
             
-            # Data Labels
+            # 3. Global Data Labels (White on Blue)
             plot.has_data_labels = True
             data_labels = plot.data_labels
             data_labels.font.name = "Avenir Medium"
             data_labels.font.size = Pt(8)
             data_labels.position = XL_LABEL_POSITION.INSIDE_END
             data_labels.number_format = '0%'
-            data_labels.font.color.rgb = WHITE # Contrast for colored bars
+            data_labels.font.color.rgb = WHITE 
             
-            # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
+            # 4. NEGATIVE VALUES HANDLING (RED BARS)
             try:
+                 from pptx.oxml.ns import qn
+                 from pptx.oxml.xmlchemy import OxmlElement
+                 
                  for series in chart.series:
-                     series.invert_if_negative = False 
+                     # A. Force XML Invert=False (Stop White Bars)
+                     try:
+                         c_ser = series._element
+                         invert = c_ser.find(qn('c:invertIfNegative'))
+                         if invert is None:
+                             invert = OxmlElement('c:invertIfNegative')
+                             c_ser.append(invert)
+                         invert.set('val', '0')
+                     except: pass
                      
+                     # B. Iterate Points for Red Fill
                      for i, val in enumerate(series.values):
                          try:
                              f_val = float(val)
@@ -609,26 +622,31 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
 
                          if f_val < 0:
                              try:
-                                 # Access Data Point
                                  pt = series.points[i]
                                  
-                                 # 1. Border: Thick Red
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
-                                 pt.format.line.width = Pt(2.5)
+                                 # -- RED FILL (OXML) --
+                                 spPr = pt._element.get_or_add_spPr()
+                                 fill = spPr.find(qn('a:solidFill'))
+                                 if fill is None:
+                                     fill = spPr.add_solidFill()
+                                 fill.clear_content() 
+                                 srgbClr = OxmlElement('a:srgbClr')
+                                 srgbClr.set('val', 'FF0000') # RED
+                                 fill.append(srgbClr)
                                  
-                                 # 2. Fill: White (Explicit)
-                                 pt.format.fill.solid()
-                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
-
-                                 # 3. Data Label: Red Text + Bold
-                                 if pt.data_label:
-                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
-                                     pt.data_label.font.bold = True
-                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+                                 # -- RED BORDER --
+                                 ln = spPr.find(qn('a:ln'))
+                                 if ln is None:
+                                     ln = spPr.add_ln()
+                                 ln_fill = ln.find(qn('a:solidFill'))
+                                 if ln_fill is None: ln_fill = ln.add_solidFill()
+                                 ln_fill.clear_content()
+                                 ln_clr = OxmlElement('a:srgbClr')
+                                 ln_clr.set('val', 'FF0000')
+                                 ln_fill.append(ln_clr)
 
                              except Exception as e_pt:
-                                 print(f"Failed to style negative point {i}: {e_pt}")
+                                 print(f"Pt error {i}: {e_pt}")
 
             except Exception as e:
                  print(f"Error styling trend chart: {e}")
