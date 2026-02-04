@@ -390,17 +390,20 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                                  pt.format.line.width = Pt(0.75)
                                  
                                  # -- FILL (OXML Hack for robustness) --
-                                 # Using explicit XML ensures the solid fill 'sticks' even if themes fight it
+                                 # Local import ensuring we have the tools
+                                 from pptx.oxml.ns import qn
+                                 from pptx.oxml.xmlchemy import OxmlElement
+                                 
                                  spPr = pt._element.get_or_add_spPr()
                                  fill = spPr.find(qn('a:solidFill'))
                                  if fill is None:
                                      fill = spPr.add_solidFill()
                                  
-                                 # Clear existing color choices in solidFill
+                                 # Nuke existing children to remove schemeClr or existing colors
                                  fill.clear_content() 
                                  
-                                 # Add srgbClr val="FF0000"
-                                 srgbClr = fill.makeelement(qn('a:srgbClr'))
+                                 # Create Red Color Element
+                                 srgbClr = OxmlElement('a:srgbClr')
                                  srgbClr.set('val', 'FF0000')
                                  fill.append(srgbClr)
 

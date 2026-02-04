@@ -592,6 +592,9 @@ def generate_excel(data):
                 if isinstance(chart_title, str): 
                     t_low = chart_title.lower()
                     if "tendencia" in t_low or "variación" in t_low or "variacion" in t_low:
+                         # FIX: Move X-Axis Labels to Bottom (Low)
+                         chart.x_axis.tickLblPos = "low"
+                         
                          # Identify negative indices
                          neg_indices = []
                          # Assuming Series 1 (Column 2) is the main data
