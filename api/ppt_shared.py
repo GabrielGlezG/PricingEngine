@@ -354,6 +354,9 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
              try:
                  for series in chart.series:
+                     # FIRST: Disable automatic inversion (which causes White/Colorless bars)
+                     series.invert_if_negative = False
+                     
                      # python-pptx series.values is a tuple of values
                      for i, val in enumerate(series.values):
                          if val is not None and val < 0:
