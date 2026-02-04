@@ -354,15 +354,28 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
              try:
                  for series in chart.series:
-                     # FIRST: Disable automatic inversion (which causes White/Colorless bars)
+                     # FIRST: Disable automatic inversion
                      series.invert_if_negative = False
                      
+                     points = series.points
                      # python-pptx series.values is a tuple of values
                      for i, val in enumerate(series.values):
                          if val is not None and val < 0:
-                             pt = series.points[i]
-                             pt.format.fill.solid()
-                             pt.format.fill.fore_color.rgb = RGBColor(255, 0, 0) # Red
+                             try:
+                                 # Access point (creates Custom Format override)
+                                 pt = points[i]
+                                 
+                                 # 1. Fill Red
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(255, 0, 0)
+                                 
+                                 # 2. Border Red (Backup if fill fails)
+                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
+                                 pt.format.line.width = Pt(0.75)
+                             except Exception as e_pt:
+                                 # Log individual point failure
+                                 print(f"Failed to color point {i}: {e_pt}")
+
              except Exception as e:
                  print(f"Error coloring negative points: {e}")
         
