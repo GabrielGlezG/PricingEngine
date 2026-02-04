@@ -509,14 +509,9 @@ def generate_excel(data):
                 # Name: "Gráfico {Name}" (Truncated to 31 chars)
                 chart_sheet_name = f"Gráfico {sheet_name}"[:31]
                 
-                # Ensure unique name
-                counter = 1
-                while chart_sheet_name in wb.sheetnames:
-                    chart_sheet_name = f"Gráfico {sheet_name[:20]} {counter}"
-                    counter += 1
-
-                # Create dedicated Chart Sheet (No grid, auto-maximized)
-                ws_chart = wb.create_chartsheet(chart_sheet_name)
+                # Create regular worksheet (avoids Protected View bug)
+                ws_chart = wb.create_sheet(chart_sheet_name)
+                ws_chart.sheet_view.showGridLines = False  # Clean white background
                 
                 num_series = num_cols - 1
                 # Create chart referencing data on 'ws' (Data Sheet)
@@ -529,8 +524,12 @@ def generate_excel(data):
                 else:
                     chart = create_bar_chart(ws, chart_title, end_row, 1, num_series)
                 
-                # Add chart to the Chart Sheet (Auto-fills the page)
-                ws_chart.add_chart(chart) 
+                # Maximize chart to fill view (simulates Chart Sheet appearance)
+                chart.width = 32  # Large width
+                chart.height = 20  # Large height
+                
+                # Position at A1 to fill screen
+                ws_chart.add_chart(chart, "A1") 
             except Exception as e:
                 import traceback
                 debug_log.append(f"Error processing sheet {sheet_data.get('name')}: {str(e)}")
