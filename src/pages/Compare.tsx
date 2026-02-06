@@ -134,11 +134,18 @@ export default function Compare() {
       
       if (error) throw error
       
+      
+      // Limit history to max 1 year
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
       return data?.map(product => {
-        const prices = product.price_data?.map(p => p.price) || []
-        const sortedHistory = product.price_data?.sort((a, b) => 
-          new Date(a.date).getTime() - new Date(b.date).getTime()
-        ) || []
+        // Filter and sort history
+        const sortedHistory = product.price_data
+          ?.filter(p => new Date(p.date) >= oneYearAgo)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+
+        const prices = sortedHistory.map(p => p.price) || []
         
         return {
           ...product,
