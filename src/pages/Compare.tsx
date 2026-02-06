@@ -135,9 +135,10 @@ export default function Compare() {
       if (error) throw error
       
       
-      // Limit history to max 1 year
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      // Limit history to max 1 year (Month granularity)
+      // We take the 1st day of the month one year ago to ensure we don't cut off early days of that month
+      const now = new Date();
+      const oneYearAgo = new Date(Date.UTC(now.getFullYear() - 1, now.getMonth(), 1));
 
       return data?.map(product => {
         // Filter and sort history
