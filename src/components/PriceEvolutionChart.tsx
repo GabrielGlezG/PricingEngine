@@ -226,17 +226,23 @@ export function PriceEvolutionChart({
       const groupedData = new Map<string, Map<string, number[]>>();
 
       data?.forEach((item) => {
-        const date = new Date(item.date);
+        // Fix: Parse manually to avoid UTC shift
+        const dateRaw = item.date.toString().split('T')[0];
+        const [y, m, d] = dateRaw.split('-').map(Number);
+        const date = new Date(y, m - 1, d); // Local Date 00:00:00
+
         let timeKey: string;
 
         switch (groupBy) {
           case "day":
-            timeKey = date.toISOString().split("T")[0];
+            // Use local accessors
+            timeKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
             break;
           case "week":
             const weekStart = new Date(date);
             weekStart.setDate(date.getDate() - date.getDay());
-            timeKey = weekStart.toISOString().split("T")[0];
+            // Use local accessors
+            timeKey = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
             break;
           case "month":
             timeKey = `${date.getFullYear()}-${String(
@@ -244,7 +250,7 @@ export function PriceEvolutionChart({
             ).padStart(2, "0")}`;
             break;
           default:
-            timeKey = date.toISOString().split("T")[0];
+            timeKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         }
 
         const useSubmodel = selectedSubmodel || submodelFilters.length > 0;
@@ -345,7 +351,12 @@ export function PriceEvolutionChart({
   });
 
   const formatDateForDisplay = (dateKey: string, groupBy: string) => {
-    const date = new Date(dateKey);
+    // Robust parsing
+    const parts = dateKey.split('-').map(Number);
+    const y = parts[0];
+    const m = parts[1];
+    const d = parts[2] || 1;
+    const date = new Date(y, m - 1, d);
     switch (groupBy) {
       case "day":
         return date.toLocaleDateString("es-MX", {
@@ -521,19 +532,6 @@ export function PriceEvolutionChart({
           </div>
         ) : evolutionData && evolutionData.labels.length > 0 ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {evolutionData.models.map((model, index) => (
-                <Badge key={model} variant="outline" className="text-xs flex items-center gap-2 py-1 pr-3">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: getLineColor(index) }}
-                  />
-                  <BrandLogo brand={model.split(' ')[0]} size="sm" showName={false} className="mr-1" />
-                  {model}
-                </Badge>
-              ))}
-            </div>
-
             <div className="h-[400px]">
               {mounted && <Line
                 data={{

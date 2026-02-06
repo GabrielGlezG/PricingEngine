@@ -109,7 +109,7 @@ const run = () => {
             const submodelKey = findKey(['Submodelo', 'Version']) || modelKey;
 
             const rawCat = row[catKey] || 'Nissan';
-            const rawPrincipal = row[principalKey] || '';
+            const rawPrincipal = (row[principalKey] || '').trim(); // ADDED TRIM HERE
             const rawModel = row[modelKey] || '';
             const rawSubmodel = row[submodelKey] || '';
 

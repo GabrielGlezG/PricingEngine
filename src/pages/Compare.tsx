@@ -252,7 +252,17 @@ export default function Compare() {
     const priceData = validDates.map(date => {
       // Use local/UTC aware formatting for display?
       // Keeping it simple with existing locale string, ensuring consistency.
-      const dataPoint: any = { date: new Date(date).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' }) }
+      const dataPoint: any = { 
+        date: (() => {
+           if (!date) return '';
+           const datePart = date.includes('T') ? date.split('T')[0] : date;
+           const [y, m, d] = datePart.split('-').map(Number);
+           if (!y || !m || !d) return date; // Fallback to original string if parse fails
+           
+           const localDate = new Date(y, m - 1, d);
+           return localDate.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
+        })()
+      }
       
       selectedData.forEach(product => {
         const priceEntry = product.price_history?.find(ph => ph.date === date)
@@ -444,7 +454,17 @@ export default function Compare() {
                     <div className="text-[11px] text-muted-foreground mt-1">
                          {(() => {
                             if (period === 'total') return "Periodo: Completo";
-                            if (startMonthId && endMonthId) return `Periodo: ${startMonthId} a ${endMonthId}`;
+                            if (startMonthId && endMonthId) {
+                                const getRange = (id: string, isEnd: boolean) => {
+                                   const [y, m] = id.split('-');
+                                   if (isEnd) {
+                                      const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+                                      return `${lastDay}/${m}/${y}`;
+                                   }
+                                   return `01/${m}/${y}`;
+                                };
+                                return `Periodo: ${getRange(startMonthId, false)} a ${getRange(endMonthId, true)}`;
+                            }
                             return "Seleccione rango";
                          })()}
                     </div>
@@ -559,16 +579,7 @@ export default function Compare() {
                     plugins: {
                       // Legend at bottom to save vertical space and handle many items better
                       legend: {
-                        display: true,
-                        position: 'bottom' as const,
-                        align: 'start',
-                        labels: {
-                          color: hslVar('--foreground'),
-                          padding: 20,
-                          boxWidth: 12,
-                          usePointStyle: true,
-                          font: { size: 11 }
-                        }
+                        display: false, // Hidden as per user request to clean up UI
                       },
                       tooltip: {
                         backgroundColor: hslVar('--card'),
