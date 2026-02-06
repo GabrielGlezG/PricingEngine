@@ -172,11 +172,8 @@ export function PriceEvolutionChart({
           );
           break;
         case "1year":
-          startDate = new Date(
-            now.getFullYear() - 1,
-            now.getMonth(),
-            now.getDate()
-          );
+          // User requested "Month-based" limit: 1st day of the month 1 year ago
+          startDate = new Date(Date.UTC(now.getFullYear() - 1, now.getMonth(), 1));
           break;
         case "2years":
           startDate = new Date(
@@ -186,6 +183,15 @@ export function PriceEvolutionChart({
           );
           break;
         default:
+          // Default to 1 year as requested if no selection, or stick to 6 months?
+          // Keeping 6 months logic but careful with days, OR if default implies max history, clamp to 1 year?
+          // Assuming default behavior was 6 months relative to today.
+          // Let's safe-guard the default to be consistent with "1year" preference if intention is to limit overall view.
+          // But code says "default: 6 months". I will leave 6 months logic as is but ensure it's robust, 
+          // or if user meant "limit EVERYTHING" then I should change this?
+          // User said "en el de evolucion de precio tambien" (limit history to max 1 year).
+          // So I will make the default view 1 year as well, or at least max 1 year. 
+          // Previous default was 6 months. I will update "1year" logic and leave 6months as is (since 6m < 1y).
           startDate = new Date(
             now.getFullYear(),
             now.getMonth() - 6,
