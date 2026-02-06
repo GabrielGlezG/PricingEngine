@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { supabase } from "@/integrations/supabase/client"
 import { useCurrency, CURRENCY_SYMBOLS } from "@/contexts/CurrencyContext"
 import { useTheme } from "next-themes"
 import { hslVar, cn } from "@/lib/utils"
 import { getScaleOptions } from "@/config/chartColors"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Scale, DollarSign, Download, FileSpreadsheet, Presentation } from "lucide-react"
@@ -15,6 +15,13 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider"
 import { Line } from 'react-chartjs-2'
 import {
@@ -77,6 +84,10 @@ export default function Compare() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [isExporting, setIsExporting] = useState(false)
 
+  // Chart Filtering State
+  const [period, setPeriod] = useState<'total' | 'month'>('total');
+  const [startMonthId, setStartMonthId] = useState<string>("");
+  const [endMonthId, setEndMonthId] = useState<string>("");
   
   const [filters, setFilters] = useState({
     tipoVehiculo: [] as string[],
@@ -141,6 +152,49 @@ export default function Compare() {
     }
   })
 
+  // Calculate available months from all products
+  const months = useMemo(() => {
+    if (!products) return [];
+    
+    // Collect all unique dates
+    const allDates = new Set<string>();
+    products.forEach(p => {
+        p.price_history?.forEach(ph => allDates.add(ph.date));
+    });
+    
+    const dates = Array.from(allDates).sort();
+    const monthGroups: Record<string, string[]> = {};
+
+    dates.forEach(d => {
+       const monthKey = d.substring(0, 7); // YYYY-MM
+       if (!monthGroups[monthKey]) monthGroups[monthKey] = [];
+       monthGroups[monthKey].push(d);
+    });
+
+    return Object.entries(monthGroups)
+       .map(([key, dates]) => {
+          const dateObj = new Date(dates[0]);
+          const label = dateObj.toLocaleDateString('es-CL', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+          const finalLabel = label.charAt(0).toUpperCase() + label.slice(1);
+          return {
+             id: key,
+             label: finalLabel,
+             dates: dates
+          };
+       })
+       .sort((a, b) => b.id.localeCompare(a.id)); // Newest first
+  }, [products]);
+
+  // Set default month range when switching matching modes
+  useEffect(() => {
+     if (period === 'month') {
+        if (months.length > 0) {
+            if (!startMonthId) setStartMonthId(months[0].id);
+            if (!endMonthId) setEndMonthId(months[0].id);
+        }
+     }
+  }, [period, months]);
+
   // Calculate min and max prices
   const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
   const minPrice = prices.length > 0 ? Math.min(...prices) : 0
@@ -178,16 +232,26 @@ export default function Compare() {
   const getComparisonData = (productIds: string[]): ComparisonData[] => {
     const selectedData = products?.filter(p => productIds.includes(p.id)) || []
     
-    const allDates = new Set<string>()
+    // Collect all dates first
+    let allDatesArray: string[] = [];
     selectedData.forEach(product => {
-      product.price_history?.forEach(ph => {
-        allDates.add(ph.date)
-      })
-    })
+      product.price_history?.forEach(ph => allDatesArray.push(ph.date));
+    });
     
-    const sortedDates = Array.from(allDates).sort()
-    
-    const priceData = sortedDates.map(date => {
+    // Filter dates based on Period
+    let validDates = Array.from(new Set(allDatesArray)).sort();
+
+    if (period === 'month' && startMonthId && endMonthId) {
+        // Simple YYYY-MM comparison
+        validDates = validDates.filter(d => {
+            const dMonth = d.substring(0, 7);
+            return dMonth >= startMonthId && dMonth <= endMonthId;
+        });
+    }
+
+    const priceData = validDates.map(date => {
+      // Use local/UTC aware formatting for display?
+      // Keeping it simple with existing locale string, ensuring consistency.
       const dataPoint: any = { date: new Date(date).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' }) }
       
       selectedData.forEach(product => {
@@ -371,66 +435,106 @@ export default function Compare() {
           {/* Gráfico de Evolución de Precios */}
           <Card>
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="card-title mb-2">Evolución de Precios</h2>
-                  <p className="caption">Comparación de precios históricos</p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                        disabled={isExporting}
-                        variant="outline" 
-                        className="gap-2"
-                    >
-                        {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
-                        Exportar
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={async () => {
-                        setIsExporting(true);
-                        try {
-                          await exportCompareData(
-                            comparisonData,
-                            filters,
-                            CURRENCY_SYMBOLS[currency],
-                            convertPrice
-                          );
-                        } finally {
-                          setIsExporting(false);
-                        }
-                      }}
-                    >
-                      <FileSpreadsheet className="mr-2 h-4 w-4" />
-                      <span>Exportar Excel (.xlsx)</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={async () => {
-                        setIsExporting(true);
-                        try {
-                          await exportCompareDataPPT(
-                            comparisonData,
-                            filters,
-                            CURRENCY_SYMBOLS[currency],
-                            convertPrice
-                          );
-                        } finally {
-                          setIsExporting(false);
-                        }
-                      }}
-                    >
-                      <Presentation className="mr-2 h-4 w-4" />
-                      <span>Exportar PowerPoint (.pptx)</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              {/* Header with Filters on the Right */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+                 {/* Title and Description */}
+                 <div className="space-y-1">
+                    <h2 className="card-title">Evolución de Precios</h2>
+                    <p className="caption">Comparación de precios históricos</p>
+                    <div className="text-[11px] text-muted-foreground mt-1">
+                         {(() => {
+                            if (period === 'total') return "Periodo: Completo";
+                            if (startMonthId && endMonthId) return `Periodo: ${startMonthId} a ${endMonthId}`;
+                            return "Seleccione rango";
+                         })()}
+                    </div>
+                 </div>
+
+                 {/* Controls Section */}
+                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                     
+                     {/* Filter Group */}
+                     <div className="flex flex-wrap items-center gap-2 bg-muted/30 p-1.5 rounded-lg border border-border/50">
+                         {/* Toggle Buttons */}
+                         <div className="flex bg-background rounded-md shadow-sm border border-border">
+                             {(['total', 'month'] as const).map((mode) => (
+                                 <button
+                                   key={mode}
+                                   onClick={() => setPeriod(mode)}
+                                   className={cn(
+                                     "px-3 py-1.5 text-[11px] font-medium transition-colors first:rounded-l-md last:rounded-r-md",
+                                     period === mode 
+                                        ? "bg-primary text-primary-foreground" 
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                   )}
+                                  >
+                                   {mode === 'total' ? 'Histórico' : 'Rango'}
+                                 </button>
+                             ))}
+                         </div>
+                         
+                         {/* Selectors */}
+                         {period === 'month' && (
+                           <>
+                             <div className="h-4 w-[1px] bg-border mx-1" /> {/* Divider */}
+                             <div className="flex items-center gap-2">
+                                 <Select value={startMonthId} onValueChange={setStartMonthId} disabled={months.length === 0}>
+                                    <SelectTrigger className="h-8 text-xs w-[110px] bg-background border-input shadow-none focus:ring-0">
+                                      <SelectValue placeholder="Inicio" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {months.map(m => (
+                                         <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                 </Select>
+                                 <span className="text-muted-foreground text-xs">-</span>
+                                 <Select value={endMonthId} onValueChange={setEndMonthId} disabled={months.length === 0}>
+                                    <SelectTrigger className="h-8 text-xs w-[110px] bg-background border-input shadow-none focus:ring-0">
+                                      <SelectValue placeholder="Fin" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {months.map(m => (
+                                         <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                 </Select>
+                             </div>
+                           </>
+                         )}
+                     </div>
+
+                     {/* Export Button */}
+                     <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                            disabled={isExporting}
+                            variant="outline" 
+                            size="sm"
+                            className="h-9 gap-2 shadow-sm"
+                        >
+                            {isExporting ? <LoadingSpinner size="sm" /> : <Download className="h-4 w-4" />}
+                            Exportar
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={async () => { /* Export logic */ setIsExporting(true); try { await exportCompareData(comparisonData, filters, CURRENCY_SYMBOLS[currency], convertPrice); } finally { setIsExporting(false); } }}>
+                          <FileSpreadsheet className="mr-2 h-4 w-4" />
+                          <span>Exportar Excel (.xlsx)</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => { /* Export logic */ setIsExporting(true); try { await exportCompareDataPPT(comparisonData, filters, CURRENCY_SYMBOLS[currency], convertPrice); } finally { setIsExporting(false); } }}>
+                          <Presentation className="mr-2 h-4 w-4" />
+                          <span>Exportar PowerPoint (.pptx)</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                 </div>
               </div>
               
-              <div className="h-[300px] sm:h-[400px]">
+              {/* Chart - Increased Height, Bottom Legend */}
+              <div className="h-[500px] w-full">
                 {mounted && <Line
-
                   key={`compare-price-evolution-${chartKey}`}
                   data={{
                     labels: comparisonData[0]?.priceData.map(d => d.date) || [],
@@ -453,13 +557,17 @@ export default function Compare() {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
+                      // Legend at bottom to save vertical space and handle many items better
                       legend: {
                         display: true,
-                        position: 'top' as const,
+                        position: 'bottom' as const,
+                        align: 'start',
                         labels: {
                           color: hslVar('--foreground'),
-                          padding: 15,
-                          font: { size: 12 }
+                          padding: 20,
+                          boxWidth: 12,
+                          usePointStyle: true,
+                          font: { size: 11 }
                         }
                       },
                       tooltip: {
