@@ -587,7 +587,17 @@ export default function Compare() {
                       }
                     },
                     scales: {
-                      x: getScaleOptions(),
+                      x: {
+                        ...getScaleOptions(),
+                        ticks: {
+                          ...getScaleOptions().ticks,
+                          // OPTIMIZATION: Prevent label overcrowding
+                          autoSkip: true,
+                          maxTicksLimit: 12,
+                          maxRotation: 45,
+                          minRotation: 0,
+                        }
+                      },
                       y: {
                         ...getScaleOptions(),
                         ticks: {
