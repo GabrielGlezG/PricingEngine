@@ -410,55 +410,26 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: NEGATIVE VALUES USING INVERT_IF_NEGATIVE ---
+             # --- FIX 3: DUAL-SERIES COLORING (SIMPLIFIED) ---
              try:
                  RED_FILL = RGBColor(239, 68, 68)  # Red-500
+                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
                  
-                 for series in chart.series:
-                     # Enable automatic inversion for negative values
-                     series.invert_if_negative = True
+                 # Check if we have 2 series (Positive/Negative split)
+                 if len(chart.series) >= 2:
+                     # Apply blue to first series (positive values)
+                     chart.series[0].format.fill.solid()
+                     chart.series[0].format.fill.fore_color.rgb = BLUE_FILL
                      
-                     # Try to set the inverted fill color to RED using XML
-                     try:
-                         # Access the series XML element
-                         ser_elem = series._element
-                         
-                         # Get or create the invertIfNegative element
-                         from pptx.oxml.ns import qn
-                         from pptx.oxml import parse_xml
-                         
-                         # Ensure invertIfNegative is set
-                         inv_elem = ser_elem.find(qn('c:invertIfNegative'))
-                         if inv_elem is None:
-                             inv_elem = parse_xml(f'<c:invertIfNegative val="1" xmlns:c="{qn("c:temp")[2:-4]}"/>')
-                             ser_elem.append(inv_elem)
-                         else:
-                             inv_elem.set('val', '1')
-                         
-                         # Now set the shape properties with RED fill for inverted (negative) values
-                         # Get or create spPr (shape properties)
-                         spPr = ser_elem.find(qn('c:spPr'))
-                         if spPr is None:
-                             spPr = parse_xml(f'<c:spPr xmlns:c="{qn("c:temp")[2:-4]}" xmlns:a="{qn("a:temp")[2:-4]}"/>')
-                             ser_elem.append(spPr)
-                         
-                         # Create solid fill with RED color
-                         # Remove existing fill if any
-                         for fill_elem in spPr.findall(qn('a:solidFill')):
-                             spPr.remove(fill_elem)
-                         
-                         # Add RED solid fill (this will be the inverted color for negatives)
-                         solid_fill_xml = f'''<a:solidFill xmlns:a="{qn("a:temp")[2:-4]}">
-                             <a:srgbClr val="EF4444"/>
-                         </a:solidFill>'''
-                         solid_fill = parse_xml(solid_fill_xml)
-                         spPr.append(solid_fill)
-                         
-                     except Exception as e_xml:
-                         print(f"XML manipulation for inverted color failed: {e_xml}")
+                     # Apply RED to second series (negative values)  
+                     chart.series[1].format.fill.solid()
+                     chart.series[1].format.fill.fore_color.rgb = RED_FILL
                      
+                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
+                     chart.has_legend = False
+                 
              except Exception as e:
-                 print(f"Error applying invert_if_negative: {e}")
+                 print(f"Error applying dual-series colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
