@@ -304,13 +304,20 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart_data.categories = categories
         
         # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
-        if is_variation and len(series_names) == 1:
-            s_name = series_names[0]
+        # FIX: We now enforce this even if multiple columns exist (like "Inicio", "Fin"), prioritizing the actual Variation column.
+        if is_variation:
+            # Identify the primary series to plot (usually containing "variación" or "%")
+            target_s_name = series_names[0] # Default to first series
+            for s in series_names:
+                if any(k in str(s).lower() for k in ['variación', 'variation', '%', 'percent']):
+                    target_s_name = s
+                    break
+            
             positive_values = []
             negative_values = []
             
             for r in rows:
-                val = r.get(s_name, 0)
+                val = r.get(target_s_name, 0)
                 try:
                     fval = float(val) if val is not None else 0.0
                 except:
