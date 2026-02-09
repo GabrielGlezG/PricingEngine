@@ -298,25 +298,53 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif chart_type == 'stacked': ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
         
         is_evolution = 'evolución' in name_lower or 'evolution' in name_lower
+        is_variation = 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower
         
         chart_data = CategoryChartData()
         chart_data.categories = categories
-        for s_name in series_names:
-            values = []
+        
+        # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
+        if is_variation and len(series_names) == 1:
+            s_name = series_names[0]
+            positive_values = []
+            negative_values = []
+            
             for r in rows:
                 val = r.get(s_name, 0)
                 try:
-                    # Logic: If Evolution, treat 0 as None (Gap)
-                    # Otherwise default to 0.0
                     fval = float(val) if val is not None else 0.0
-                    
-                    if is_evolution and fval == 0.0:
-                        values.append(None)
-                    else:
-                        values.append(fval)
-                except: 
-                    values.append(0.0)
-            chart_data.add_series(s_name, values)
+                except:
+                    fval = 0.0
+                
+                # Split: positive goes to first series, negative to second
+                if fval >= 0:
+                    positive_values.append(fval)
+                    negative_values.append(None)  # Gap in negative series
+                else:
+                    positive_values.append(None)  # Gap in positive series
+                    negative_values.append(fval)
+            
+            # Add two series: Positive (blue) and Negative (red)
+            chart_data.add_series("Valores Positivos", positive_values)
+            chart_data.add_series("Valores Negativos", negative_values)
+        else:
+            # STANDARD HANDLING FOR OTHER CHARTS
+            for s_name in series_names:
+                values = []
+                for r in rows:
+                    val = r.get(s_name, 0)
+                    try:
+                        # Logic: If Evolution, treat 0 as None (Gap)
+                        # Otherwise default to 0.0
+                        fval = float(val) if val is not None else 0.0
+                        
+                        if is_evolution and fval == 0.0:
+                            values.append(None)
+                        else:
+                            values.append(fval)
+                    except: 
+                        values.append(0.0)
+                chart_data.add_series(s_name, values)
 
     # 16:9 Layout Adjustments (Width 13.33")
     # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
@@ -382,48 +410,28 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: NEGATIVE VALUES (SOLID RED FILL + WHITE TEXT) ---
+             # --- FIX 3: SERIES-LEVEL COLORING FOR NEGATIVE VALUES ---
              try:
                  RED_FILL = RGBColor(239, 68, 68)  # Red-500
+                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
                  
-                 for series in chart.series:
-                     series.invert_if_negative = False  # Manual control
+                 # If we have 2 series (split Positivos/Negativos), color them differently
+                 if len(chart.series) == 2:
+                     # Series 0: Positive values (Blue)
+                     positive_series = chart.series[0]
+                     positive_series.format.fill.solid()
+                     positive_series.format.fill.fore_color.rgb = BLUE_FILL
                      
-                     for i, val in enumerate(series.values):
-                         # Handle potentially exotic number types
-                         try:
-                             f_val = float(val)
-                         except:
-                             f_val = 0.0
-
-                         if f_val < 0:
-                             try:
-                                 # Access Data Point
-                                 pt = series.points[i]
-                                 
-                                 # 1. Fill: SOLID RED
-                                 pt.format.fill.solid()
-                                 pt.format.fill.fore_color.rgb = RED_FILL
-                                 
-                                 # 2. Border: Darker Red (optional, for definition)
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RGBColor(220, 38, 38)  # Red-700
-                                 pt.format.line.width = Pt(1.0)
-
-                                 # 3. Data Label: WHITE TEXT + INSIDE positioning for negative
-                                 if pt.data_label:
-                                     pt.data_label.font.color.rgb = WHITE
-                                     pt.data_label.font.bold = True
-                                     pt.data_label.font.size = Pt(9)
-                                     # Position inside the red bar (below axis, upward from bottom)
-                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_BASE
-                                     pt.data_label.number_format = '0.0%'
-
-                             except Exception as e_pt:
-                                 print(f"Failed to style negative point {i}: {e_pt}")
-
+                     # Series 1: Negative values (RED)
+                     negative_series = chart.series[1]
+                     negative_series.format.fill.solid()
+                     negative_series.format.fill.fore_color.rgb = RED_FILL
+                     
+                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
+                     chart.has_legend = False
+                     
              except Exception as e:
-                 print(f"Error coloring negative points: {e}")
+                 print(f"Error applying series colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
