@@ -298,7 +298,11 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         elif chart_type == 'stacked': ppt_chart_type = XL_CHART_TYPE.COLUMN_STACKED
         
         is_evolution = 'evolución' in name_lower or 'evolution' in name_lower
-        is_variation = 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower
+        
+        # Robust detection: Check Name OR Headers
+        is_variation = ('tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower)
+        if not is_variation and headers:
+             is_variation = any('variación %' in str(h).lower() or 'variation %' in str(h).lower() for h in headers)
         
         chart_data = CategoryChartData()
         chart_data.categories = categories
