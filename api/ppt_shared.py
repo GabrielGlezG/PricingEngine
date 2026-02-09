@@ -713,7 +713,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         val_axis.has_major_gridlines = False # Clean Layout (No Grid)
         
         # Standard Color Cycle if not vary_by_categories
-        if not plot.vary_by_categories and chart_type not in ['scatter']:
+        if not plot.vary_by_categories and chart_type not in ['scatter'] and not is_variation:
              brand_palette = [
                 RGBColor(30, 41, 59),   # Dark Blue
                 RGBColor(71, 85, 105),  # Light Blue
