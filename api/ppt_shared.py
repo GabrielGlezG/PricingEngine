@@ -373,8 +373,17 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
-             # Since solid fill is failing, we highlight via Thick Red Border + Red Text
+             # --- FIX 2: ENABLE DATA LABELS GLOBALLY ---
+             try:
+                 plot.has_data_labels = True
+                 data_labels = plot.data_labels
+                 data_labels.font.name = "Avenir Medium"
+                 data_labels.font.size = Pt(9)
+                 data_labels.font.bold = True
+                 data_labels.number_format = '0.0%'
+             except: pass
+
+             # --- FIX 3: COLOR NEGATIVE BARS RED, POSITIVE BARS GREEN ---
              try:
                  for series in chart.series:
                      series.invert_if_negative = False 
@@ -391,28 +400,49 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                                  # Access Data Point
                                  pt = series.points[i]
                                  
-                                 # 1. Border: Thick Red
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
-                                 pt.format.line.width = Pt(2.5) # Thicker to make it obvious
-                                 
-                                 # 2. Fill: Explicit White (so Red text pops)
+                                 # 1. Fill: SOLID RED for negative bars
                                  pt.format.fill.solid()
-                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
+                                 pt.format.fill.fore_color.rgb = RGBColor(239, 68, 68)  # Red-500
+                                 
+                                 # 2. Border: Same Red (clean appearance)
+                                 pt.format.line.solid()
+                                 pt.format.line.color.rgb = RGBColor(239, 68, 68)
 
-                                 # 3. Data Label: Red Text + Bold
-                                 # We must access the specific label for this point
+                                 # 3. Data Label: WHITE TEXT for visibility on red background
                                  if pt.data_label:
-                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
+                                     pt.data_label.font.color.rgb = RGBColor(255, 255, 255)
                                      pt.data_label.font.bold = True
-                                     # Ensure it's inside
-                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+                                     pt.data_label.font.size = Pt(9)
+                                     # Position at the base (bottom) for negative bars
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_BASE
 
                              except Exception as e_pt:
                                  print(f"Failed to style negative point {i}: {e_pt}")
+                         else:
+                             # Positive values: GREEN bars
+                             try:
+                                 pt = series.points[i]
+                                 
+                                 # 1. Fill: SOLID GREEN for positive bars
+                                 pt.format.fill.solid()
+                                 pt.format.fill.fore_color.rgb = RGBColor(34, 197, 94)  # Green-500
+                                 
+                                 # 2. Border: Same Green
+                                 pt.format.line.solid()
+                                 pt.format.line.color.rgb = RGBColor(34, 197, 94)
+                                 
+                                 # 3. Data Label: WHITE TEXT for visibility on green background
+                                 if pt.data_label:
+                                     pt.data_label.font.color.rgb = RGBColor(255, 255, 255)
+                                     pt.data_label.font.bold = True
+                                     pt.data_label.font.size = Pt(9)
+                                     # Position at the end (top) for positive bars
+                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
+                             except Exception as e_pt:
+                                 print(f"Failed to style positive point {i}: {e_pt}")
 
              except Exception as e:
-                 print(f"Error coloring negative points: {e}")
+                 print(f"Error coloring bars: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
