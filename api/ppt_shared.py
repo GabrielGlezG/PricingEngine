@@ -412,50 +412,51 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: POINT-LEVEL COLORING FOR VARIATION CHARTS ---
-             # Color each bar individually based on whether value is positive (blue) or negative (red)
+             # --- FIX 3: IMMEDIATE SERIES-LEVEL COLORING ---
+             # Apply color to the entire series fill (not points) - matches Precios chart pattern
              try:
-                 RED_FILL = RGBColor(220, 38, 38)  # Red-600 (more saturated)
+                 RED_FILL = RGBColor(220, 38, 38)  # Red-600
                  BLUE_FILL = RGBColor(37, 99, 235)  # Blue-600
                  
-                 # For variation charts, we now have a SINGLE series
-                 # We need to color each point based on the original data values
+                 print(f"[VARIATION] Coloring {len(chart.series)} series")
+                 
+                 # Color the single series, but we need to color points individually
+                 # because we have positive AND negative values in the same series
                  if len(chart.series) >= 1:
                      series = chart.series[0]
-                     print(f"[VARIATION COLORING] Series name: {series.name}, Points count: {len(series.points)}")
+                     target_s_name = series.name
                      
-                     # Get the target series name to lookup values
-                     target_s_name = series.name  # Use the actual series name
+                     print(f"[VARIATION] Series: '{target_s_name}', Points: {len(series.points)}")
                      
+                     # Try BOTH approaches: series-level first, then point-level override
+                     # 1. Set default series color
+                     try:
+                         series.format.fill.solid()
+                         series.format.fill.fore_color.rgb = BLUE_FILL
+                         print(f"[VARIATION] Applied series-level BLUE fill")
+                     except Exception as se:
+                         print(f"[VARIATION ERROR] Series-level fill failed: {se}")
+                     
+                     # 2. Override individual negative points with RED
                      for point_idx, point in enumerate(series.points):
                          try:
-                             # Get the actual value from the data
                              if point_idx < len(rows):
                                  value = rows[point_idx].get(target_s_name, 0)
-                                 try:
-                                     fval = float(value) if value is not None else 0.0
-                                 except:
-                                     fval = 0.0
+                                 fval = float(value) if value is not None else 0.0
                                  
-                                 # Apply color based on value
-                                 point.format.fill.solid()
                                  if fval < 0:
+                                     # Override with RED for negative values
+                                     point.format.fill.solid()
                                      point.format.fill.fore_color.rgb = RED_FILL
-                                     print(f"[VARIATION COLORING] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → RED")
-                                 else:
-                                     point.format.fill.fore_color.rgb = BLUE_FILL
-                                     print(f"[VARIATION COLORING] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → BLUE")
-                             else:
-                                 print(f"[VARIATION COLORING] Point {point_idx} out of range, skipping")
-                         except Exception as point_error:
-                             print(f"[VARIATION COLORING ERROR] Point {point_idx}: {point_error}")
+                                     print(f"[VARIATION] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → RED override")
+                         except Exception as pe:
+                             print(f"[VARIATION ERROR] Point {point_idx} color failed: {pe}")
                      
-                     # Hide legend for cleaner look
                      chart.has_legend = False
-                     print(f"[VARIATION COLORING] ✓ Completed coloring {len(series.points)} points")
+                     print(f"[VARIATION] ✓ Coloring complete")
                  
              except Exception as e:
-                 print(f"[VARIATION COLORING ERROR] Fatal error: {e}")
+                 print(f"[VARIATION ERROR] Fatal: {e}")
                  import traceback
                  traceback.print_exc()
         
