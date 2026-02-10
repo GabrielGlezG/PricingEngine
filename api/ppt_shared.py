@@ -307,55 +307,24 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart_data = CategoryChartData()
         chart_data.categories = categories
         
-        # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
-        # FIX: We now enforce this even if multiple columns exist (like "Inicio", "Fin"), prioritizing the actual Variation column.
-        if is_variation:
-            # Identify the primary series to plot (usually containing "variación" or "%")
-            target_s_name = series_names[0] # Default to first series
-            for s in series_names:
-                if any(k in str(s).lower() for k in ['variación', 'variation', '%', 'percent']):
-                    target_s_name = s
-                    break
-            
-            positive_values = []
-            negative_values = []
-            
+        # STANDARD HANDLING: Single series per column
+        # (Negative coloring is now handled via DataPoint in the styling section)
+        for s_name in series_names:
+            values = []
             for r in rows:
-                val = r.get(target_s_name, 0)
+                val = r.get(s_name, 0)
                 try:
+                    # Logic: If Evolution, treat 0 as None (Gap)
+                    # Otherwise default to 0.0
                     fval = float(val) if val is not None else 0.0
-                except:
-                    fval = 0.0
-                
-                # Split: positive goes to first series, negative to second
-                if fval >= 0:
-                    positive_values.append(fval)
-                    negative_values.append(None)  # Gap in negative series
-                else:
-                    positive_values.append(None)  # Gap in positive series
-                    negative_values.append(fval)
-            
-            # Add two series: Positive (blue) and Negative (red)
-            chart_data.add_series("Valores Positivos", positive_values)
-            chart_data.add_series("Valores Negativos", negative_values)
-        else:
-            # STANDARD HANDLING FOR OTHER CHARTS
-            for s_name in series_names:
-                values = []
-                for r in rows:
-                    val = r.get(s_name, 0)
-                    try:
-                        # Logic: If Evolution, treat 0 as None (Gap)
-                        # Otherwise default to 0.0
-                        fval = float(val) if val is not None else 0.0
-                        
-                        if is_evolution and fval == 0.0:
-                            values.append(None)
-                        else:
-                            values.append(fval)
-                    except: 
-                        values.append(0.0)
-                chart_data.add_series(s_name, values)
+                    
+                    if is_evolution and fval == 0.0:
+                        values.append(None)
+                    else:
+                        values.append(fval)
+                except: 
+                    values.append(0.0)
+            chart_data.add_series(s_name, values)
 
     # 16:9 Layout Adjustments (Width 13.33")
     # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
@@ -421,26 +390,59 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: DUAL-SERIES COLORING (SIMPLIFIED) ---
+             # --- FIX 3: COLOR NEGATIVE BARS RED (Using Excel's DataPoint Approach) ---
              try:
-                 RED_FILL = RGBColor(239, 68, 68)  # Red-500
-                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
+                 # Import necessary classes for point-level styling
+                 from pptx.oxml.xmlchemy import OxmlElement
+                 from pptx.util import Pt
+                 from pptx.dml.color import RGBColor
                  
-                 # Check if we have 2 series (Positive/Negative split)
-                 if len(chart.series) >= 2:
-                     # Apply blue to first series (positive values)
-                     chart.series[0].format.fill.solid()
-                     chart.series[0].format.fill.fore_color.rgb = BLUE_FILL
+                 # Identify negative value indices
+                 neg_indices = []
+                 if len(headers) > 1:
+                     # headers[1] is usually the first data column (e.g., "Variación %")
+                     val_key = headers[1]
+                     for i, row_data in enumerate(rows):
+                         try:
+                             val = row_data.get(val_key, 0)
+                             if isinstance(val, (int, float)) and val < 0:
+                                 neg_indices.append(i)
+                         except:
+                             pass
+                 
+                 # Apply Red Fill to negative points via XML manipulation
+                 if neg_indices and len(chart.series) > 0:
+                     series = chart.series[0]  # Main series
+                     ser_element = series._element
                      
-                     # Apply RED to second series (negative values)  
-                     chart.series[1].format.fill.solid()
-                     chart.series[1].format.fill.fore_color.rgb = RED_FILL
-                     
-                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
-                     chart.has_legend = False
+                     for idx in neg_indices:
+                         # Create <c:dPt> element for this data point
+                         dPt = OxmlElement('c:dPt')
+                         
+                         # <c:idx val="X"/>
+                         idx_elem = OxmlElement('c:idx')
+                         idx_elem.set('val', str(idx))
+                         dPt.append(idx_elem)
+                         
+                         # <c:spPr> (Shape Properties)
+                         spPr = OxmlElement('c:spPr')
+                         
+                         # <a:solidFill>
+                         solidFill = OxmlElement('a:solidFill')
+                         
+                         # <a:srgbClr val="FF0000"/> (Red)
+                         srgbClr = OxmlElement('a:srgbClr')
+                         srgbClr.set('val', 'FF0000')
+                         solidFill.append(srgbClr)
+                         
+                         spPr.append(solidFill)
+                         dPt.append(spPr)
+                         
+                         # Append to series
+                         ser_element.append(dPt)
                  
              except Exception as e:
-                 print(f"Error applying dual-series colors: {e}")
+                 print(f"Error applying negative red colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
