@@ -421,26 +421,63 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: DUAL-SERIES COLORING (SIMPLIFIED) ---
+             # --- FIX 3: POINT-LEVEL COLORING (RESEARCH-BASED SOLUTION) ---
+             # Based on python-pptx documentation: Must use series.points, NOT series.format.fill
              try:
                  RED_FILL = RGBColor(239, 68, 68)  # Red-500
-                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
+                 BLUE_FILL = RGBColor(59, 130, 246)  # Blue-500
                  
-                 # Check if we have 2 series (Positive/Negative split)
+                 # Get the actual data values to determine which points are negative
+                 # If dual-series split was applied (len >= 2), get from original data
+                 # Otherwise, use the single series directly
+                 
                  if len(chart.series) >= 2:
-                     # Apply blue to first series (positive values)
-                     chart.series[0].format.fill.solid()
-                     chart.series[0].format.fill.fore_color.rgb = BLUE_FILL
+                     # Dual-series: First series = positive, second = negative
+                     # Color each point individually
+                     for point_idx, point in enumerate(chart.series[0].points):
+                         try:
+                             point.format.fill.solid()
+                             point.format.fill.fore_color.rgb = BLUE_FILL
+                         except:
+                             pass
                      
-                     # Apply RED to second series (negative values)  
-                     chart.series[1].format.fill.solid()
-                     chart.series[1].format.fill.fore_color.rgb = RED_FILL
+                     for point_idx, point in enumerate(chart.series[1].points):
+                         try:
+                             point.format.fill.solid()
+                             point.format.fill.fore_color.rgb = RED_FILL
+                         except:
+                             pass
                      
-                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
+                     # Hide legend
                      chart.has_legend = False
+                 else:
+                     # Single series: Color each point based on its value
+                     # Access the underlying chart data to get values
+                     series = chart.series[0]
+                     for point_idx, point in enumerate(series.points):
+                         try:
+                             # Get the value from the chart's internal data
+                             # Note: This requires accessing the underlying XML or chart_data
+                             # For now, we'll use a heuristic: if the point is below axis, it's negative
+                             point.format.fill.solid()
+                             
+                             # Try to determine if negative by checking data
+                             # This is a fallback if dual-series didn't work
+                             value = rows[point_idx].get(series_names[0], 0) if point_idx < len(rows) else 0
+                             try:
+                                 fval = float(value)
+                                 if fval < 0:
+                                     point.format.fill.fore_color.rgb = RED_FILL
+                                 else:
+                                     point.format.fill.fore_color.rgb = BLUE_FILL
+                             except:
+                                 point.format.fill.fore_color.rgb = BLUE_FILL
+                         except Exception as point_error:
+                             print(f"Error coloring point {point_idx}: {point_error}")
+                             pass
                  
              except Exception as e:
-                 print(f"Error applying dual-series colors: {e}")
+                 print(f"Error applying point-level colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
