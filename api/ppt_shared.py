@@ -307,8 +307,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart_data = CategoryChartData()
         chart_data.categories = categories
         
-        # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
-        # FIX: We now enforce this even if multiple columns exist (like "Inicio", "Fin"), prioritizing the actual Variation column.
+        # SPECIAL HANDLING FOR VARIATION CHARTS: Single series with point-level coloring
+        # FIX: Avoid dual-series with None values which creates empty/white bars
         if is_variation:
             # Identify the primary series to plot (usually containing "variación" or "%")
             target_s_name = series_names[0] # Default to first series
@@ -317,27 +317,18 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                     target_s_name = s
                     break
             
-            positive_values = []
-            negative_values = []
-            
+            # Create SINGLE series with ALL values (positive and negative)
+            values = []
             for r in rows:
                 val = r.get(target_s_name, 0)
                 try:
                     fval = float(val) if val is not None else 0.0
                 except:
                     fval = 0.0
-                
-                # Split: positive goes to first series, negative to second
-                if fval >= 0:
-                    positive_values.append(fval)
-                    negative_values.append(None)  # Gap in negative series
-                else:
-                    positive_values.append(None)  # Gap in positive series
-                    negative_values.append(fval)
+                values.append(fval)
             
-            # Add two series: Positive (blue) and Negative (red)
-            chart_data.add_series("Valores Positivos", positive_values)
-            chart_data.add_series("Valores Negativos", negative_values)
+            # Add single series - point-level coloring will be applied later
+            chart_data.add_series(target_s_name, values)
         else:
             # STANDARD HANDLING FOR OTHER CHARTS
             for s_name in series_names:
@@ -421,63 +412,52 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: POINT-LEVEL COLORING (RESEARCH-BASED SOLUTION) ---
-             # Based on python-pptx documentation: Must use series.points, NOT series.format.fill
+             # --- FIX 3: POINT-LEVEL COLORING FOR VARIATION CHARTS ---
+             # Color each bar individually based on whether value is positive (blue) or negative (red)
              try:
-                 RED_FILL = RGBColor(239, 68, 68)  # Red-500
-                 BLUE_FILL = RGBColor(59, 130, 246)  # Blue-500
+                 RED_FILL = RGBColor(220, 38, 38)  # Red-600 (more saturated)
+                 BLUE_FILL = RGBColor(37, 99, 235)  # Blue-600
                  
-                 # Get the actual data values to determine which points are negative
-                 # If dual-series split was applied (len >= 2), get from original data
-                 # Otherwise, use the single series directly
-                 
-                 if len(chart.series) >= 2:
-                     # Dual-series: First series = positive, second = negative
-                     # Color each point individually
-                     for point_idx, point in enumerate(chart.series[0].points):
-                         try:
-                             point.format.fill.solid()
-                             point.format.fill.fore_color.rgb = BLUE_FILL
-                         except:
-                             pass
-                     
-                     for point_idx, point in enumerate(chart.series[1].points):
-                         try:
-                             point.format.fill.solid()
-                             point.format.fill.fore_color.rgb = RED_FILL
-                         except:
-                             pass
-                     
-                     # Hide legend
-                     chart.has_legend = False
-                 else:
-                     # Single series: Color each point based on its value
-                     # Access the underlying chart data to get values
+                 # For variation charts, we now have a SINGLE series
+                 # We need to color each point based on the original data values
+                 if len(chart.series) >= 1:
                      series = chart.series[0]
+                     print(f"[VARIATION COLORING] Series name: {series.name}, Points count: {len(series.points)}")
+                     
+                     # Get the target series name to lookup values
+                     target_s_name = series.name  # Use the actual series name
+                     
                      for point_idx, point in enumerate(series.points):
                          try:
-                             # Get the value from the chart's internal data
-                             # Note: This requires accessing the underlying XML or chart_data
-                             # For now, we'll use a heuristic: if the point is below axis, it's negative
-                             point.format.fill.solid()
-                             
-                             # Try to determine if negative by checking data
-                             # This is a fallback if dual-series didn't work
-                             value = rows[point_idx].get(series_names[0], 0) if point_idx < len(rows) else 0
-                             try:
-                                 fval = float(value)
+                             # Get the actual value from the data
+                             if point_idx < len(rows):
+                                 value = rows[point_idx].get(target_s_name, 0)
+                                 try:
+                                     fval = float(value) if value is not None else 0.0
+                                 except:
+                                     fval = 0.0
+                                 
+                                 # Apply color based on value
+                                 point.format.fill.solid()
                                  if fval < 0:
                                      point.format.fill.fore_color.rgb = RED_FILL
+                                     print(f"[VARIATION COLORING] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → RED")
                                  else:
                                      point.format.fill.fore_color.rgb = BLUE_FILL
-                             except:
-                                 point.format.fill.fore_color.rgb = BLUE_FILL
+                                     print(f"[VARIATION COLORING] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → BLUE")
+                             else:
+                                 print(f"[VARIATION COLORING] Point {point_idx} out of range, skipping")
                          except Exception as point_error:
-                             print(f"Error coloring point {point_idx}: {point_error}")
-                             pass
+                             print(f"[VARIATION COLORING ERROR] Point {point_idx}: {point_error}")
+                     
+                     # Hide legend for cleaner look
+                     chart.has_legend = False
+                     print(f"[VARIATION COLORING] ✓ Completed coloring {len(series.points)} points")
                  
              except Exception as e:
-                 print(f"Error applying point-level colors: {e}")
+                 print(f"[VARIATION COLORING ERROR] Fatal error: {e}")
+                 import traceback
+                 traceback.print_exc()
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
