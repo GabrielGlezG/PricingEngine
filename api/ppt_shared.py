@@ -390,18 +390,14 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: COLOR NEGATIVE BARS RED (Using Excel's DataPoint Approach) ---
+             # --- FIX 3: COLOR NEGATIVE BARS RED (Proper XML with Namespaces) ---
              try:
-                 # Import necessary classes for point-level styling
-                 from pptx.oxml.xmlchemy import OxmlElement
-                 from pptx.util import Pt
-                 from pptx.dml.color import RGBColor
+                 from pptx.oxml import parse_xml
                  
                  # Identify negative value indices
                  neg_indices = []
                  if len(headers) > 1:
-                     # headers[1] is usually the first data column (e.g., "Variación %")
-                     val_key = headers[1]
+                     val_key = headers[1]  # Usually "Variación %"
                      for i, row_data in enumerate(rows):
                          try:
                              val = row_data.get(val_key, 0)
@@ -410,39 +406,31 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                          except:
                              pass
                  
-                 # Apply Red Fill to negative points via XML manipulation
+                 # Apply Red Fill using proper XML with namespaces
                  if neg_indices and len(chart.series) > 0:
-                     series = chart.series[0]  # Main series
+                     series = chart.series[0]
                      ser_element = series._element
                      
                      for idx in neg_indices:
-                         # Create <c:dPt> element for this data point
-                         dPt = OxmlElement('c:dPt')
-                         
-                         # <c:idx val="X"/>
-                         idx_elem = OxmlElement('c:idx')
-                         idx_elem.set('val', str(idx))
-                         dPt.append(idx_elem)
-                         
-                         # <c:spPr> (Shape Properties)
-                         spPr = OxmlElement('c:spPr')
-                         
-                         # <a:solidFill>
-                         solidFill = OxmlElement('a:solidFill')
-                         
-                         # <a:srgbClr val="FF0000"/> (Red)
-                         srgbClr = OxmlElement('a:srgbClr')
-                         srgbClr.set('val', 'FF0000')
-                         solidFill.append(srgbClr)
-                         
-                         spPr.append(solidFill)
-                         dPt.append(spPr)
-                         
-                         # Append to series
+                         # Create properly namespaced DataPoint XML
+                         dPt_xml = f'''
+                         <c:dPt xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" 
+                                xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                             <c:idx val="{idx}"/>
+                             <c:spPr>
+                                 <a:solidFill>
+                                     <a:srgbClr val="FF0000"/>
+                                 </a:solidFill>
+                             </c:spPr>
+                         </c:dPt>
+                         '''
+                         dPt = parse_xml(dPt_xml)
                          ser_element.append(dPt)
                  
              except Exception as e:
-                 print(f"Error applying negative red colors: {e}")
+                 print(f"Error applying red negative bars: {e}")
+                 import traceback
+                 traceback.print_exc()
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
