@@ -307,8 +307,8 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         chart_data = CategoryChartData()
         chart_data.categories = categories
         
-        # SPECIAL HANDLING FOR VARIATION CHARTS: Single series with point-level coloring
-        # FIX: Avoid dual-series with None values which creates empty/white bars
+        # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
+        # FIX: We now enforce this even if multiple columns exist (like "Inicio", "Fin"), prioritizing the actual Variation column.
         if is_variation:
             # Identify the primary series to plot (usually containing "variación" or "%")
             target_s_name = series_names[0] # Default to first series
@@ -317,18 +317,27 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                     target_s_name = s
                     break
             
-            # Create SINGLE series with ALL values (positive and negative)
-            values = []
+            positive_values = []
+            negative_values = []
+            
             for r in rows:
                 val = r.get(target_s_name, 0)
                 try:
                     fval = float(val) if val is not None else 0.0
                 except:
                     fval = 0.0
-                values.append(fval)
+                
+                # Split: positive goes to first series, negative to second
+                if fval >= 0:
+                    positive_values.append(fval)
+                    negative_values.append(None)  # Gap in negative series
+                else:
+                    positive_values.append(None)  # Gap in positive series
+                    negative_values.append(fval)
             
-            # Add single series - point-level coloring will be applied later
-            chart_data.add_series(target_s_name, values)
+            # Add two series: Positive (blue) and Negative (red)
+            chart_data.add_series("Valores Positivos", positive_values)
+            chart_data.add_series("Valores Negativos", negative_values)
         else:
             # STANDARD HANDLING FOR OTHER CHARTS
             for s_name in series_names:
@@ -412,53 +421,26 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 3: IMMEDIATE SERIES-LEVEL COLORING ---
-             # Apply color to the entire series fill (not points) - matches Precios chart pattern
+             # --- FIX 3: DUAL-SERIES COLORING (SIMPLIFIED) ---
              try:
-                 RED_FILL = RGBColor(220, 38, 38)  # Red-600
-                 BLUE_FILL = RGBColor(37, 99, 235)  # Blue-600
+                 RED_FILL = RGBColor(239, 68, 68)  # Red-500
+                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
                  
-                 print(f"[VARIATION] Coloring {len(chart.series)} series")
-                 
-                 # Color the single series, but we need to color points individually
-                 # because we have positive AND negative values in the same series
-                 if len(chart.series) >= 1:
-                     series = chart.series[0]
-                     target_s_name = series.name
+                 # Check if we have 2 series (Positive/Negative split)
+                 if len(chart.series) >= 2:
+                     # Apply blue to first series (positive values)
+                     chart.series[0].format.fill.solid()
+                     chart.series[0].format.fill.fore_color.rgb = BLUE_FILL
                      
-                     print(f"[VARIATION] Series: '{target_s_name}', Points: {len(series.points)}")
+                     # Apply RED to second series (negative values)  
+                     chart.series[1].format.fill.solid()
+                     chart.series[1].format.fill.fore_color.rgb = RED_FILL
                      
-                     # Try BOTH approaches: series-level first, then point-level override
-                     # 1. Set default series color
-                     try:
-                         series.format.fill.solid()
-                         series.format.fill.fore_color.rgb = BLUE_FILL
-                         print(f"[VARIATION] Applied series-level BLUE fill")
-                     except Exception as se:
-                         print(f"[VARIATION ERROR] Series-level fill failed: {se}")
-                     
-                     # 2. Override individual negative points with RED
-                     for point_idx, point in enumerate(series.points):
-                         try:
-                             if point_idx < len(rows):
-                                 value = rows[point_idx].get(target_s_name, 0)
-                                 fval = float(value) if value is not None else 0.0
-                                 
-                                 if fval < 0:
-                                     # Override with RED for negative values
-                                     point.format.fill.solid()
-                                     point.format.fill.fore_color.rgb = RED_FILL
-                                     print(f"[VARIATION] Point {point_idx} ({categories[point_idx]}): {fval:.2%} → RED override")
-                         except Exception as pe:
-                             print(f"[VARIATION ERROR] Point {point_idx} color failed: {pe}")
-                     
+                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
                      chart.has_legend = False
-                     print(f"[VARIATION] ✓ Coloring complete")
                  
              except Exception as e:
-                 print(f"[VARIATION ERROR] Fatal: {e}")
-                 import traceback
-                 traceback.print_exc()
+                 print(f"Error applying dual-series colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
