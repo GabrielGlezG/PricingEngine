@@ -299,24 +299,63 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         is_evolution = 'evolución' in name_lower or 'evolution' in name_lower
         
+        # Robust detection: Check Name OR Headers
+        is_variation = ('tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower)
+        if not is_variation and headers:
+             is_variation = any('variación %' in str(h).lower() or 'variation %' in str(h).lower() for h in headers)
+        
         chart_data = CategoryChartData()
         chart_data.categories = categories
-        for s_name in series_names:
-            values = []
+        
+        # SPECIAL HANDLING FOR VARIATION CHARTS: Split into Positive/Negative Series
+        # FIX: We now enforce this even if multiple columns exist (like "Inicio", "Fin"), prioritizing the actual Variation column.
+        if is_variation:
+            # Identify the primary series to plot (usually containing "variación" or "%")
+            target_s_name = series_names[0] # Default to first series
+            for s in series_names:
+                if any(k in str(s).lower() for k in ['variación', 'variation', '%', 'percent']):
+                    target_s_name = s
+                    break
+            
+            positive_values = []
+            negative_values = []
+            
             for r in rows:
-                val = r.get(s_name, 0)
+                val = r.get(target_s_name, 0)
                 try:
-                    # Logic: If Evolution, treat 0 as None (Gap)
-                    # Otherwise default to 0.0
                     fval = float(val) if val is not None else 0.0
-                    
-                    if is_evolution and fval == 0.0:
-                        values.append(None)
-                    else:
-                        values.append(fval)
-                except: 
-                    values.append(0.0)
-            chart_data.add_series(s_name, values)
+                except:
+                    fval = 0.0
+                
+                # Split: positive goes to first series, negative to second
+                if fval >= 0:
+                    positive_values.append(fval)
+                    negative_values.append(None)  # Gap in negative series
+                else:
+                    positive_values.append(None)  # Gap in positive series
+                    negative_values.append(fval)
+            
+            # Add two series: Positive (blue) and Negative (red)
+            chart_data.add_series("Valores Positivos", positive_values)
+            chart_data.add_series("Valores Negativos", negative_values)
+        else:
+            # STANDARD HANDLING FOR OTHER CHARTS
+            for s_name in series_names:
+                values = []
+                for r in rows:
+                    val = r.get(s_name, 0)
+                    try:
+                        # Logic: If Evolution, treat 0 as None (Gap)
+                        # Otherwise default to 0.0
+                        fval = float(val) if val is not None else 0.0
+                        
+                        if is_evolution and fval == 0.0:
+                            values.append(None)
+                        else:
+                            values.append(fval)
+                    except: 
+                        values.append(0.0)
+                chart_data.add_series(s_name, values)
 
     # 16:9 Layout Adjustments (Width 13.33")
     # Centered Wider Chart: Width 12", Margin (13.33 - 12)/2 = 0.665"
@@ -368,51 +407,40 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         
         # 0. "Tendencia" / "Variación" Specifics
         if 'tendencia' in name_lower or 'variación' in name_lower or 'variacion' in name_lower:
-             # --- FIX 1: LABELS AT BOTTOM (Avoid overlap with negative bars) ---
+             # --- FIX 1: ENABLE DATA LABELS FOR ALL BARS ---
+             plot.has_data_labels = True
+             data_labels = plot.data_labels
+             data_labels.font.name = "Avenir Medium"
+             data_labels.font.size = Pt(9)
+             data_labels.font.bold = True
+             data_labels.number_format = '0.0%'
+             data_labels.position = XL_LABEL_POSITION.OUTSIDE_END  # Default above bars
+             
+             # --- FIX 2: LABELS AT BOTTOM (Avoid overlap with negative bars) ---
              try:
                  chart.category_axis.tick_label_position = XL_TICK_LABEL_POSITION.LOW
              except: pass
 
-             # --- FIX 2: NEGATIVE VALUES (RED BORDER + RED TEXT) ---
-             # Since solid fill is failing, we highlight via Thick Red Border + Red Text
+             # --- FIX 3: DUAL-SERIES COLORING (SIMPLIFIED) ---
              try:
-                 for series in chart.series:
-                     series.invert_if_negative = False 
+                 RED_FILL = RGBColor(239, 68, 68)  # Red-500
+                 BLUE_FILL = RGBColor(68, 114, 196)  # Excel Blue
+                 
+                 # Check if we have 2 series (Positive/Negative split)
+                 if len(chart.series) >= 2:
+                     # Apply blue to first series (positive values)
+                     chart.series[0].format.fill.solid()
+                     chart.series[0].format.fill.fore_color.rgb = BLUE_FILL
                      
-                     for i, val in enumerate(series.values):
-                         # Handle potentially exotic number types
-                         try:
-                             f_val = float(val)
-                         except:
-                             f_val = 0.0
-
-                         if f_val < 0:
-                             try:
-                                 # Access Data Point
-                                 pt = series.points[i]
-                                 
-                                 # 1. Border: Thick Red
-                                 pt.format.line.solid()
-                                 pt.format.line.color.rgb = RGBColor(255, 0, 0)
-                                 pt.format.line.width = Pt(2.5) # Thicker to make it obvious
-                                 
-                                 # 2. Fill: Explicit White (so Red text pops)
-                                 pt.format.fill.solid()
-                                 pt.format.fill.fore_color.rgb = RGBColor(255, 255, 255)
-
-                                 # 3. Data Label: Red Text + Bold
-                                 # We must access the specific label for this point
-                                 if pt.data_label:
-                                     pt.data_label.font.color.rgb = RGBColor(255, 0, 0)
-                                     pt.data_label.font.bold = True
-                                     # Ensure it's inside
-                                     pt.data_label.position = XL_LABEL_POSITION.INSIDE_END
-
-                             except Exception as e_pt:
-                                 print(f"Failed to style negative point {i}: {e_pt}")
-
+                     # Apply RED to second series (negative values)  
+                     chart.series[1].format.fill.solid()
+                     chart.series[1].format.fill.fore_color.rgb = RED_FILL
+                     
+                     # Hide legend (we don't need "Valores Positivos/Negativos" labels)
+                     chart.has_legend = False
+                 
              except Exception as e:
-                 print(f"Error coloring negative points: {e}")
+                 print(f"Error applying dual-series colors: {e}")
         
         # 0. "Evolución" (Evolution) -> Line Chart, No Data Labels (Clean), Currency Axis
         if 'evolución' in name_lower or 'evolution' in name_lower:
@@ -689,7 +717,7 @@ def add_chart_slide(prs, chart_info, currency_symbol='$'):
         val_axis.has_major_gridlines = False # Clean Layout (No Grid)
         
         # Standard Color Cycle if not vary_by_categories
-        if not plot.vary_by_categories and chart_type not in ['scatter']:
+        if not plot.vary_by_categories and chart_type not in ['scatter'] and not is_variation:
              brand_palette = [
                 RGBColor(30, 41, 59),   # Dark Blue
                 RGBColor(71, 85, 105),  # Light Blue

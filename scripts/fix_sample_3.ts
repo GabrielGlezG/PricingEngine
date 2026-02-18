@@ -94,7 +94,7 @@ const run = () => {
                 const parsed = Papa.parse(content, { header: true, delimiter: delim });
                 rows = parsed.data;
             } else {
-                console.error("Neither XLSX nor CSV found for SAMPLE (3)");
+                console.error("Neither XLSX nor CSV found");
                 return;
             }
         }
@@ -110,12 +110,18 @@ const run = () => {
 
             const rawCat = row[catKey] || 'Nissan';
             const rawPrincipal = (row[principalKey] || '').trim(); // ADDED TRIM HERE
-            const rawModel = row[modelKey] || '';
+            let rawModel = row[modelKey] || '';
             const rawSubmodel = row[submodelKey] || '';
 
             // Apply Title Case only to Modelo Principal (User calls this 'Modelo')
             const cat = rawCat;
             const principal = toTitleCase(rawPrincipal);
+
+            // Fix Honda Model specifically
+            if (cat.trim().toUpperCase() === 'HONDA') {
+                rawModel = '1.5 Turbo Aut. 4x4';
+            }
+
             const model = rawModel;
             const submodel = rawSubmodel;
 
