@@ -129,12 +129,36 @@ export default function UploadComponent() {
         throw new Error("Tipo de archivo no soportado");
       }
 
-      const { data, error } = await supabase.functions.invoke("upload-json", {
-        body: { data: jsonData, batchId },
-      });
+      // 1. Clean JSON data to strictly remove empty keys and empty rows (lowers payload size globally)
+      const cleanedData = jsonData.map((item: any) => {
+        const cleaned: any = {};
+        for (const key in item) {
+          if (item[key] !== null && item[key] !== undefined && String(item[key]).trim() !== "") {
+            cleaned[key] = item[key];
+          }
+        }
+        return cleaned;
+      }).filter((item: any) => Object.keys(item).length > 0);
 
-      if (error) throw error;
-      return data;
+      // 2. Chunk data to strictly prevent Vercel/Supabase '413 Payload Too Large' errors (Max 2MB limit)
+      const CHUNK_SIZE = 500;
+      const chunks = [];
+      for (let i = 0; i < cleanedData.length; i += CHUNK_SIZE) {
+        chunks.push(cleanedData.slice(i, i + CHUNK_SIZE));
+      }
+
+      // 3. Send sequential chunked requests as separate background jobs
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkBatchId = crypto.randomUUID();
+        const { error } = await supabase.functions.invoke("upload-json", {
+          body: { data: chunks[i], batchId: chunkBatchId },
+        });
+        if (error) {
+          throw new Error(`Error cargando lote ${i + 1} de ${chunks.length}: ${error.message}`);
+        }
+      }
+
+      return { success: true, chunksProcessed: chunks.length };
     },
     onSuccess: () => {
       toast({
