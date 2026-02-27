@@ -129,12 +129,28 @@ export default function UploadComponent() {
         throw new Error("Tipo de archivo no soportado");
       }
 
-      const { data, error } = await supabase.functions.invoke("upload-json", {
-        body: { data: jsonData, batchId },
-      });
+      const CHUNK_SIZE = 500;
+      const chunks = [];
+      for (let i = 0; i < jsonData.length; i += CHUNK_SIZE) {
+        chunks.push(jsonData.slice(i, i + CHUNK_SIZE));
+      }
 
-      if (error) throw error;
-      return data;
+      // Dispatch parallel batches separated by small delays to avoid overwhelming Postgres connection pools
+      await Promise.all(
+        chunks.map(async (chunk, index) => {
+          const batchId = crypto.randomUUID();
+          
+          return new Promise(resolve => setTimeout(resolve, index * 200)).then(async () => {
+             const { data, error } = await supabase.functions.invoke("upload-json", {
+               body: { data: chunk, batchId },
+             });
+             if (error) throw error;
+             return data;
+          });
+        })
+      );
+      
+      return true;
     },
     onSuccess: () => {
       toast({
