@@ -287,27 +287,16 @@ Deno.serve(async (req) => {
       throw jobError;
     }
 
-    // Start background processing
-    const backgroundPromise = processBackground(jsonData, batchId, supabaseClient);
+    // AWAIT the processing completely to prevent Edge Worker termination mid-flight
+    console.log("Starting full await of background processing to guarantee completion...");
+    await processBackground(jsonData, batchId, supabaseClient);
 
-    // Use EdgeRuntime.waitUntil if available to prevent worker termination
-    // @ts-ignore
-    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(backgroundPromise);
-      console.log("Passed processing to EdgeRuntime.waitUntil");
-    } else {
-      // Fallback or dev environment
-      console.log("EdgeRuntime not found, promise floating (might be terminated early in some envs)");
-      backgroundPromise.catch(e => console.error("Unhandled background error", e));
-    }
-
-    // Return immediate success
+    // Return success after processing finishes
     return new Response(
       JSON.stringify({
         success: true,
         jobId: batchId,
-        message: "File accepted. Processing running in background."
+        message: "File processed successfully."
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
