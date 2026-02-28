@@ -405,12 +405,6 @@ Deno.serve(async (req) => {
       monthlyQuery = monthlyQuery.gte('date', filters.volatilityStartDate);
     } else if (filters.dateFrom) {
       monthlyQuery = monthlyQuery.gte('date', filters.dateFrom);
-    } else if (filters.volatilityStartDate !== 'all') {
-      // DEFAULT: Limit internal database query to the rolling 1 year to avoid downloading 2022-2023 data 
-      // and hitting the 1000-row Supabase API limit!
-      const now = new Date();
-      const oneYearAgoStr = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
-      monthlyQuery = monthlyQuery.gte('date', oneYearAgoStr);
     }
 
     if (filters.volatilityEndDate && filters.volatilityEndDate !== 'all') {
@@ -518,11 +512,6 @@ Deno.serve(async (req) => {
       }
       if (filters.variationStartDate && filters.variationStartDate !== 'all') {
         brandHistoryQuery = brandHistoryQuery.gte('date', filters.variationStartDate);
-      } else if (filters.variationStartDate !== 'all') {
-        // DEFAULT: Limit to rolling 1 year to avoid downloading massive history and bypassing 1000-row limits
-        const now = new Date();
-        const oneYearAgoStr = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
-        brandHistoryQuery = brandHistoryQuery.gte('date', oneYearAgoStr);
       }
 
       if (filters.variationEndDate && filters.variationEndDate !== 'all') {
