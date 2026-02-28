@@ -149,6 +149,69 @@ export function getBrandLogo(brand: string): string | null {
 }
 
 /**
+ * Get logo URL from Clearbit API as a third-tier fallback
+ * Maps common car brands to their official websites (prioritizing Chilean domains)
+ * @param brand - The brand name
+ * @returns The Clearbit API URL or null
+ */
+export function getClearbitLogoUrl(brand: string): string | null {
+  if (!brand) return null;
+
+  const normalized = brand.toLowerCase().trim();
+
+  // Custom domain mapping for accurate Clearbit rendering (Chilean/Latam context)
+  const domainMap: Record<string, string> = {
+    'changan': 'changan.cl',
+    'jac': 'jacautos.cl',
+    'foton': 'foton.cl',
+    'maxus': 'maxus.cl',
+    'mg': 'mgmotor.cl',
+    'byd': 'bydauto.cl',
+    'chery': 'chery.cl',
+    'haval': 'haval.cl',
+    'great wall': 'greatwallmotors.cl',
+    'geely': 'geely.cl',
+    'ssangyong': 'ssangyong.cl',
+    'dongfeng': 'dongfeng.cl',
+    'jetour': 'jetour.cl',
+    'ram': 'ram.cl',
+    'gmc': 'gmc.com',
+    'hino': 'hino.cl',
+    'opel': 'opel.cl',
+    'seat': 'seat.cl',
+    'skoda': 'skoda.cl',
+    'tata': 'tatamotors.com',
+    'mahindra': 'mahindra.cl',
+    'lexus': 'lexus.cl',
+    'aston martin': 'astonmartin.com',
+    'peugeot': 'peugeot.cl',
+    'renault': 'renault.cl',
+    'fiat': 'fiat.cl',
+    'chevrolet': 'chevrolet.cl',
+    'ford': 'ford.cl',
+    'toyota': 'toyota.cl',
+    'nissan': 'nissan.cl',
+    'kia': 'kia.cl',
+    'hyundai': 'hyundai.cl',
+    'suzuki': 'suzuki.cl',
+    'mazda': 'mazda.cl',
+    'subaru': 'subaru.cl',
+    'honda': 'honda.cl',
+    'mitsubishi': 'mitsubishi-motors.cl',
+    'volkswagen': 'volkswagen.cl',
+    'bmw': 'bmw.cl',
+    'audi': 'audi.cl',
+    'mercedes-benz': 'mercedes-benz.cl',
+    'volvo': 'volvocars.com',
+    'jeep': 'jeep.cl',
+    'dodge': 'dodge.cl',
+  };
+
+  const domain = domainMap[normalized] || `${normalized.replace(/\s+/g, '')}.com`;
+  return `https://logo.clearbit.com/${domain}?size=128`;
+}
+
+/**
  * Get initials from brand name for fallback display
  * @param brand - The brand name
  * @returns Initials (max 2 characters)
