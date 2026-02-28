@@ -3,6 +3,7 @@ import { getBrandLogo, getBrandSvgUrl } from '@/config/brandLogos';
 
 const logoCache: Record<string, HTMLImageElement> = {};
 const failedSvgs: Set<string> = new Set();
+const failedImages: Set<string> = new Set();
 
 export const brandAxisLogoPlugin: Plugin = {
     id: 'brandAxisLogo',
@@ -34,12 +35,24 @@ export const brandAxisLogoPlugin: Plugin = {
                         failedSvgs.add(cacheKey);
                         if (pngUrl) {
                             img.src = pngUrl;
+                            img.onerror = () => {
+                                failedImages.add(cacheKey);
+                                chart.draw();
+                            };
+                        } else {
+                            failedImages.add(cacheKey);
+                            chart.draw();
                         }
                     };
                 } else if (pngUrl) {
                     img.src = pngUrl;
+                    img.onerror = () => {
+                        failedImages.add(cacheKey);
+                        chart.draw();
+                    };
                 } else {
-                    return; // No URL found
+                    // No URL found
+                    failedImages.add(cacheKey);
                 }
 
                 img.onload = () => {
@@ -49,11 +62,11 @@ export const brandAxisLogoPlugin: Plugin = {
                 logoCache[cacheKey] = img;
             }
 
-            // Draw if loaded
-            if (img.complete && img.naturalHeight !== 0) {
-                const xPos = x.getPixelForTick(index);
-                const yPos = x.top + 10; // Position below axis line
+            const xPos = x.getPixelForTick(index);
+            const yPos = x.top + 12; // Position below axis line
 
+            // Draw if loaded
+            if (img.complete && img.naturalHeight !== 0 && !failedImages.has(cacheKey)) {
                 // Dynamic width calculation to prevent overlap
                 const tickWidth = x.width / x.ticks.length;
                 const availableWidth = Math.min(60, tickWidth - 8); // Max 60px or available space minus padding
@@ -82,6 +95,18 @@ export const brandAxisLogoPlugin: Plugin = {
                 } catch (e) {
                     // Ignore transient errors
                 }
+            } else if (failedImages.has(cacheKey)) {
+                // Draw text fallback
+                ctx.save();
+                ctx.fillStyle = '#64748b'; // muted text color
+                ctx.font = '600 10px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                // Truncate long brand names to fit
+                const text = brandName.length > 12 ? brandName.substring(0, 9) + '...' : brandName;
+                ctx.fillText(text, xPos, yPos + 6); // Add slight padding to center with imaginary logo
+                ctx.restore();
             }
         });
     }
