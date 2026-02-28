@@ -400,17 +400,20 @@ Deno.serve(async (req) => {
       monthlyQuery = monthlyQuery.in('products.submodel', filters.submodel);
     }
 
-    // Apply Volatility Specific Date Filters if present, otherwise fallback to global
+    // Apply Volatility Specific Date Filters
     if (filters.volatilityStartDate && filters.volatilityStartDate !== 'all') {
       monthlyQuery = monthlyQuery.gte('date', filters.volatilityStartDate);
     } else if (filters.dateFrom) {
       monthlyQuery = monthlyQuery.gte('date', filters.dateFrom);
+    } else if (filters.volatilityStartDate !== 'all') {
+      // DEFAULT: Limit internal database query to the rolling 1 year to avoid downloading 2022-2023 data 
+      // and hitting the 1000-row Supabase API limit!
+      const now = new Date();
+      const oneYearAgoStr = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
+      monthlyQuery = monthlyQuery.gte('date', oneYearAgoStr);
     }
 
     if (filters.volatilityEndDate && filters.volatilityEndDate !== 'all') {
-      // Ensure we include the end date fully by appending time if needed or simply using LTE
-      // If passing just YYYY-MM-DD, LTE works fine for ISO 8601 usually if exact match desired
-      // But safe to append T23:59:59
       monthlyQuery = monthlyQuery.lte('date', filters.volatilityEndDate + 'T23:59:59');
     } else if (filters.dateTo) {
       monthlyQuery = monthlyQuery.lte('date', filters.dateTo);
@@ -515,7 +518,13 @@ Deno.serve(async (req) => {
       }
       if (filters.variationStartDate && filters.variationStartDate !== 'all') {
         brandHistoryQuery = brandHistoryQuery.gte('date', filters.variationStartDate);
+      } else if (filters.variationStartDate !== 'all') {
+        // DEFAULT: Limit to rolling 1 year to avoid downloading massive history and bypassing 1000-row limits
+        const now = new Date();
+        const oneYearAgoStr = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
+        brandHistoryQuery = brandHistoryQuery.gte('date', oneYearAgoStr);
       }
+
       if (filters.variationEndDate && filters.variationEndDate !== 'all') {
         // Append time to end of day if just a date, or just simple comparison if exact
         // Assuming YYYY-MM-DD, we want to include that day, so maybe lt date+1 or just lte 23:59:59
@@ -542,8 +551,14 @@ Deno.serve(async (req) => {
         if (dateAverages.length > 0) {
           const firstAvg = dateAverages[0].avg_price;
           const lastAvg = dateAverages[dateAverages.length - 1].avg_price;
-          // Calculate variation only if we have > 1 point, otherwise 0
-          const variation = dateAverages.length > 1 ? ((lastAvg - firstAvg) / firstAvg * 100) : 0;
+          // Calculate variation only if we have > 1 point and firstAvg > 0
+          let variation = 0;
+          if (dateAverages.length > 1 && firstAvg > 0) {
+            const rawVariation = ((lastAvg - firstAvg) / firstAvg * 100);
+            if (rawVariation >= -99 && rawVariation <= 500) {
+              variation = rawVariation;
+            }
+          }
 
           return {
             brand,
@@ -637,8 +652,12 @@ Deno.serve(async (req) => {
           const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
 
           if (prevAvg > 0) {
-            const variation = ((avg - prevAvg) / prevAvg) * 100;
-            m.variations[bucket] = variation;
+            const rawVariation = ((avg - prevAvg) / prevAvg) * 100;
+            // Filter out absurd data outliers (e.g., price dropping to 1 peso or jumping to billions)
+            // Realistic month-to-month car price variation is usually between -50% and +100%
+            if (rawVariation >= -99 && rawVariation <= 500) {
+              m.variations[bucket] = rawVariation;
+            }
           }
           prevAvg = avg;
         }
@@ -889,14 +908,23 @@ Deno.serve(async (req) => {
           submodel: filters.submodel,
           ctx_precio: filters.ctx_precio,
           priceRange: filters.priceRange,
-          priceRange: filters.priceRange,
-          date_from: filters.dateFrom,
-          priceRange: filters.priceRange,
           date_from: filters.dateFrom,
           date_to: filters.dateTo
         },
-        // Sort ascending (Oldest -> Newest) as requested
-        available_dates: [...new Set(priceData?.map(d => d.date.split('T')[0]))].sort(),
+        // Sort ascending (Oldest -> Newest) and limit to the last rolling 12 months based on the LATEST data available
+        available_dates: (() => {
+          const allDates = [...new Set(monthlyData?.map((d: any) => d.date.split('T')[0]) || [])].sort() as string[];
+          if (allDates.length === 0) return [];
+
+          // Use the newest date in the database as the reference point, not the system clock
+          const latestDateStr = allDates[allDates.length - 1];
+          const latestDate = new Date(latestDateStr);
+
+          // First day of the month, one year ago from the latest data point
+          const oneYearAgo = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), 1);
+
+          return allDates.filter(d => new Date(d) >= oneYearAgo);
+        })(),
         generated_at: new Date().toISOString()
       }),
       {

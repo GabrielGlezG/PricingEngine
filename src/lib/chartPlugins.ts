@@ -127,7 +127,7 @@ export const brandAxisLogoPlugin: Plugin = {
 
                 // Truncate long brand names to fit
                 const text = brandName.length > 12 ? brandName.substring(0, 9) + '...' : brandName;
-                ctx.fillText(text, xPos, yPos + 6); // Add slight padding to center with imaginary logo
+                ctx.fillText(text, xPos, yPos + 18); // Added more padding to prevent overlap with axis line/grid
                 ctx.restore();
             }
         });

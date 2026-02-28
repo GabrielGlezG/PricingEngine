@@ -454,19 +454,20 @@ export default function Dashboard() {
        .map(([key, dates]) => {
           const [yearStr, weekStr] = key.split('-W');
           const range = getISOWeekDateRange(parseInt(yearStr), parseInt(weekStr));
-          const min = formatLabelDate(range.start.toISOString());
-          const max = formatLabelDate(range.end.toISOString());
+          // Format safely, fallback if min/max functions fail
+          const min = range?.start ? new Date(range.start).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }) : '';
+          const max = range?.end ? new Date(range.end).toLocaleDateString('es-CL', { timeZone: 'UTC', day: '2-digit', month: '2-digit' }) : '';
           return {
              id: key,
-             label: `Semana ${key.split('-W')[1]} (${min} - ${max})`,
+             label: `Semana ${weekStr} (${min} - ${max})`,
              dates: dates
           };
        })
        .sort((a, b) => b.id.localeCompare(a.id));
 
     return { months: validMonths, weeks: validWeeks };
-  }, [analytics?.available_dates?.length]);
-
+  }, [analytics?.available_dates ? analytics.available_dates.join(',') : '']);
+  
   // Effect to set initial default option when period changes
   useEffect(() => {
      if (variationPeriod === 'month') {
