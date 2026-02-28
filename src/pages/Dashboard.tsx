@@ -1034,7 +1034,7 @@ export default function Dashboard() {
                       <div style={{ width: chartData.length > 8 ? minWidth : '100%', height: '100%' }}>
                         <Bar
                           ref={null}
-                          plugins={[brandAxisLogoPlugin]}
+                          plugins={selectedPriceSegment === "all" ? [] : [brandAxisLogoPlugin]}
                           key={`price-analysis-${chartKey}-${selectedPriceSegment}`}
                           data={{
                         labels: selectedPriceSegment === "all"

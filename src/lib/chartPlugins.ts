@@ -8,16 +8,30 @@ const failedImages: Set<string> = new Set();
 export const brandAxisLogoPlugin: Plugin = {
     id: 'brandAxisLogo',
     afterDraw(chart) {
+        // If the chart actively disables this plugin (or if it's not explicitly the brand axis), skip.
+        // But since it's injected per-chart in Dashboard.tsx, let's just make sure we don't double-draw 
+        // if the text isn't a recognized brand or if we can heuristically tell it's not a brand chart.
         const { ctx, scales: { x } } = chart;
 
         // Safety checks
         if (!x || !chart.data.labels) return;
 
+        // Optional: you can pass custom options to the plugin via chart.options.plugins.brandAxisLogo
+        // If a chart sets `enabled: false`, we skip.
+        if (chart.options?.plugins?.brandAxisLogo?.enabled === false) return;
+
         x.ticks.forEach((tick, index) => {
             const brandName = chart.data.labels?.[index] as string;
             if (!brandName) return;
 
+            // Heuristic to prevent drawing on non-brand charts (like Segment: SUV, Sedan, Hatchback)
+            const nonBrands = new Set(['SUV', 'SEDAN', 'HATCHBACK', 'PICKUP', 'VAN/FURGÓN', 'COMERCIAL', 'ELÉCTRICO', 'HÍBRIDO', 'CITYCAR']);
             const cacheKey = brandName.trim().toUpperCase();
+
+            if (nonBrands.has(cacheKey)) {
+                return; // Skip drawing any custom logo or text for generic vehicle categories
+            }
+
             let img = logoCache[cacheKey];
 
             // Load image if not in cache
