@@ -1,5 +1,5 @@
 import { Plugin } from 'chart.js';
-import { getBrandLogo, getBrandSvgUrl } from '@/config/brandLogos';
+import { getBrandLogo, getBrandSvgUrl, getClearbitLogoUrl } from '@/config/brandLogos';
 
 const logoCache: Record<string, HTMLImageElement> = {};
 const failedSvgs: Set<string> = new Set();
@@ -27,32 +27,40 @@ export const brandAxisLogoPlugin: Plugin = {
 
                 const svgUrl = getBrandSvgUrl(brandName);
                 const pngUrl = getBrandLogo(brandName);
+                const clearbitUrl = getClearbitLogoUrl(brandName);
 
-                // Strategy: Try SVG first (Quality). If it fails, fallback to PNG.
+                const handleTotalFailure = () => {
+                    failedImages.add(cacheKey);
+                    chart.draw();
+                };
+
+                const tryClearbit = () => {
+                    if (clearbitUrl) {
+                        img.src = clearbitUrl;
+                        img.onerror = handleTotalFailure;
+                    } else {
+                        handleTotalFailure();
+                    }
+                };
+
+                const tryPng = () => {
+                    if (pngUrl) {
+                        img.src = pngUrl;
+                        img.onerror = tryClearbit;
+                    } else {
+                        tryClearbit();
+                    }
+                };
+
+                // Strategy: Try SVG -> Try PNG -> Try Clearbit API -> Give up and use Text (failedImages)
                 if (svgUrl && !failedSvgs.has(cacheKey)) {
                     img.src = svgUrl;
                     img.onerror = () => {
                         failedSvgs.add(cacheKey);
-                        if (pngUrl) {
-                            img.src = pngUrl;
-                            img.onerror = () => {
-                                failedImages.add(cacheKey);
-                                chart.draw();
-                            };
-                        } else {
-                            failedImages.add(cacheKey);
-                            chart.draw();
-                        }
-                    };
-                } else if (pngUrl) {
-                    img.src = pngUrl;
-                    img.onerror = () => {
-                        failedImages.add(cacheKey);
-                        chart.draw();
+                        tryPng();
                     };
                 } else {
-                    // No URL found
-                    failedImages.add(cacheKey);
+                    tryPng();
                 }
 
                 img.onload = () => {
