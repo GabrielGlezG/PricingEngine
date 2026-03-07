@@ -69,9 +69,9 @@ import {
   Legend as ChartLegend,
   Filler,
 } from "chart.js";
+import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect, useMemo } from "react";
-import { brandAxisLogoPlugin } from "@/lib/chartPlugins";
-import { getBrandLogo } from "@/config/brandLogos";
+import { brandAxisLogoPlugin, setDbLogos } from "@/lib/chartPlugins";
 import { DateRange } from "react-day-picker";
 import { usePriceDistribution } from "@/hooks/usePriceDistribution";
 // import { CurrencySelector } from "@/components/CurrencySelector";
@@ -88,6 +88,7 @@ import {
 } from "@/config/chartColors";
 import { ModelsTable } from "@/components/ModelsTable";
 import { useTheme } from "next-themes";
+import { useBrandLogos } from "@/hooks/useBrandLogos";
 import { BrandLogo } from "@/components/BrandLogo";
 import { BrandHeader } from "@/components/BrandHeader";
 import { DashboardFilters } from "@/components/DashboardFilters";
@@ -239,7 +240,13 @@ export default function Dashboard() {
   const [volatilityEndMonthId, setVolatilityEndMonthId] = useState<string>("");
   const [volatilityStartDate, setVolatilityStartDate] = useState<string>("all");
   const [volatilityEndDate, setVolatilityEndDate] = useState<string>("all");
-  const [volatilityBrands, setVolatilityBrands] = useState<string[]>([]);
+  const { logos } = useBrandLogos();
+
+  useEffect(() => {
+     setDbLogos(logos);
+  }, [logos]);
+
+  const [globalTrends, setGlobalTrends] = useState<any[]>([]);
   
   // ✅ Estado para Variación de Precios
   const [variationPeriod, setVariationPeriod] = useState<'total' | 'month'>('total');
@@ -300,7 +307,7 @@ export default function Dashboard() {
     isRefetching,
     error: queryError,
   } = useQuery({
-    queryKey: ["analytics", filters, volatilityPeriod, volatilityBrands, variationStartDate, variationEndDate, volatilityStartDate, volatilityEndDate, "v2"],
+    queryKey: ["analytics", filters, volatilityPeriod, variationStartDate, variationEndDate, volatilityStartDate, volatilityEndDate, "v2"],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -321,9 +328,9 @@ export default function Dashboard() {
       if (volatilityEndDate !== 'all') params.append("volatilityEndDate", volatilityEndDate);
       
       // Append multiple volatility brands
-      volatilityBrands.forEach(brand => {
-        params.append("volatilityBrand", brand);
-      });
+      // volatilityBrands.forEach(brand => {
+      //   params.append("volatilityBrand", brand);
+      // });
       if (variationStartDate !== "all") {
         params.append("variationStartDate", variationStartDate);
       }
@@ -717,7 +724,6 @@ export default function Dashboard() {
           analytics, 
           {
               filters: filters,
-              volatilityBrands: volatilityBrands,
               volatilityPeriod: volatilityPeriod
           },
           CURRENCY_SYMBOLS[currency], 
@@ -736,7 +742,6 @@ export default function Dashboard() {
             analytics, 
             {
                 filters: filters,
-                volatilityBrands: volatilityBrands,
                 volatilityPeriod: volatilityPeriod
             },
             CURRENCY_SYMBOLS[currency], 
@@ -800,12 +805,7 @@ export default function Dashboard() {
       <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <DataCard
           title="Mercado Total"
-          value={
-             <div className="flex items-baseline gap-2">
-                <span>{analytics.metrics.total_brands}</span>
-                <span className="text-lg font-medium text-muted-foreground">Marcas</span>
-             </div>
-          }
+          value={String(analytics.metrics.total_brands)}
           subValue={
              <div className="flex flex-col">
                 <span>{analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos</span>
@@ -983,8 +983,8 @@ export default function Dashboard() {
                                </div>
                              ))}
                         </div>
-                      </div>
-                      </div>
+                         </div>
+                       </div>
                     );
                   })()}
                 </div>
@@ -1092,10 +1092,7 @@ export default function Dashboard() {
                             grid: { display: false },
                             ticks: {
                               ...getScaleOptions().ticks,
-                              color: (c: any) => {
-                                const label = c.chart.data.labels?.[c.index] as string;
-                                return getBrandLogo(label) ? 'transparent' : axisColor;
-                              },
+                              color: axisColor,
                               maxRotation: 45,
                               minRotation: 0,
                               autoSkip: false,
@@ -1654,14 +1651,14 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between gap-4">
                     <CardTitle className="card-title flex items-center gap-2 whitespace-nowrap">
                       <Activity className="h-5 w-5 text-primary" />
-                      Volatilidad de Mercado: {volatilityBrands.length === 1 || filters.brand?.length === 1 ? 'Modelos' : 'Marcas'}
+                      Volatilidad de Mercado: {filters.brand?.length === 1 ? 'Modelos' : 'Marcas'}
                     </CardTitle>
                     
                      <div className="w-full max-w-[200px]">
                       <MultiSelectSearch 
                         options={brands || []}
-                        selected={volatilityBrands}
-                        onChange={setVolatilityBrands}
+                        selected={filters.brand}
+                        onChange={(selectedBrands) => setFilters(prev => ({ ...prev, brand: selectedBrands }))}
                         placeholder="Filtrar Marcas"
                         searchPlaceholder="Buscar marca..."
                         className="h-7 text-xs bg-background/50"
@@ -1764,7 +1761,7 @@ export default function Dashboard() {
                       <div style={{ width: uniqueDates.length > 10 ? minWidth : '100%', height: '100%' }}>
                         <Bar
                           ref={null}
-                          key={`bar-volatility-${chartKey}-${volatilityPeriod}-${volatilityBrands.join(',')}`}
+                          key={`bar-volatility-${chartKey}-${volatilityPeriod}-${filters.brand?.join(',')}`}
                           data={{
                             // Collect all unique dates from all series to ensure x-axis alignment
                             labels: uniqueDates,
@@ -1839,7 +1836,7 @@ export default function Dashboard() {
                 {/* Custom Legend with Logos (or Text for Models) */}
                 <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 px-2">
                   {(() => {
-                      const isModelMode = volatilityBrands.length === 1 || filters.brand?.length === 1;
+                      const isModelMode = filters.brand?.length === 1;
                       return (analytics.chart_data?.volatility_timeseries || []).map((series, idx) => (
                          <div key={series.entity} className="flex items-center gap-2" title={series.entity}>
                             <div 
