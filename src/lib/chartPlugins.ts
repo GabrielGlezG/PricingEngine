@@ -1,6 +1,13 @@
 import { Plugin } from 'chart.js';
 import { getBrandLogo, getBrandSvgUrl, getClearbitLogoUrl } from '@/config/brandLogos';
 
+// Global cache for the database logos injected from React
+let dbLogoCache: Record<string, string> = {};
+
+export const setDbLogos = (logos: Record<string, string>) => {
+    dbLogoCache = logos;
+};
+
 const logoCache: Record<string, HTMLImageElement> = {};
 const failedSvgs: Set<string> = new Set();
 const failedImages: Set<string> = new Set();
@@ -42,6 +49,7 @@ export const brandAxisLogoPlugin: Plugin = {
                 const svgUrl = getBrandSvgUrl(brandName);
                 const pngUrl = getBrandLogo(brandName);
                 const clearbitUrl = getClearbitLogoUrl(brandName);
+                const dbUrl = dbLogoCache[cacheKey];
 
                 const handleTotalFailure = () => {
                     failedImages.add(cacheKey);
@@ -66,19 +74,43 @@ export const brandAxisLogoPlugin: Plugin = {
                     }
                 };
 
-                // Strategy: Try SVG -> Try PNG -> Try Clearbit API -> Give up and use Text (failedImages)
-                if (svgUrl && !failedSvgs.has(cacheKey)) {
-                    img.src = svgUrl;
-                    img.onerror = () => {
-                        failedSvgs.add(cacheKey);
+                const trySvg = () => {
+                    if (svgUrl && !failedSvgs.has(cacheKey)) {
+                        img.src = svgUrl;
+                        img.onerror = () => {
+                            failedSvgs.add(cacheKey);
+                            tryPng();
+                        };
+                    } else {
                         tryPng();
+                    }
+                };
+
+                // Strategy: Try DB -> Try SVG -> Try PNG -> Try Clearbit API -> Give up and use Text (failedImages)
+                if (dbUrl) {
+                    img.src = dbUrl;
+                    img.onerror = () => {
+                        trySvg();
                     };
                 } else {
-                    tryPng();
+                    trySvg();
                 }
 
                 img.onload = () => {
-                    chart.draw();
+                    // Check for invisible 1x1 clearbit images
+                    if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+                        if (dbUrl && img.src === dbUrl) {
+                            trySvg();
+                        } else if (svgUrl && img.src === svgUrl) {
+                            tryPng();
+                        } else if (pngUrl && img.src === pngUrl) {
+                            tryClearbit();
+                        } else {
+                            handleTotalFailure();
+                        }
+                    } else {
+                        chart.draw();
+                    }
                 };
 
                 logoCache[cacheKey] = img;
