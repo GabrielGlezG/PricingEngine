@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-import { getBrandLogo, getBrandInitials, getBrandColor, getBrandSvgUrl } from "@/config/brandLogos";
+import React, { useState, useEffect } from "react";
+import { getBrandInitials, getBrandColor, getBrandSvgUrl, getClearbitLogoUrl } from "@/config/brandLogos";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBrandLogos } from "@/hooks/useBrandLogos";
 import { cn } from "@/lib/utils";
 
 interface BrandLogoProps {
@@ -15,7 +17,6 @@ const sizeClasses = {
   md: "w-8 h-8",
   lg: "w-12 h-12",
   xl: "w-20 h-20",
-  "2xl": "w-32 h-32",
 };
 
 const fallbackSizeClasses = {
@@ -23,84 +24,160 @@ const fallbackSizeClasses = {
   md: "w-8 h-8 text-xs",
   lg: "w-12 h-12 text-base",
   xl: "w-20 h-20 text-xl",
-  "2xl": "w-32 h-32 text-4xl",
 };
 
-const nameSizeClasses = {
-  sm: "text-sm",
-  md: "text-base",
-  lg: "text-lg",
-  xl: "text-2xl font-bold",
-  "2xl": "text-4xl font-extrabold tracking-tight",
-};
+export function BrandLogo({ brand, size = "md", className = "" }: BrandLogoProps) {
+  // First, check for our newly hosted DB logos
+  const { getLogo, isLoading } = useBrandLogos();
+  const dbLogoUrl = getLogo(brand);
 
-export function BrandLogo({ brand, size = "md", className, showName = true, variant = "default" }: BrandLogoProps) {
-  const [renderMode, setRenderMode] = useState<'svg' | 'png' | 'initials'>('svg');
-  
+  const [renderMode, setRenderMode] = useState<'db' | 'svg' | 'clearbit' | 'initials'>('db');
+  const [imageError, setImageError] = useState(false);
+
+  // Derive all fallback URLs
   const svgUrl = getBrandSvgUrl(brand);
-  const pngUrl = getBrandLogo(brand);
-  const initials = getBrandInitials(brand);
-  const brandColor = getBrandColor(brand);
+  const clearbitUrl = getClearbitLogoUrl(brand);
 
+  const initials = getBrandInitials(brand);
+  const bgColor = getBrandColor(brand);
+
+  // If DB logos are loaded but brand isn't there, immediately skip to SVG mode
   useEffect(() => {
-    setRenderMode('svg');
-  }, [brand]);
+    if (!isLoading) {
+      if (!dbLogoUrl && renderMode === 'db') {
+         setRenderMode('svg');
+      }
+    }
+  }, [isLoading, dbLogoUrl, renderMode]);
 
   const handleError = () => {
-    if (renderMode === 'svg') {
-      // SVG failed, try PNG if available, otherwise initials
-      if (pngUrl) setRenderMode('png');
+    if (renderMode === 'db') {
+        setRenderMode('svg');
+    } else if (renderMode === 'svg') {
+      // SVG failed, try Clearbit, otherwise initials
+      if (clearbitUrl) setRenderMode('clearbit');
       else setRenderMode('initials');
-    } else if (renderMode === 'png') {
-      // PNG failed (or wasn't available), use initials
+    } else if (renderMode === 'clearbit') {
+      // Clearbit failed
+      setImageError(true);
       setRenderMode('initials');
     } else {
-        setRenderMode('initials');
+      setImageError(true);
+      setRenderMode('initials');
     }
   };
 
-  const showImage = renderMode !== 'initials';
-  const currentUrl = renderMode === 'svg' ? svgUrl : pngUrl;
+  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+       handleError();
+    }
+  };
 
+  if (renderMode === 'db' && dbLogoUrl) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "relative flex items-center justify-center bg-white rounded-full overflow-hidden ring-1 ring-border/10 shadow-sm",
+              sizeClasses[size],
+              className
+            )}>
+              <img
+                src={dbLogoUrl}
+                alt={`${brand} logo`}
+                title={`${brand} logo`}
+                className="w-full h-full object-contain p-[15%] transition-transform hover:scale-110"
+                onError={handleError}
+                onLoad={handleLoad}
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{brand}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (renderMode === 'svg' && svgUrl) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "relative flex items-center justify-center bg-white rounded-full overflow-hidden ring-1 ring-border/10 shadow-sm p-1.5",
+              sizeClasses[size],
+              className
+            )}>
+              <img
+                src={svgUrl}
+                alt={`${brand} logo`}
+                title={`${brand} logo`}
+                className="w-full h-full object-contain"
+                onError={handleError}
+                onLoad={handleLoad}
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{brand}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (renderMode === 'clearbit' && clearbitUrl && !imageError) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={cn(
+              "relative flex items-center justify-center bg-white rounded-full overflow-hidden ring-1 ring-border/10 shadow-sm p-1",
+              sizeClasses[size],
+              className
+            )}>
+              <img
+                src={clearbitUrl}
+                alt={`${brand} logo`}
+                title={`${brand} logo`}
+                className="w-full h-full object-contain"
+                onError={handleError}
+                onLoad={handleLoad}
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{brand}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // Final fallback: Initials
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      {showImage && currentUrl ? (
-        <div className={cn(
-          "relative flex-shrink-0 flex items-center justify-center",
-          variant === "default" && "rounded-xl overflow-hidden bg-white shadow-sm",
-          sizeClasses[size],
-          variant === "default" && size === "xl" && "shadow-md",
-          variant === "default" && size === "2xl" && "shadow-lg",
-          variant === "default" && (renderMode === 'svg' ? "p-1.5" : "p-1"),
-          variant === "raw" && "object-contain"
-        )}>
-          <img
-            key={`${brand}-${renderMode}`} // Force re-render on mode change
-            src={currentUrl}
-            alt={`${brand} logo`}
-            className="w-full h-full object-contain"
-            onError={handleError}
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div
-          className={cn(
-            "flex-shrink-0 rounded-xl flex items-center justify-center font-bold text-white shadow-sm",
-            fallbackSizeClasses[size],
-            size === "xl" && "shadow-md",
-            size === "2xl" && "shadow-lg"
-          )}
-          style={{ backgroundColor: brandColor }}
-        >
-          {initials}
-        </div>
-      )}
-      {showName && (
-        <span className={cn("truncate font-heading font-semibold text-foreground/80", nameSizeClasses[size])}>
-          {brand}
-        </span>
-      )}
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={cn(
+              "flex-shrink-0 rounded-full flex items-center justify-center font-bold text-white shadow-sm ring-1 ring-border/10",
+              fallbackSizeClasses[size],
+              className
+            )}
+            style={{ backgroundColor: bgColor }}
+          >
+            {initials}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{brand}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
