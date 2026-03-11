@@ -805,7 +805,12 @@ export default function Dashboard() {
       <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <DataCard
           title="Mercado Total"
-          value={String(analytics.metrics.total_brands)}
+          value={
+            <span className="flex items-baseline gap-1.5">
+              {String(analytics.metrics.total_brands)}
+              <span className="text-sm font-semibold text-muted-foreground tracking-wide uppercase">Marcas</span>
+            </span>
+          }
           subValue={
              <div className="flex flex-col">
                 <span>{analytics.metrics.total_model_families ?? analytics.chart_data.models_by_principal.length} modelos</span>
@@ -970,15 +975,14 @@ export default function Dashboard() {
                              {allBrands.map((brand, idx) => (
                                <div key={brand} className="flex items-center gap-1.5" title={brand}>
                                    <div 
-                                     className="h-2 w-2 rounded-full shadow-sm" 
+                                     className="h-2 w-2 rounded-full shadow-sm flex-shrink-0" 
                                      style={{ backgroundColor: brandColors[idx % brandColors.length] }} 
                                    />
                                    <BrandLogo 
                                      brand={brand} 
-                                     variant="raw" 
+                                     variant="default" 
                                      size="sm" 
                                      showName={false} 
-                                     className="!w-auto !h-4 opacity-90 hover:opacity-100 transition-opacity" 
                                    />
                                </div>
                              ))}
@@ -1096,6 +1100,8 @@ export default function Dashboard() {
                               maxRotation: 45,
                               minRotation: 0,
                               autoSkip: false,
+                              // Hide text labels when brand logos are shown by the plugin
+                              display: selectedPriceSegment === "all",
                             }
                           },
                           y: {
@@ -1236,19 +1242,18 @@ export default function Dashboard() {
                           />
                         </div>
                         {/* Custom Legend with Logos */}
-                        <div className="mt-4 flex flex-wrap justify-center items-center gap-x-6 gap-y-3 px-2 border-t border-border/50 pt-3">
+                        <div className="mt-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-3 px-2 border-t border-border/50 pt-3">
                             {brands.map((brand, idx) => (
-                              <div key={brand} className="flex items-center gap-2" title={brand}>
+                              <div key={brand} className="flex items-center gap-1.5" title={brand}>
                                   <div 
-                                    className="h-2.5 w-2.5 rounded-full shadow-sm" 
+                                    className="h-2 w-2 rounded-full shadow-sm flex-shrink-0" 
                                     style={{ backgroundColor: brandColors[idx % brandColors.length] }} 
                                   />
                                   <BrandLogo 
                                     brand={brand} 
-                                    variant="raw" 
+                                    variant="default" 
                                     size="sm" 
                                     showName={false} 
-                                    className="!w-auto !h-5 opacity-90 hover:opacity-100 transition-opacity" 
                                   />
                               </div>
                             ))}
@@ -1848,10 +1853,9 @@ export default function Dashboard() {
                             ) : (
                                 <BrandLogo 
                                    brand={series.entity} 
-                                   variant="raw" 
+                                   variant="default" 
                                    size="sm" 
                                    showName={false} 
-                                   className="!w-auto !h-5 opacity-90 hover:opacity-100 transition-opacity"
                                 />
                             )}
                          </div>

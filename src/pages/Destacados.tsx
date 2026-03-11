@@ -327,7 +327,7 @@ export default function Destacados() {
                      size="xl" 
                      showName={false}
                      variant="raw"
-                     className="w-full h-full justify-center object-contain transition-all duration-500" 
+                     className="transition-all duration-500 max-w-full max-h-full object-contain" 
                    />
                  </div>
                  

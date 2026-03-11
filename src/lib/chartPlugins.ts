@@ -86,24 +86,24 @@ export const brandAxisLogoPlugin: Plugin = {
                     }
                 };
 
-                // Strategy: Try DB -> Try SVG -> Try PNG -> Try Clearbit API -> Give up and use Text (failedImages)
+                // Strategy: Try DB -> Try PNG -> Try SVG -> Try Clearbit API -> Give up and use Text (failedImages)
                 if (dbUrl) {
                     img.src = dbUrl;
                     img.onerror = () => {
-                        trySvg();
+                        tryPng();
                     };
                 } else {
-                    trySvg();
+                    tryPng();
                 }
 
                 img.onload = () => {
                     // Check for invisible 1x1 clearbit images
                     if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
                         if (dbUrl && img.src === dbUrl) {
-                            trySvg();
-                        } else if (svgUrl && img.src === svgUrl) {
                             tryPng();
                         } else if (pngUrl && img.src === pngUrl) {
+                            trySvg();
+                        } else if (svgUrl && img.src === svgUrl) {
                             tryClearbit();
                         } else {
                             handleTotalFailure();
@@ -149,18 +149,6 @@ export const brandAxisLogoPlugin: Plugin = {
                 } catch (e) {
                     // Ignore transient errors
                 }
-            } else if (failedImages.has(cacheKey)) {
-                // Draw text fallback
-                ctx.save();
-                ctx.fillStyle = '#64748b'; // muted text color
-                ctx.font = '600 10px Inter, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-
-                // Truncate long brand names to fit
-                const text = brandName.length > 12 ? brandName.substring(0, 9) + '...' : brandName;
-                ctx.fillText(text, xPos, yPos + 18); // Added more padding to prevent overlap with axis line/grid
-                ctx.restore();
             }
         });
     }
