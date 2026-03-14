@@ -5,6 +5,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+async function fetchAll(queryObject: any) {
+  let allData: any[] = [];
+  let from = 0;
+  const step = 1000;
+  let hasMore = true;
+  while (hasMore) {
+    const { data, error } = await queryObject.range(from, from + step - 1);
+    if (error) return { data: null, error };
+    if (data && data.length > 0) {
+      allData = allData.concat(data);
+      from += step;
+      if (data.length < step) hasMore = false;
+    } else {
+      hasMore = false;
+    }
+  }
+  return { data: allData, error: null };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -122,7 +141,7 @@ Deno.serve(async (req) => {
       query = query.lte('date', filters.dateTo);
     }
 
-    const { data: priceData, error: priceError } = await query;
+    const { data: priceData, error: priceError } = await fetchAll(query);
 
     if (priceError) {
       console.error('Error fetching price data:', priceError);
@@ -133,15 +152,21 @@ Deno.serve(async (req) => {
 
     // Get latest price for each product (most recent date per product)
     const latestPrices = new Map();
+    let maxDateMs = 0;
+
     priceData?.forEach(item => {
+      const itemDateMs = new Date(item.date).getTime();
+      if (itemDateMs > maxDateMs) maxDateMs = itemDateMs;
+
       const productId = (item.products as any).id;
       if (!latestPrices.has(productId) || new Date(item.date) > new Date(latestPrices.get(productId).date)) {
         latestPrices.set(productId, item);
       }
     });
 
+    // The user explicitly requested that all historical models and versions be counted 
+    // within the selected period, even if they were discontinued.
     const filteredData = Array.from(latestPrices.values());
-
     // JS filtering removed as it is now done in DB
     // Only 'priceRange' needs manual filtering if passing complex strings, 
     // but basic filtering is now DB-side.
@@ -233,12 +258,18 @@ Deno.serve(async (req) => {
     };
 
     // Get total scraping sessions count (distinct dates)
-    const { data: allDates } = await supabaseClient
+    const { data: allDates } = await fetchAll(supabaseClient
       .from('price_data')
-      .select('date');
+      .select('date'));
 
-    const uniqueDates = [...new Set(allDates?.map(d => d.date.split('T')[0]))];
+    const uniqueDates = [...new Set(allDates?.map((d: any) => d.date.split('T')[0]))].sort() as string[];
     metrics.total_scraping_sessions = uniqueDates.length;
+
+    const absoluteMaxDateStr = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : new Date().toISOString();
+    const absoluteMaxDate = new Date(absoluteMaxDateStr);
+    const oneYearAgo = new Date(absoluteMaxDate);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const oneYearAgoStr = oneYearAgo.toISOString();
 
     // Group data for comprehensive charts WITH TEMPORAL ANALYSIS
     const pricesByBrand = await Promise.all(brands.map(async (brand) => {
@@ -265,7 +296,7 @@ Deno.serve(async (req) => {
         brandHistoryQuery = brandHistoryQuery.in('products.submodel', filters.submodel);
       }
 
-      const { data: brandHistory } = await brandHistoryQuery;
+      const { data: brandHistory } = await fetchAll(brandHistoryQuery);
 
       // Calculate trend
       const recentPrices = brandHistory?.map(h => parseFloat(h.price)) || [];
@@ -405,6 +436,8 @@ Deno.serve(async (req) => {
       monthlyQuery = monthlyQuery.gte('date', filters.volatilityStartDate);
     } else if (filters.dateFrom) {
       monthlyQuery = monthlyQuery.gte('date', filters.dateFrom);
+    } else {
+      monthlyQuery = monthlyQuery.gte('date', oneYearAgoStr);
     }
 
     if (filters.volatilityEndDate && filters.volatilityEndDate !== 'all') {
@@ -413,7 +446,7 @@ Deno.serve(async (req) => {
       monthlyQuery = monthlyQuery.lte('date', filters.dateTo);
     }
 
-    const { data: monthlyData } = await monthlyQuery;
+    const { data: monthlyData } = await fetchAll(monthlyQuery);
 
     const monthlyVariation: {
       most_volatile: Array<{
@@ -512,6 +545,8 @@ Deno.serve(async (req) => {
       }
       if (filters.variationStartDate && filters.variationStartDate !== 'all') {
         brandHistoryQuery = brandHistoryQuery.gte('date', filters.variationStartDate);
+      } else if (!filters.dateFrom) {
+        brandHistoryQuery = brandHistoryQuery.gte('date', oneYearAgoStr);
       }
 
       if (filters.variationEndDate && filters.variationEndDate !== 'all') {
@@ -521,7 +556,7 @@ Deno.serve(async (req) => {
         brandHistoryQuery = brandHistoryQuery.lte('date', filters.variationEndDate + 'T23:59:59');
       }
 
-      const { data: brandHistory } = await brandHistoryQuery;
+      const { data: brandHistory } = await fetchAll(brandHistoryQuery);
 
       if (brandHistory && brandHistory.length > 0) {
         // Group by date and calculate average price per date
@@ -844,7 +879,7 @@ Deno.serve(async (req) => {
     // Historical data for selected models
     const historicalData = [];
     if (filters.model) {
-      const { data: historical, error: histError } = await supabaseClient
+      const { data: historical, error: histError } = await fetchAll(supabaseClient
         .from('price_data')
         .select(`
           date,
@@ -852,7 +887,7 @@ Deno.serve(async (req) => {
           products!inner (brand, model, name)
         `)
         .eq('products.model', filters.model)
-        .order('date', { ascending: true });
+        .order('date', { ascending: true }));
 
       if (!histError && historical) {
         historicalData.push(...historical.map(item => ({
@@ -900,20 +935,8 @@ Deno.serve(async (req) => {
           date_from: filters.dateFrom,
           date_to: filters.dateTo
         },
-        // Sort ascending (Oldest -> Newest) and limit to the last rolling 12 months based on the LATEST data available
-        available_dates: (() => {
-          const allDates = [...new Set(monthlyData?.map((d: any) => d.date.split('T')[0]) || [])].sort() as string[];
-          if (allDates.length === 0) return [];
-
-          // Use the newest date in the database as the reference point, not the system clock
-          const latestDateStr = allDates[allDates.length - 1];
-          const latestDate = new Date(latestDateStr);
-
-          // First day of the month, one year ago from the latest data point
-          const oneYearAgo = new Date(latestDate.getFullYear() - 1, latestDate.getMonth(), 1);
-
-          return allDates.filter(d => new Date(d) >= oneYearAgo);
-        })(),
+        // Return all active dates so users can pick any historical period they wish
+        available_dates: uniqueDates,
         generated_at: new Date().toISOString()
       }),
       {
