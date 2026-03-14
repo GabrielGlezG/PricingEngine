@@ -1538,8 +1538,12 @@ export default function Dashboard() {
                              
                              if (variationPeriod === 'total') {
                                  if (!analytics.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
-                                 const min = fmt(analytics.available_dates[0]);
-                                 const max = fmt(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const maxDate = new Date(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const minDate = new Date(maxDate);
+                                 minDate.setFullYear(minDate.getFullYear() - 1);
+                                 
+                                 const min = fmt(minDate.toISOString());
+                                 const max = fmt(maxDate.toISOString());
                                  return `Periodo: ${min} - ${max}`;
                              }
                              if (variationStartDate !== 'all' && variationEndDate !== 'all' && variationStartDate && variationEndDate) {
@@ -1740,8 +1744,12 @@ export default function Dashboard() {
 
                              if (volatilityPeriod === 'total') {
                                  if (!analytics?.available_dates || analytics.available_dates.length === 0) return "Cargando fechas...";
-                                 const min = fmt(analytics.available_dates[0]);
-                                 const max = fmt(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const maxDate = new Date(analytics.available_dates[analytics.available_dates.length - 1]);
+                                 const minDate = new Date(maxDate);
+                                 minDate.setFullYear(minDate.getFullYear() - 1);
+                                 
+                                 const min = fmt(minDate.toISOString());
+                                 const max = fmt(maxDate.toISOString());
                                  return `Periodo: ${min} - ${max}`;
                              }
                              if (volatilityStartDate !== 'all' && volatilityEndDate !== 'all' && volatilityStartDate && volatilityEndDate) {
