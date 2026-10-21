@@ -94,7 +94,7 @@ export default function Compare() {
     brand: [] as string[],
     model: [] as string[],
     submodel: [] as string[],
-    priceRange: [0, 2000000] as [number, number]
+    priceRange: [0, 100000000] as [number, number]
   })
 
   useEffect(() => {
@@ -123,31 +123,40 @@ export default function Compare() {
     submodels 
   } = useInterconnectedFilters(filters, setFilters, "compare");
 
-  // Fetch products for comparison
+  // Fetch products for comparison — re-fetches whenever segment/brand/model filters change
   const { data: products } = useQuery({
-    queryKey: ['products-for-comparison'],
+    queryKey: ['products-for-comparison', filters.tipoVehiculo, filters.brand, filters.model],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select(`*, price_data (price, date)`)
         .order('brand')
-      
+
+      // Apply server-side filters so we fetch only what matches the current selection
+      if (filters.tipoVehiculo.length > 0) {
+        query = query.in('tipo_vehiculo', filters.tipoVehiculo)
+      }
+      if (filters.brand.length > 0) {
+        query = query.in('brand', filters.brand)
+      }
+      if (filters.model.length > 0) {
+        query = query.in('model', filters.model)
+      }
+
+      const { data, error } = await query
       if (error) throw error
-      
-      
+
       // Limit history to max 1 year (Month granularity)
-      // We take the 1st day of the month one year ago to ensure we don't cut off early days of that month
       const now = new Date();
       const oneYearAgo = new Date(Date.UTC(now.getFullYear() - 1, now.getMonth(), 1));
 
       return data?.map(product => {
-        // Filter and sort history
         const sortedHistory = product.price_data
           ?.filter(p => new Date(p.date) >= oneYearAgo)
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
 
         const prices = sortedHistory.map(p => p.price) || []
-        
+
         return {
           ...product,
           latest_price: prices.length > 0 ? prices[prices.length - 1] : 0,
@@ -206,24 +215,24 @@ export default function Compare() {
   // Calculate min and max prices
   const prices = products?.map(p => p.latest_price || 0).filter(p => p > 0) || []
   const minPrice = prices.length > 0 ? Math.min(...prices) : 0
-  const maxPrice = prices.length > 0 ? Math.max(...prices) : 2000000
-  
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : 100000000
+
   useEffect(() => {
-    if (products && products.length > 0 && filters.priceRange[0] === 0 && filters.priceRange[1] === 2000000 && minPrice > 0 && maxPrice > 0) {
+    if (products && products.length > 0 && filters.priceRange[1] === 100000000 && minPrice > 0 && maxPrice > 0) {
       setFilters(f => ({ ...f, priceRange: [minPrice, maxPrice] }))
     }
   }, [products, minPrice, maxPrice])
 
   const hasActiveFilters = filters.tipoVehiculo.length > 0 || filters.brand.length > 0 || filters.model.length > 0 || filters.submodel.length > 0
 
-  // Filter products based on current filters
+  // Filter products based on current filters.
+  // The query already filters server-side by tipoVehiculo/brand/model.
+  // Here we only apply the client-side price slider on top.
   const filteredProducts = hasActiveFilters ? (products?.filter(product => {
-    if (filters.tipoVehiculo.length > 0 && !filters.tipoVehiculo.includes(product.tipo_vehiculo || '')) return false
-    if (filters.brand.length > 0 && !filters.brand.includes(product.brand)) return false
-    if (filters.model.length > 0 && !filters.model.includes(product.model)) return false
     if (filters.submodel.length > 0 && !filters.submodel.includes(product.submodel || '')) return false
     const price = product.latest_price || 0
-    if (price < filters.priceRange[0] || price > filters.priceRange[1]) return false
+    // Only apply price filter if the slider has been adjusted from defaults
+    if (minPrice > 0 && (price < filters.priceRange[0] || price > filters.priceRange[1])) return false
     return true
   }) || []) : []
 
