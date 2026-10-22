@@ -146,16 +146,17 @@ export default function Compare() {
       const { data, error } = await query
       if (error) throw error
 
-      // Limit history to max 1 year (Month granularity)
-      const now = new Date();
-      const oneYearAgo = new Date(Date.UTC(now.getFullYear() - 1, now.getMonth(), 1));
-
+      // Sort history chronologically — no hard date cutoff so segments with
+      // older data (e.g. Camión last updated in mid-2025) are not hidden.
+      // We keep the most recent 24 points for chart readability.
       return data?.map(product => {
-        const sortedHistory = product.price_data
-          ?.filter(p => new Date(p.date) >= oneYearAgo)
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || []
+        const sortedHistory = (product.price_data || [])
+          .filter(p => p.price > 0) // exclude zero-price entries
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-        const prices = sortedHistory.map(p => p.price) || []
+        // Keep last 24 data points (≈ 2 years monthly) to avoid chart overcrowding
+        const trimmedHistory = sortedHistory.slice(-24)
+        const prices = trimmedHistory.map(p => p.price)
 
         return {
           ...product,
@@ -163,7 +164,7 @@ export default function Compare() {
           min_price: prices.length > 0 ? Math.min(...prices) : 0,
           max_price: prices.length > 0 ? Math.max(...prices) : 0,
           avg_price: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
-          price_history: sortedHistory
+          price_history: trimmedHistory
         }
       }) || []
     }
